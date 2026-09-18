@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Window background for API < 21's dark-mode variant. See `drawable/launch_background.xml`.
+
+  Same amber as the other two paths, and for the same reason: no white flash before the logo,
+  whatever the API level and whatever the theme.
+-->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@color/splash_background" />
+</layer-list>

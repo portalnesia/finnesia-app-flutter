@@ -1,0 +1,73 @@
+# Launcher icon — generated, not hand-drawn.
+#
+# Run: `./dev icons` (or `cd apps/pos && dart run flutter_launcher_icons`).
+#
+# Source art is the owner's, copied from the owner's Logo folder outside this repo
+# (a sibling of the repo root, not of this package) and verified
+# byte-identical (`md5sum`). `logo.svg` in that folder is the same mark as a vector
+# (`viewBox 0 0 1080 1080`, one path, `fill="#ffffff"`), but the raster is used here:
+# Android's `<adaptive-icon>` bitmap layers take a PNG, and converting the SVG would add
+# a rasteriser dependency to CI for no visible gain at these sizes.
+#
+# `assets/icon/` is a build-time input only. It is deliberately NOT listed under
+# `flutter: assets:` in `pubspec.yaml` — nothing reads these at runtime, and listing them
+# would ship them in the APK for nothing.
+flutter_launcher_icons:
+  android: true
+  # API < 26 only, so unreachable at our `minSdk 31`. Generated anyway so the resource
+  # tree is complete and the icon does not silently break if the floor ever drops.
+  image_path: "assets/icon/icon.png"
+  min_sdk_android: 31
+
+  # Adaptive icon (API 26+). This is the one every supported device actually draws.
+  #
+  # `#FF9800` is the amber of the artwork itself: `assets/icon/icon.png`'s background is
+  # exactly `rgb(255,152,0)`, and it is the value the owner named. `site.webmanifest`'s
+  # `theme_color` and the PWA icons use the same one, so the launcher and the installed web
+  # app agree.
+  #
+  # It is NOT byte-identical to the theme's accent. `pn_ui`'s `accent` is
+  # `hsl(36 100% 50%)` = `#FF9900` — 1/255 different on the green channel. That divergence is
+  # pre-existing and lives in the web app too (`index.css` says `hsl(36 100% 50%)` while its
+  # own manifest says `#FF9800`), so it is not this repo's to settle. The icon follows the
+  # artwork, because that is what the mark is drawn in.
+  adaptive_icon_background: "#FF9800"
+  adaptive_icon_foreground: "assets/icon/icon_only.png"
+
+  # Android 13+ themed icons. The glyph is already a single-colour silhouette, so it is
+  # its own monochrome layer — no second piece of artwork. Without this, Android 16 QPR 2+
+  # themes the icon anyway, by deriving a silhouette from the foreground; supplying it
+  # deliberately is what keeps that under our control.
+  adaptive_icon_monochrome: "assets/icon/icon_only.png"
+
+  # Inset is a percentage of the LAYER bounds: `InsetDrawable` multiplies it by the bound
+  # size, and the layer is drawn at its natural 108 dp (`AdaptiveIconDrawable
+  # .getIntrinsicWidth()` returns `108 * 2/3` = 72 dp, so the 108 dp layer is scaled to
+  # 72 dp rather than up to 150%). The visible width is therefore `108 * (1 - 2*inset)`.
+  #
+  # 16 is the smallest value that is safe under EVERY mask a device may use, measured
+  # against this artwork rather than assumed — see `plan/ui/findings.md` F27:
+  #
+  #   glyph bbox 71.75 dp, corners 50.91 dp from centre
+  #   at 15%: 50.2 dp wide, corners 35.6 dp  -> fits the 72 dp circle (r=36), still >= 48 dp
+  #   at 14%: 51.7 dp wide, corners 36.7 dp  -> corners clipped by a round mask
+  #
+  # Android requires a logo of at least 48 dp and at most 66 dp. 16% lands at 48.8 dp:
+  # inside the 66 dp ceiling, and a round-masked launcher cannot clip it.
+  adaptive_icon_foreground_inset: 16
+
+  # Windows. The block exists to RECORD the decision; `generate: false` is what the test in
+  # `test/branding/branding_test.dart` pins, because flipping it silently changes which tool
+  # owns the `.ico`.
+  #
+  # `generate: false` because this tool writes a SINGLE-size `.ico`
+  # (`windows_icon_generator.dart` calls `encodeIco` on one resized image, default 48 px) while
+  # Windows asks the shell for six different sizes. `tool/generate_windows_icon.dart` writes it
+  # instead; `./dev icons` runs both. Windows being unsupported for now is not the reason — the
+  # reason is that one size is wrong on Windows whatever the support status.
+  #
+  # No `image_path` here on purpose. It would be dead: `validateRequirements()` returns before
+  # reading it, and the generator falls back to the top-level `image_path` anyway. Keeping it
+  # would only suggest it is doing something.
+  windows:
+    generate: false

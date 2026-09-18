@@ -1,0 +1,15 @@
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  exclude:
+    - build/**
+    - android/**
+    - windows/**
+
+linter:
+  rules:
+    # `.claude/rules/style.md` §8 requires importing straight from the file that defines the
+    # thing (`package:pn_types/src/session.dart`) and forbids barrel re-exports. This lint asks
+    # for the opposite — a public library that exports it — which would be exactly the barrel
+    # the rule bans. `pn_pos` and `pn_types` already import each other's `src/` the same way.
+    implementation_imports: false

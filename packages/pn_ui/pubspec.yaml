@@ -1,0 +1,14 @@
+name: pn_ui
+publish_to: none
+environment:
+  sdk: ^3.6.0
+resolution: workspace
+
+dependencies:
+  flutter:
+    sdk: flutter
+  pn_types:
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter

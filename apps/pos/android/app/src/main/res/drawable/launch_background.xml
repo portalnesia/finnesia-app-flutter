@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Window background for API < 21's light-mode variant. See `drawable-v21/launch_background.xml`.
+
+  Unreachable at `minSdk 31`, but set to the same amber rather than Flutter's template white so
+  the whole launch path is one colour with no white flash before the logo.
+-->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@color/splash_background" />
+</layer-list>

@@ -1,0 +1,15 @@
+# Finds user-visible text written into widgets instead of coming from the dictionary
+# (`.claude/rules/style.md` §7). Standalone like `rule_lint`: not a member of the root pub
+# workspace, so it runs without the workspace and adds nothing to the app's dependency graph.
+name: string_lint
+description: Finds hardcoded user-facing strings in widget code.
+publish_to: none
+
+environment:
+  sdk: ^3.6.0
+
+dependencies:
+  path: ^1.9.0
+
+dev_dependencies:
+  test: ^1.25.0

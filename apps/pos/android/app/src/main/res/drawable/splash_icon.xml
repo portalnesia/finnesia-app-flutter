@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The splash's own icon: the white glyph, named by `windowSplashScreenAnimatedIcon` in both
+  themes. Left unset, the system draws the launcher icon instead, and on a tablet that showed as
+  an empty amber screen; this does not depend on how a launcher's adaptive icon is masked.
+
+  A splash icon with no background is drawn at 288 dp and masked to a circle of 192 dp. The
+  glyph is 66% of its 1080 px canvas and roughly square, so 20% inset on each side leaves about
+  115 dp wide, with its corners well inside that circle.
+
+  `splash_glyph.png` is `assets/icon/icon_only.png`, kept in `drawable-nodpi` so it is scaled
+  to the bounds and not by a density.
+-->
+<inset xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/splash_glyph"
+    android:inset="20%" />

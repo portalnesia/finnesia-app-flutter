@@ -1,0 +1,13 @@
+# Structural checks for this repo's agent rule files (AGENTS.md, copilot-instructions.md,
+# .claude/rules/*.md). Deliberately a standalone package, NOT a member of the root pub
+# workspace: it must be runnable before the workspace exists and it must not add a
+# dependency to the app's dependency graph.
+name: rule_lint
+description: Structural checks for agent rule files.
+publish_to: none
+
+environment:
+  sdk: ^3.6.0
+
+dev_dependencies:
+  test: ^1.25.0

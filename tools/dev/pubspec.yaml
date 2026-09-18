@@ -1,0 +1,14 @@
+# Short commands for the things a contributor does all day (`./dev run`, `./dev check`, ...).
+# Deliberately a standalone package, NOT a member of the root pub workspace, for the same
+# reasons as `tools/rule_lint`: it must run before the workspace resolves (`./dev setup` is what
+# resolves it) and it must not add a dependency to the app's graph. It has no dependencies of
+# its own: only `dart:io`.
+name: dev
+description: Task runner for this repo.
+publish_to: none
+
+environment:
+  sdk: ^3.6.0
+
+dev_dependencies:
+  test: ^1.25.0

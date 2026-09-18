@@ -1,0 +1,77 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "pos verify",
+			"type": "shell",
+			"command": "dart format --output=none --set-exit-if-changed .",
+			"group": "test"
+		},
+		{
+			"label": "pos format",
+			"type": "shell",
+			"command": "dart format .",
+			"group": "test"
+		},
+		{
+			"label": "pos analyze",
+			"type": "shell",
+			"command": "dart analyze",
+			"group": "test"
+		},
+		{
+			"label": "pos dart test",
+			"type": "shell",
+			"command": "dart test",
+			"group": "test"
+		},
+		{
+			"label": "pos pn test",
+			"type": "shell",
+			"command": "dart test packages/pn_types packages/pn_pos",
+			"group": "test"
+		},
+		{
+			"label": "pos flutter test",
+			"type": "shell",
+			"command": "cd apps/pos && flutter test",
+			"group": "test"
+		},
+		{
+			"label": "pos rule lint",
+			"type": "shell",
+			"command": "dart run tools/rule_lint/bin/rule_lint.dart",
+			"group": "test"
+		},
+		{
+			"label": "pos verify all",
+			"type": "shell",
+			"command": "dart format --output=none --set-exit-if-changed . && dart analyze && dart test packages/pn_types packages/pn_pos && cd apps/pos && flutter test",
+			"group": "test"
+		},
+		{
+			"label": "pos rule lint final",
+			"type": "shell",
+			"command": "dart run tools/rule_lint/bin/rule_lint.dart",
+			"group": "test"
+		},
+		{
+			"label": "pos flutter test full",
+			"type": "shell",
+			"command": "cd apps/pos && flutter test",
+			"group": "test"
+		},
+		{
+			"label": "pos verify round2",
+			"type": "shell",
+			"command": "dart format . && dart analyze && dart test packages/pn_types packages/pn_pos && dart run tools/rule_lint/bin/rule_lint.dart",
+			"group": "test"
+		},
+		{
+			"label": "pos verify final2",
+			"type": "shell",
+			"command": "dart format --output=none --set-exit-if-changed . && dart analyze && dart test packages/pn_types packages/pn_pos && dart run tools/rule_lint/bin/rule_lint.dart && cd apps/pos && flutter test",
+			"group": "test"
+		}
+	]
+}

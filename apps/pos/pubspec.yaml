@@ -1,0 +1,154 @@
+name: pos
+description: "A new Flutter project."
+publish_to: "none"
+# 1.0.0, not 0.1.0: the Microsoft Store rejects an MSIX whose Major is 0
+# ("the first section, which cannot be 0" — app-package-requirements), and `msix_version`
+# below has to agree with this. Kept in step with `msix_version` by
+# `test/branding/store_identity_test.dart`, so one release cannot carry two numbers.
+#
+# The `+N` is the Android versionCode. Play rejects an upload whose versionCode does not
+# increase, so this counter has to move for every AAB pushed to any track — `msix_version`
+# below does NOT track it (the test compares only the three sections before the `+`).
+version: 1.0.0+3
+
+environment:
+  sdk: ^3.13.3
+
+# Required: the root `pubspec.yaml` lists this package under `workspace:`.
+# Without this line `dart pub get` at the root fails with
+# "<path> is included in the workspace from ./pubspec.yaml, but does not have
+# `resolution: workspace`".
+resolution: workspace
+
+dependencies:
+  flutter:
+    sdk: flutter
+  # Workspace siblings: no version, no path. `apps/pos` is the only package
+  # allowed to depend on all of them (`.claude/rules/architecture.md` §3).
+  pn_pos:
+  pn_types:
+  pn_ui:
+
+  # The HTTP stack under `PublicHttpPort` (step 13), and the `Interceptor` the debug inspector
+  # is built on (README §14). Verified with `flutter pub get` and a real request through a fake
+  # adapter before use (`.claude/rules/patterns.md` §2a.1).
+  dio: ^5.11.1
+  freezed_annotation: ^3.1.0
+  url_launcher: ^6.3.2
+  flutter_secure_storage: ^11.2.0
+  universal_ble: ^2.3.0
+  shared_preferences: ^2.5.5
+  flutter_localizations:
+    sdk: flutter
+  intl: 0.20.3
+  android_id: ^0.5.2+1
+  app_links: ^7.2.1
+  sqflite: ^2.4.4
+  path_provider: ^2.1.6
+  sqflite_common_ffi: ^2.4.3
+  package_info_plus: ^10.2.1
+  mobile_scanner: ^7.4.2
+  device_info_plus: ^13.2.0
+  firebase_core: ^4.15.0
+  firebase_analytics: ^12.6.0
+  firebase_crashlytics: ^5.4.0
+  # OTA (`docs/distribution.md` §4). `checkForUpdate()` answers `unavailable` — mapped by
+  # `ShorebirdUpdaterPort` to `upToDate` — on any build not made with `shorebird release`
+  # (debug, or a plain `flutter build`), so the "update ready" banner is production-only
+  # with no extra guard needed in app code.
+  shorebird_code_push: ^2.0.7
+  # Native (APK/AAB) update prompt via Play Core (`docs/distribution.md` §5). Only ever
+  # fires for a genuine new versionCode published on Play — cannot be confused with a
+  # Shorebird patch, which never changes the installed app's versionCode at all. Cannot
+  # be exercised locally: Play Core requires the app to be installed through Play.
+  in_app_update: ^5.0.0
+dev_dependencies:
+  build_runner: ^2.4.0
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  freezed: ^4.0.1
+  url_launcher_platform_interface: ^2.3.2
+  plugin_platform_interface: ^2.1.8
+  flutter_secure_storage_platform_interface: ^2.1.1
+  shared_preferences_platform_interface: ^2.4.2
+  flutter_launcher_icons: ^0.14.4
+  image: ^4.10.1
+  msix: ^3.18.0
+  path_provider_platform_interface: ^2.1.3
+  package_info_plus_platform_interface: ^4.1.0
+  firebase_core_platform_interface: ^8.1.1
+  firebase_crashlytics_platform_interface: ^3.9.0
+
+flutter:
+  uses-material-design: true
+  generate: true
+
+  assets:
+    - assets/logo/finnesia.png
+    - shorebird.yaml
+
+# MSIX packaging — two jobs, and the second one is why the values below are what they are.
+#
+# 1. Sideload, for the Windows App Link (`plan note 2026-09-21`).
+# 2. Microsoft Store submission, where three values must match Partner Center exactly.
+#
+# This block must live HERE and not in a separate `msix_config.yaml`: the tool reads
+# `pubspec['msix_config']` and nothing else (`msix/lib/src/configuration.dart`). A separate file
+# was silently ignored, and the package came out with the template's defaults —
+# `com.flutter.pos`, display name `pos`, and **no protocol registration at all**.
+#
+# Windows receives the login "Kembali ke aplikasi" link through web-to-app activation, which
+# only a packaged app can register for: a registry entry cannot claim an https host, and
+# protocol activation does not fire for `flutter run` at all (the doc is explicit). So the link
+# is testable from an MSIX sideload, not from a plain debug session.
+#
+# ── Store identity (read from Partner Center → Product management → Product identity) ──
+# `identity_name`, `publisher`, and `publisher_display_name` are **not ours to choose** for a
+# Store package: they must be the values Microsoft assigned, character for character. They used
+# to be invented here (`com.finnesia.pos` / `Portalnesia`) for the sideload path, and a Store
+# upload would have failed with a manifest error that does not name the offending field.
+#
+# `identity_name` is `<PublisherId>.<AppName>`, NOT a reverse-DNS name. There is no domain in it,
+# so do not "tidy" it into one.
+#
+# `publisher` is required by the tool in two cases, both of which apply (`msix/configuration.dart`
+# §241: required when `store`; §236: required when `sign_msix: false`).
+msix_config:
+  display_name: Finnesia POS
+  # Partner Center: Package/Properties/PublisherDisplayName. Shown on the Store listing.
+  publisher_display_name: Putu Aditya
+  # Partner Center: Package/Identity/Name.
+  identity_name: PutuAditya.FinnesiaPOS
+  # Partner Center: Package/Identity/Publisher. This is the certificate *subject*, so it carries
+  # the `CN=` prefix. Sideload is unaffected by changing this: with a test certificate the tool
+  # overwrites `publisher` with the certificate's own subject (`sign_tool.dart:23,42`), and the
+  # self-signed cert is what signs it. It matters only for the Store, which re-signs anyway.
+  publisher: CN=FD977251-3866-4FF0-ABD2-D71AAABF5137
+  # Must track `version:` at the top of this file (Major != 0, fourth section 0).
+  # `flutter build` stamps the Windows exe from `version:` while the MSIX carries this one, so
+  # if they disagree the Store listing and the running app report different numbers for the
+  # same build. `test/branding/store_identity_test.dart` is what keeps them equal.
+  msix_version: 1.0.0.0
+  # The https hosts the backend's login landing page links to. Staging is for the debug-built
+  # package; production belongs in a release packaging config when that exists.
+  # `protocol_activation` registers the scheme(s); `app_uri_handler_hosts` registers the hosts
+  # for web-to-app. Hosts cannot use patterns (msix/README).
+  protocol_activation: https
+  app_uri_handler_hosts: apps-dev.finnesia.com, apps.finnesia.com
+  # Without this the package ships the tool's own default artwork, and Windows draws the
+  # *packaged* icon — not the exe's embedded one — in the taskbar, Start menu and tile.
+  # Verified: the packaged `StoreLogo.scale-100.png` was byte-identical to
+  # `msix/lib/assets/icons/BadgeLogo.scale-100.png` until this line was added.
+  #
+  # Full-bleed `icon.png`, not `icon_only.png`: Windows does not mask app icons the way Android's
+  # adaptive icon does, so the transparent-background glyph would be white on white in light mode.
+  # Same source and reasoning as the Windows `.ico` (`tool/generate_windows_icon.dart`).
+  logo_path: assets/icon/icon.png
+  # Sideload: sign with a self-signed test certificate. The certificate lands next to the .msix
+  # and must be installed to Local Machine > Trusted People before the package opens.
+  sign_msix: true
+  # Never prompt: the question ("install the certificate?") needs a human at a console and an
+  # admin prompt, so it cannot be answered here — and answering it is a separate, deliberate act.
+  install_certificate: false
+  capabilities: internetClient

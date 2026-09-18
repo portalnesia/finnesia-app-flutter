@@ -1,0 +1,3 @@
+#!/usr/bin/env sh
+# Short commands for this repo: ./dev help
+exec dart run "$(dirname "$0")/tools/dev/bin/dev.dart" "$@"

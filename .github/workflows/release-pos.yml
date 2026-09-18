@@ -1,0 +1,378 @@
+# Build rilis Android: APK (GitHub Release) + AAB (Play Console, track `internal`), dari tag.
+#
+# Alur distribusi lengkap dan langkah setup manual: docs/distribution.md.
+#
+#   - APK → GitHub Release (draft): sideload/fallback sebelum Play Store siap.
+#   - AAB → Play Console track `internal`, lewat `shorebird release android` (bukan
+#     `flutter build appbundle` langsung), yang sekaligus mendaftarkan rilis ini sebagai
+#     target patch OTA. Cara mencabut Shorebird ada di komentar blok "── Shorebird" di
+#     bawah. Promosi ke track lain dilakukan MANUAL di Play Console — docs/distribution.md
+#     §Promote.
+#   - Upload pertama ke Play Console WAJIB manual lewat web UI sekali dulu — Play
+#     Developer API menolak package yang belum pernah punya release.
+#
+# Trigger: tag `pos-vMAJOR.MINOR.PATCH` polos (tanpa akhiran) — rilis NATIVE.
+#
+# Repo ini monorepo dan akan memuat aplikasi lain, jadi tag diberi prefix aplikasi: `pos-`
+# menandakan workflow POS, sementara versi yang dibaca adalah bagian setelahnya (`pos-v1.2.0`
+# → `1.2.0`). Aplikasi lain memakai prefix sendiri dan tidak menyentuh workflow ini.
+#
+# Perubahan Dart-only lewat OTA memakai `shorebird-patch.yml`, trigger tag
+# `pos-vMAJOR.MINOR.PATCH-N` (mis. `pos-v1.2.0-5`). Keempat pattern tag di repo ini sengaja
+# saling eksklusif (tidak ada tag yang cocok keduanya) supaya satu `git push --tags` tidak
+# pernah memicu dua workflow sekaligus — lihat docs/distribution.md §4.3.
+#
+# Pola positifnya sengaja lebar (`*` di ujung, cocok dengan nol atau lebih karakter) dan
+# eksklusinya ditulis eksplisit sebagai negasi, bukan diserahkan pada asumsi bahwa GitHub
+# meng-anchor pola ke seluruh nama ref. Urutan penting: negasi harus SETELAH pola positifnya.
+#
+# Rahasia yang dibutuhkan (Settings → Secrets and variables → Actions):
+#
+#   ANDROID_KEY_BASE64         base64 satu baris dari upload-keystore.jks
+#   ANDROID_KEY_ALIAS          alias di dalam keystore
+#   ANDROID_KEY_PASSWORD       password keystore
+#   PLAY_SERVICE_ACCOUNT_JSON  isi lengkap JSON key service account Play Developer API
+#   SHOREBIRD_TOKEN            API key dari Shorebird console (docs.shorebird.dev/account/api-keys)
+#
+# Cara membuat PLAY_SERVICE_ACCOUNT_JSON: docs/distribution.md §Setup.
+
+name: Release POS
+
+on:
+  push:
+    tags:
+      - "pos-v[0-9]+.[0-9]+.[0-9]+*"
+      - "!pos-v[0-9]+.[0-9]+.[0-9]+-*"
+
+# Satu rilis per tag. Tag tidak bisa dipush ulang, jadi run yang sedang berjalan
+# tidak perlu dibatalkan.
+concurrency:
+  group: release-pos-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  FLUTTER_VERSION: "3.47.4"
+  # Harus sama dengan `ndkVersion` yang di-pin Flutter 3.47.4. Kalau tidak, Gradle
+  # gagal dengan "Package ndk not found" — dan `flutter doctor` tidak memberi tahu,
+  # karena doctor memeriksa keberadaan toolchain, bukan kecocokan versinya.
+  NDK_VERSION: "28.2.13676358"
+  # Sama dengan `applicationId` di apps/pos/android/app/build.gradle.kts — bukan rahasia,
+  # sudah publik di repo, jadi tidak perlu jadi secret.
+  ANDROID_PACKAGE_NAME: "com.finnesia.pos"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # untuk membuat GitHub Release
+    env:
+      # Hanya dipakai oleh blok "── Shorebird" di bawah. Job-level, bukan step-level,
+      # supaya action Shorebird bisa membacanya tanpa `with:` tambahan — begitu cara
+      # action resminya diinstruksikan bekerja.
+      SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ── Versi ─────────────────────────────────────────────────────────────
+      # Trigger workflow ini selalu `pos-vMAJOR.MINOR.PATCH` polos (dijaga oleh pattern di
+      # `on.push.tags`), jadi versi selalu tiga angka bersih, tanpa akhiran apa pun. Prefix
+      # `pos-` dibuang di sini — ia menandakan aplikasi, bukan bagian dari versinya.
+      - name: Derive version
+        id: version
+        run: |
+          VERSION="${GITHUB_REF_NAME#pos-v}"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Versi dari tag: $VERSION"
+
+      # `versionCode` diturunkan dari versi tag supaya setiap rilis punya nilai yang naik
+      # secara monoton — Android (dan Play Console) menolak rilis kalau versionCode tidak
+      # naik. Formatnya `major*1000000 + minor*1000 + patch`, sehingga versi semver apa pun
+      # memetakan ke satu integer tanpa tabrakan selama minor/patch < 1000. Dihitung sekali
+      # di sini, dipakai ulang oleh build APK dan AAB supaya keduanya tidak bisa berbeda, DAN
+      # oleh `shorebird-patch.yml` (rumus yang identik) supaya `--release-version` sebuah
+      # patch selalu menunjuk build number yang persis sama dengan rilis native aslinya.
+      - name: Compute build number
+        id: build_number
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          MAJOR="${VERSION%%.*}"
+          REST="${VERSION#*.}"
+          MINOR="${REST%%.*}"
+          PATCH="${REST#*.}"
+          BUILD_NUMBER=$(( MAJOR * 1000000 + MINOR * 1000 + PATCH ))
+          echo "value=$BUILD_NUMBER" >> "$GITHUB_OUTPUT"
+          echo "versionName=$VERSION versionCode=$BUILD_NUMBER"
+
+      # ── Toolchain ─────────────────────────────────────────────────────────
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      # Tanpa langkah ini build Android gagal total, bukan hanya build yang butuh
+      # native code. Flutter memanggil `sdkmanager` sendiri lewat
+      # `maybeHandleToolNdkProvisioning()`, dan di image runner `sdkmanager` adalah
+      # wrapper usang yang crash (NTSTATUS 0xC0000409) — lihat
+      # plan/scaffold/00-environment.md §3. Memasangnya di sini melewati jalur itu.
+      - name: Install Android NDK
+        run: sdkmanager "ndk;${NDK_VERSION}"
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('apps/pos/android/**/*.gradle*') }}
+          restore-keys: gradle-${{ runner.os }}-
+
+      - name: Resolve workspace
+        run: dart pub get
+
+      # ── Verifikasi ────────────────────────────────────────────────────────
+      # Rilis tidak dibangun kalau ini gagal. Urutan mengikuti AGENTS.md.
+      - name: Analyze
+        run: dart analyze
+
+      - name: Test pure Dart packages
+        run: |
+          for pkg in packages/pn_types packages/pn_pos; do
+            if [ -d "$pkg/test" ]; then
+              echo "── dart test: $pkg"
+              (cd "$pkg" && dart test)
+            else
+              echo "── skip $pkg (belum ada test/)"
+            fi
+          done
+
+      - name: Test Flutter packages
+        run: |
+          for pkg in packages/pn_ui apps/pos; do
+            if [ -d "$pkg/test" ]; then
+              echo "── flutter test: $pkg"
+              (cd "$pkg" && flutter test)
+            else
+              echo "── skip $pkg (belum ada test/)"
+            fi
+          done
+
+      # ── Signing ───────────────────────────────────────────────────────────
+      # Semua bahan signing hanya ada di runner dan ditulis ke $RUNNER_TEMP —
+      # tidak ada yang menyentuh repo. `app/build.gradle.kts` membaca berkas ini
+      # lewat `rootProject.file("keystore.properties")`, jadi lokasinya adalah
+      # `apps/pos/android/`. Tanpa berkas itu build release gagal dengan
+      # "Keystore file not set", dan itu disengaja: lebih baik gagal daripada
+      # diam-diam mengirim APK yang ditandatangani debug key.
+      - name: Setup Android signing
+        working-directory: apps/pos/android
+        run: |
+          base64 -d <<< "${{ secrets.ANDROID_KEY_BASE64 }}" > "$RUNNER_TEMP/keystore.jks"
+          {
+            echo "keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}"
+            echo "password=${{ secrets.ANDROID_KEY_PASSWORD }}"
+            echo "storeFile=$RUNNER_TEMP/keystore.jks"
+          } > keystore.properties
+
+      # ── Build ─────────────────────────────────────────────────────────────
+      # `--target-platform` dibatasi arm64 + armv7 untuk APK: itu seluruh tablet Android
+      # yang masih didukung, dan x86_64 hanya berguna untuk emulator. AAB tidak perlu
+      # `--target-platform` — Play Store sendiri yang memilih ABI per perangkat lewat
+      # split delivery, jadi satu AAB sudah mencakup keduanya.
+      - name: Build release APK
+        working-directory: apps/pos
+        run: |
+          flutter build apk --release \
+            --build-name "${{ steps.version.outputs.version }}" \
+            --build-number "${{ steps.build_number.outputs.value }}" \
+            --target-platform android-arm64,android-arm
+
+      # ── Shorebird ─────────────────────────────────────────────────────────
+      # Dua step ini menggantikan `flutter build appbundle --release` biasa dengan
+      # `shorebird release android`, yang membangun AAB YANG SAMA (output tetap di
+      # `build/app/outputs/bundle/release/`) sekaligus mendaftarkannya sebagai target
+      # yang bisa dikirimi patch OTA Dart-only nanti (lewat `shorebird patch`, belum
+      # ada di workflow ini — docs/distribution.md §OTA).
+      #
+      # Untuk MATIKAN Shorebird (kembali ke native 100%, tidak ada OTA sama sekali):
+      # hapus DUA step di bawah ini ("Setup Shorebird" dan "Build release AAB"), lalu
+      # ganti dengan:
+      #
+      #   - name: Build release AAB
+      #     working-directory: apps/pos
+      #     run: |
+      #       flutter build appbundle --release \
+      #         --build-name "${{ steps.version.outputs.version }}" \
+      #         --build-number "${{ steps.build_number.outputs.value }}"
+      #
+      # Tidak ada bagian lain di workflow ini yang perlu diubah — "Locate AAB" mencari
+      # di path output yang sama untuk kedua cara.
+      - name: Setup Shorebird
+        uses: shorebirdtech/setup-shorebird@v1
+        with:
+          cache: true
+
+      - name: Build release AAB (shorebird release android)
+        uses: shorebirdtech/shorebird-release@v1
+        with:
+          platform: android
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          working-directory: apps/pos
+          args: >-
+            --build-name=${{ steps.version.outputs.version }}
+            --build-number=${{ steps.build_number.outputs.value }}
+            --no-confirm
+
+      - name: Locate APK
+        id: apk
+        run: |
+          # Debug dikecualikan supaya tidak salah ambil kalau ada sisa build lokal.
+          APK=$(find apps/pos/build/app/outputs/flutter-apk \
+            -type f -name '*.apk' -not -name '*-debug*.apk' | head -n1)
+          if [ -z "$APK" ]; then
+            echo "::error::APK tidak ditemukan setelah build"
+            exit 1
+          fi
+
+          echo "path=$APK" >> "$GITHUB_OUTPUT"
+          echo "name=finnesia-pos-${{ steps.version.outputs.version }}.apk" >> "$GITHUB_OUTPUT"
+          ls -lh "$APK"
+
+      - name: Locate AAB
+        id: aab
+        run: |
+          AAB=$(find apps/pos/build/app/outputs/bundle/release \
+            -type f -name '*.aab' | head -n1)
+          if [ -z "$AAB" ]; then
+            echo "::error::AAB tidak ditemukan setelah build"
+            exit 1
+          fi
+
+          echo "path=$AAB" >> "$GITHUB_OUTPUT"
+          ls -lh "$AAB"
+
+      # ── Pengaman: APK rilis harus production, bukan debug/staging ──────────
+      # Diperiksa atas ARTIFACT, bukan input build: yang beredar ke tablet adalah APK-nya.
+      #
+      # TIGA tempat, dan ketiganya perlu — ini yang mudah terlewat:
+      #
+      #   1. `libapp.so` (payload Dart) — memuat host endpoint dari
+      #      `EndpointEnvironment` (`packages/pn_types/lib/src/api/environment.dart`).
+      #   2. AndroidManifest.xml (host) — memuat host App Link dari `intent-filter`.
+      #      Android mengompilasi manifest ke biner, jadi host-nya TIDAK muncul di
+      #      `libapp.so`; pemeriksaan yang hanya grep payload akan melaporkan "bersih"
+      #      untuk APK yang tetap membawa host staging di manifest-nya.
+      #   3. AndroidManifest.xml (applicationId) — memastikan ini varian production
+      #      (`com.finnesia.pos`), bukan `com.finnesia.pos.debug` dari `buildTypes.debug`.
+      #
+      # Detektornya divalidasi lebih dulu, di ketiga tempat (`.claude/rules/testing.md` §0.3):
+      # sebuah pemeriksaan yang tidak pernah menyala tidak bisa dibedakan dari yang rusak,
+      # dan `grep` yang salah path akan lulus tanpa memeriksa apa pun.
+      #
+      # Hanya dijalankan atas APK, tidak diulang untuk AAB: keduanya dibangun dari source
+      # Dart dan versi yang identik, dalam mode `--release` yang sama (AAB lewat
+      # `shorebird release android`, yang tidak pernah membangun debug/profile — lihat
+      # blok "── Shorebird" di atas), tanpa `--dart-define` yang membedakan — host endpoint
+      # dan applicationId ditentukan saat kompilasi, bukan oleh flag CLI yang beda antara
+      # `flutter build apk` dan build AAB. Memeriksa AAB secara terpisah akan memeriksa hal
+      # yang sama dua kali.
+      - name: Release APK must be the production build
+        working-directory: apps/pos
+        env:
+          APK: ${{ steps.apk.outputs.path }}
+        run: |
+          # ── 1. Payload Dart ────────────────────────────────────────────────
+          unzip -o -q "$APK" 'lib/*/libapp.so' -d /tmp/apk
+          SO=$(find /tmp/apk/lib -name 'libapp.so' | head -n1)
+          if [ -z "$SO" ]; then
+            echo "::error::libapp.so tidak ditemukan di APK; pemeriksaan tidak akan membuktikan apa pun"
+            exit 1
+          fi
+
+          grep -aq 'apps.finnesia.com' "$SO" \
+            || { echo "::error::detector rusak: host produksi tidak ditemukan di payload"; exit 1; }
+          ! grep -aq 'apps-dev.finnesia.com\|localhost:4000' "$SO" \
+            || { echo "::error::host non-produksi bocor ke payload APK rilis"; exit 1; }
+          echo "✅ payload Dart: host produksi ada, host non-produksi tidak ada"
+
+          # ── 2. Manifest (host App Link) ────────────────────────────────────
+          # aapt2, bukan `unzip | strings`: host disimpan sebagai string UTF-16 di
+          # dalam chunk biner manifest, dan `strings` default (min 4 byte ASCII)
+          # melewatkannya — persis kegagalan yang membuat pemeriksaan ini terlihat
+          # lulus padahal tidak memeriksa apa pun.
+          #
+          # `aapt2*`, bukan `aapt2`: di Windows binary-nya bernama `aapt2.exe`, dan
+          # pola tanpa wildcard membuat langkah ini gagal di mesin developer meski
+          # lulus di runner. Ditemukan dengan menjalankan langkah ini apa adanya
+          # terhadap APK rilis lokal, bukan dengan membacanya.
+          AAPT2=$(find "${ANDROID_HOME:-$ANDROID_SDK_ROOT}" -path '*build-tools*' \
+            -name 'aapt2*' -type f | sort -V | tail -n1)
+          if [ -z "$AAPT2" ]; then
+            echo "::error::aapt2 tidak ditemukan; manifest tidak bisa diperiksa"
+            exit 1
+          fi
+
+          "$AAPT2" dump xmltree --file AndroidManifest.xml "$APK" > /tmp/manifest.txt
+
+          # ── 3. applicationId (bukan varian .debug) ─────────────────────────
+          # `buildTypes.debug` di app/build.gradle.kts menambah `applicationIdSuffix
+          # ".debug"` — dua app yang sepenuhnya terpisah di device (beda id, beda
+          # data). Rilis (APK, AAB, dan target Shorebird) harus applicationId polos
+          # `com.finnesia.pos`; kalau langkah build entah bagaimana menghasilkan
+          # varian debug, Play Developer API akan menolaknya (package tidak cocok
+          # dengan yang terdaftar) — tapi gagal di sini lebih jelas daripada gagal
+          # samar di step publish nanti.
+          grep -q 'package="com.finnesia.pos"' /tmp/manifest.txt \
+            || { echo "::error::applicationId APK bukan com.finnesia.pos — build debug bocor ke rilis?"; exit 1; }
+          echo "✅ manifest: applicationId production (com.finnesia.pos, bukan .debug)"
+
+          grep -q 'apps.finnesia.com' /tmp/manifest.txt \
+            || { echo "::error::detector rusak: host produksi tidak ditemukan di manifest"; exit 1; }
+          ! grep -q 'apps-dev.finnesia.com' /tmp/manifest.txt \
+            || { echo "::error::host staging bocor ke manifest APK rilis"; exit 1; }
+          echo "✅ manifest: host produksi ada, host staging tidak ada"
+
+      # ── Terbitkan ─────────────────────────────────────────────────────────
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: finnesia-pos-${{ steps.version.outputs.version }}
+          path: ${{ steps.apk.outputs.path }}
+          retention-days: 30
+
+      # Draft, bukan rilis langsung: APK tidak bisa diunduh sampai Anda publish dari
+      # dashboard. Rilis otomatis tanpa dilihat dulu bukan hal yang diinginkan untuk
+      # aplikasi yang menangani uang.
+      - name: Create draft release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: "Finnesia POS v${{ steps.version.outputs.version }}"
+          draft: true
+          generate_release_notes: true
+          files: ${{ steps.apk.outputs.path }}
+
+      # Selalu ke track `internal` — promosi ke `closed`/`open`/`production` dilakukan
+      # manual di Play Console (docs/distribution.md §Promote), bukan dipilih di sini.
+      # Gagal dengan jelas kalau `PLAY_SERVICE_ACCOUNT_JSON` belum diisi atau package
+      # belum pernah di-upload manual — itu prasyarat satu kali, lihat docs/distribution.md.
+      - name: Publish to Play Console (internal track)
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: ${{ env.ANDROID_PACKAGE_NAME }}
+          releaseFiles: ${{ steps.aab.outputs.path }}
+          track: internal
+          status: completed

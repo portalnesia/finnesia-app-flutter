@@ -1,0 +1,35 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <!-- The INTERNET permission is required for development. Specifically,
+         the Flutter tool needs it to communicate with the running application
+         to allow setting breakpoints, to provide hot reload, etc.
+    -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+
+    <!-- Cleartext HTTP to `localhost` and `10.0.2.2` only, for the `lokal` endpoint. -->
+    <application android:networkSecurityConfig="@xml/network_security_config">
+        <!-- The staging App Link, and only here: a debug build is the one that talks to
+             staging, and staging's App Links document names `com.finnesia.pos.debug` with the
+             developer's debug certificate. The release manifest declares the production host
+             instead, so `apps-dev.finnesia.com` never appears in a shipped APK — which is also
+             what the release-APK host check looks for.
+
+             No `tools:replace` on the activity: manifest merging ADDS this filter to the ones
+             the main manifest already declares, which is what is wanted — replacing them would
+             drop the LAUNCHER filter and the app would lose its icon in the launcher.
+
+             The path is the same as production's, so the button on either done page opens
+             whichever build is installed. -->
+        <activity android:name=".MainActivity">
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data
+                    android:scheme="https"
+                    android:host="apps-dev.finnesia.com"
+                    android:pathPrefix="/api/auth/mobile/return"/>
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

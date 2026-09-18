@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Overrides main: tells the staging build apart from the release one in the launcher.
+         Both install under the same application id (`com.finnesia.pos`), so without this they
+         are indistinguishable in the launcher and in Android's app settings. -->
+    <string name="app_name">Finnesia POS (tester)</string>
+</resources>

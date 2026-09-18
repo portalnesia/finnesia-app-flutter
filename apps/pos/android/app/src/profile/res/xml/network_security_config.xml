@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Profile (staging) builds only. The owner asked for the endpoint picker to come along with
+  this build, and `lokal` is http://localhost:4000 — Android refuses cleartext HTTP by default.
+  The exception in `src/debug/` is not read by a profile build, so it is repeated here.
+
+  Only the two names a development backend has: `localhost` (a physical tablet through
+  `adb reverse tcp:4000 tcp:4000`) and `10.0.2.2` (the emulator's alias for the host machine).
+  Every other host — staging and production included — stays HTTPS-only. Do NOT add a
+  `<base-config>`: that would permit cleartext for every host, including the ones that must
+  never be plain HTTP.
+-->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">localhost</domain>
+        <domain includeSubdomains="false">10.0.2.2</domain>
+    </domain-config>
+</network-security-config>

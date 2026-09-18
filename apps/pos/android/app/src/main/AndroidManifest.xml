@@ -1,0 +1,113 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <!-- The app talks to its backend over HTTPS. Only debug/ and profile/ had this (Flutter's
+         template adds it there for hot reload), so a release build could not make a single
+         request. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+
+    <!-- Bluetooth, for the thermal receipt printer (plan/printer/README.md §9). The tablets are
+         Android 12+ (minSdk 31), so these two are the whole list.
+         BLUETOOTH_SCAN finds the printer; `neverForLocation` says the scan is never used to work
+         out where the tablet is, which is what lets the app ask for no location permission.
+         BLUETOOTH_CONNECT opens the link and writes to it. The BLE plugin fails outright when
+         either is missing here, so do not remove them because they look unused. -->
+    <uses-permission
+        android:name="android.permission.BLUETOOTH_SCAN"
+        android:usesPermissionFlags="neverForLocation"/>
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT"/>
+    <!-- The BLE plugin's own manifest declares the pre-Android-12 pair, capped at API 30. At
+         minSdk 31 they can never be granted, but they would still be listed to the user at
+         install time and in review, so they are removed. -->
+    <uses-permission android:name="android.permission.BLUETOOTH" tools:node="remove"/>
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" tools:node="remove"/>
+    <!-- Not required: a tablet with no BLE can still ring up sales; it just cannot print. -->
+    <uses-feature android:name="android.hardware.bluetooth_le" android:required="false"/>
+
+    <!-- Camera, for reading the pairing QR on the Pairing screen (`mobile_scanner`). It is asked
+         for at the moment the cashier taps Pindai QR, never at launch, and refusing it only
+         leaves typing the code. The plugin's own manifest declares the same permission and a
+         not-required camera feature; both are repeated here so that neither goes unseen, and so
+         a tablet with no camera still installs. -->
+    <uses-permission android:name="android.permission.CAMERA"/>
+    <uses-feature android:name="android.hardware.camera" android:required="false"/>
+
+    <!-- `allowBackup` is off on purpose. The session is stored encrypted with a key that lives in
+         the Android Keystore, and a Keystore key is not restored with a backup: a restored
+         session would be unreadable. Worse, `device_id` (the tablet's identity on the server)
+         would be restored onto a different tablet and clone it. Nothing in this app is meant to
+         follow the user to another device. -->
+    <application
+        android:label="@string/app_name"
+        android:allowBackup="false"
+        android:name="${applicationName}"
+        android:icon="@mipmap/ic_launcher">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:taskAffinity=""
+            android:theme="@style/LaunchTheme"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+            android:hardwareAccelerated="true"
+            android:windowSoftInputMode="adjustResize">
+            <!-- Specifies an Android theme to apply to this Activity as soon as
+                 the Android process has started. This theme is visible to the user
+                 while the Flutter UI initializes. After that, this theme continues
+                 to determine the Window background behind the Flutter UI. -->
+            <meta-data
+              android:name="io.flutter.embedding.android.NormalTheme"
+              android:resource="@style/NormalTheme"
+              />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+            <!-- The App Link the login landing page's "Kembali ke aplikasi" button points at.
+                 The browser finishes the OIDC round trip on the canonical host and lands on
+                 /api/auth/mobile/done, whose button links to /api/auth/mobile/return on the same
+                 host; without this filter that tap stays in the browser and the cashier has to
+                 find the app by hand (`plan/api-client/findings.md` §Langkah 11).
+
+                 `autoVerify` is what makes Android fetch
+                 https://<host>/.well-known/assetlinks.json and check it against this app's
+                 package name and signing certificate — the document the backend serves from
+                 `android.assetlinks` config. A link that does not verify is not a security
+                 problem (it carries no data, by design) but it is a dead one.
+
+                 The path is deliberately under /api/ so the proxies that already forward
+                 /api/* need no change. It carries NO query and NO fragment: `MobilePoll` hands
+                 the session to whoever holds `request_id`, and a custom scheme or a link with
+                 the id in it could be claimed by another app on the tablet.
+
+                 Production host only. A tenant's custom_domain cannot be listed here (it is not
+                 known at build time), and the done page is always served from the canonical
+                 host anyway. The staging host belongs in `src/debug/AndroidManifest.xml`; a
+                 release build that named it would ship a development host to customers. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data
+                    android:scheme="https"
+                    android:host="apps.finnesia.com"
+                    android:pathPrefix="/api/auth/mobile/return"/>
+            </intent-filter>
+        </activity>
+        <!-- Don't delete the meta-data below.
+             This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
+        <meta-data
+            android:name="flutterEmbedding"
+            android:value="2" />
+    </application>
+    <!-- Required to query activities that can process text, see:
+         https://developer.android.com/training/package-visibility and
+         https://developer.android.com/reference/android/content/Intent#ACTION_PROCESS_TEXT.
+
+         In particular, this is used by the Flutter engine in io.flutter.plugin.text.ProcessTextPlugin. -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.PROCESS_TEXT"/>
+            <data android:mimeType="text/plain"/>
+        </intent>
+    </queries>
+</manifest>

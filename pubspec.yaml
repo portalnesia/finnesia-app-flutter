@@ -1,0 +1,15 @@
+name: finnesia_pos_workspace
+publish_to: none
+environment:
+  sdk: ^3.6.0
+
+# `apps/pos` was created by `flutter create` and is listed here in the same
+# change that gave it `resolution: workspace`. Listing a member before its
+# directory exists makes `dart pub get` fail.
+#
+# `plugins/` is absent until the first plugin exists.
+workspace:
+  - apps/pos
+  - packages/pn_types
+  - packages/pn_pos
+  - packages/pn_ui

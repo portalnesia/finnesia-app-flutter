@@ -1,0 +1,209 @@
+# Build rilis Windows: paket MSIX (Microsoft Store) dari tag, ke draft GitHub Release.
+#
+# Alur distribusi lengkap: plan/windows-distribution/README.md.
+#
+#   - Paket → draft GitHub Release (asset). Unggah ke Partner Center dilakukan MANUAL.
+#   - Tidak ada signing: Store menandatangani ulang MSIX saat sertifikasi.
+#   - Upload pertama ke Partner Center WAJIB manual lewat web UI sekali dulu.
+#
+# Keputusan pemilik 2026-09-28: CI TIDAK mengunggah ke Store. Jalur otomatis menuntut tenant
+# Entra + app registration + role Manager + empat secret, untuk pekerjaan yang terjadi sekali
+# per rilis dan hanya tiga klik. Yang pemilik kerjakan: unduh .msix dari halaman run, lalu
+# Partner Center → app → Update → Packages → Submit for certification.
+#
+# Konsekuensinya: workflow ini TIDAK butuh satu secret pun.
+#
+# Trigger HANYA tag `pos-vMAJOR.MINOR.PATCH` polos — sama dengan `release-pos.yml`, dan itu
+# disengaja: satu nomor versi untuk satu produk di dua platform. Yang membedakan job,
+# bukan pola tag, jadi kegagalan build Windows tidak memblokir rilis Android.
+#
+# Prefix `pos-` menandakan aplikasi (repo ini monorepo, akan ada aplikasi lain), bukan bagian
+# dari versinya — versi dibaca sebagai `${GITHUB_REF_NAME#pos-v}`, jadi `pos-v1.2.0` → `1.2.0`.
+# Huruf `v` tetap di nama tag tapi TIDAK ikut ke nilai versi: `pub_semver` menolak `v1.2.0`,
+# sehingga `shorebird release android` gagal.
+#
+# `env:` yang dipakai:
+#
+#   FLUTTER_VERSION      versi Flutter, sama dengan workflow lain
+#   STORE_IDENTITY_NAME  Package/Identity/Name di Partner Center
+#
+# Setup identitas Store: plan/windows-distribution/README.md §2.
+
+name: Release POS Windows
+
+on:
+  push:
+    tags:
+      - "pos-v[0-9]+.[0-9]+.[0-9]+*"
+      - "!pos-v[0-9]+.[0-9]+.[0-9]+-*"
+
+# Satu build per tag. Tag tidak bisa dipush ulang, jadi run yang berjalan tidak dibatalkan.
+#
+# Group-nya SENGAJA sama dengan `release-pos.yml`: kedua workflow memicu di tag polos yang
+# sama dan menulis GitHub Release yang sama. Dengan group yang sama, GitHub hanya menjalankan
+# satu di antaranya pada satu waktu, sehingga langkah "update release" di kedua sisi tidak
+# berpacu. `cancel-in-progress: false` supaya rilis yang sedang berjalan tidak dibatalkan.
+concurrency:
+  group: release-pos-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  FLUTTER_VERSION: "3.47.4"
+  # Partner Center: Package/Identity/Name. Sama dengan `msix_config: identity_name` di
+  # apps/pos/pubspec.yaml. Bukan rahasia — sudah publik di listing Store.
+  STORE_IDENTITY_NAME: "PutuAditya.FinnesiaPOS"
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    # Untuk menulis asset ke draft GitHub Release di step terakhir.
+    permissions:
+      contents: write
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Rumus build number identik dengan release-pos.yml, supaya satu versi punya satu
+      # nomor di kedua platform.
+      - name: Derive version
+        id: version
+        run: |
+          VERSION="${GITHUB_REF_NAME#pos-v}"
+          MAJOR="${VERSION%%.*}"
+          REST="${VERSION#*.}"
+          MINOR="${REST%%.*}"
+          PATCH="${REST#*.}"
+          BUILD_NUMBER=$(( MAJOR * 1000000 + MINOR * 1000 + PATCH ))
+
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "build_number=$BUILD_NUMBER" >> "$GITHUB_OUTPUT"
+          # MSIX butuh empat bagian, yang keempat dipesan Store. Major 0 ditolak — dijaga
+          # test/branding/store_identity_test.dart.
+          echo "msix_version=${VERSION}.0" >> "$GITHUB_OUTPUT"
+          echo "Versi dari tag: $VERSION (MSIX ${VERSION}.0, build $BUILD_NUMBER)"
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      # Tidak ada Android SDK/NDK di sini: build Windows tidak menyentuhnya.
+      - name: Resolve workspace
+        run: dart pub get
+
+      # Sama seperti release-pos.yml; paket tidak dibangun kalau ini gagal.
+      - name: Analyze
+        run: dart analyze
+
+      - name: Test pure Dart packages
+        run: |
+          for pkg in packages/pn_types packages/pn_pos; do
+            if [ -d "$pkg/test" ]; then
+              echo "── dart test: $pkg"
+              (cd "$pkg" && dart test)
+            fi
+          done
+
+      - name: Test Flutter packages
+        run: |
+          for pkg in packages/pn_ui apps/pos; do
+            if [ -d "$pkg/test" ]; then
+              echo "── flutter test: $pkg"
+              (cd "$pkg" && flutter test)
+            fi
+          done
+
+      # `msix:create` menjalankan `flutter build windows` sendiri, jadi tidak ada step build
+      # terpisah. `--version` + `--windows-build-args` menyalin versi tag ke .exe dan paket;
+      # `--store` mempertahankan `publisher` dari pubspec dan melewati signing.
+      - name: Build MSIX for the Store
+        working-directory: apps/pos
+        run: |
+          dart run msix:create \
+            --store \
+            --version "${{ steps.version.outputs.msix_version }}" \
+            --windows-build-args="--build-name=${{ steps.version.outputs.version }} --build-number=${{ steps.version.outputs.build_number }}"
+
+      - name: Locate MSIX
+        id: msix
+        run: |
+          FOUND=$(find apps/pos/build/windows -name '*.msix' -type f | head -n1)
+          if [ -z "$FOUND" ]; then
+            echo "::error::paket .msix tidak ditemukan setelah msix:create"
+            exit 1
+          fi
+
+          # `msix:create` menamai paketnya dari `name:` di pubspec (`pos.msix`). Dinamai ulang
+          # dengan versinya supaya dua paket di folder unduhan bisa dibedakan.
+          NAME="finnesia-pos-windows-${{ steps.version.outputs.version }}.msix"
+          mv "$FOUND" "$(dirname "$FOUND")/$NAME"
+
+          echo "path=$(dirname "$FOUND")/$NAME" >> "$GITHUB_OUTPUT"
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+          ls -lh "$(dirname "$FOUND")/$NAME"
+
+      # Diperiksa atas paketnya, bukan input build: kalau identity salah, unggahan ditolak
+      # dengan pesan yang tidak menyebut field mana. Pemeriksaan negatif ada supaya grep-nya
+      # terbukti membaca berkas yang benar.
+      - name: The package must carry the Store identity
+        env:
+          MSIX: ${{ steps.msix.outputs.path }}
+        run: |
+          unzip -p "$MSIX" AppxManifest.xml > /tmp/AppxManifest.xml
+
+          if [ ! -s /tmp/AppxManifest.xml ]; then
+            echo "::error::AppxManifest.xml tidak terbaca dari paket; pemeriksaan tidak akan membuktikan apa pun"
+            exit 1
+          fi
+
+          # Identitas Store harus ada.
+          grep -q "Name=\"$STORE_IDENTITY_NAME\"" /tmp/AppxManifest.xml \
+            || { echo "::error::identity_name paket bukan $STORE_IDENTITY_NAME"; exit 1; }
+          echo "✅ manifest: Package/Identity/Name = $STORE_IDENTITY_NAME"
+
+          grep -q 'Publisher="CN=FD977251-3866-4FF0-ABD2-D71AAABF5137"' /tmp/AppxManifest.xml \
+            || { echo "::error::publisher paket bukan subjek sertifikat Partner Center"; exit 1; }
+          echo "✅ manifest: Publisher = subjek Partner Center"
+
+          grep -q '<PublisherDisplayName>Putu Aditya</PublisherDisplayName>' /tmp/AppxManifest.xml \
+            || { echo "::error::PublisherDisplayName paket salah"; exit 1; }
+          echo "✅ manifest: PublisherDisplayName"
+
+          # Nilai lama yang hanya untuk sideload harus hilang.
+          ! grep -q 'com\.finnesia\.pos"' /tmp/AppxManifest.xml \
+            || { echo "::error::identity_name masih nilai sideload (com.finnesia.pos)"; exit 1; }
+          ! grep -q 'Msix Testing' /tmp/AppxManifest.xml \
+            || { echo "::error::paket ditandatangani test certificate — ini bukan paket Store"; exit 1; }
+          echo "✅ manifest: tidak ada sisa nilai sideload"
+
+          # Versi paket harus versi tag, bukan pubspec.yaml.
+          grep -q "Version=\"${{ steps.version.outputs.msix_version }}\"" /tmp/AppxManifest.xml \
+            || { echo "::error::versi paket bukan versi tag (${{ steps.version.outputs.msix_version }})"; exit 1; }
+          echo "✅ manifest: Version = ${{ steps.version.outputs.msix_version }}"
+
+      # Draft GitHub Release, BUKAN unggahan Store. Paketnya diunduh dari sini oleh pemilik
+      # lalu diunggah manual ke Partner Center.
+      #
+      # Satu release per tag, dan tag polos juga dipakai `release-pos.yml` — jadi dua workflow
+      # menulis release yang SAMA untuk tag yang sama. Dua hal yang membuat itu aman:
+      #
+      #   1. `concurrency` di atas memakai group yang sama dengan `release-pos.yml`, supaya
+      #      keduanya berbaris, bukan berpacu.
+      #   2. `name:` SENGAJA tidak diisi di sini. Action-nya memakai `input_name ||
+      #      existingRelease.name || tag`, jadi membiarkannya kosong MEMPERTAHANKAN nama yang
+      #      `release-pos.yml` pasang ("Finnesia POS vX.Y.Z"). Kalau diisi, judul release akan
+      #      berubah jadi "... Windows ..." setiap kali job ini selesai belakangan, padahal
+      #      release-nya juga memuat APK Android.
+      - name: Create draft release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          draft: true
+          generate_release_notes: true
+          files: ${{ steps.msix.outputs.path }}

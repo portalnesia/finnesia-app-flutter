@@ -1,0 +1,196 @@
+# OTA Dart-only: kirim patch Shorebird ke rilis native yang SUDAH ada — tanpa native build
+# baru, tanpa upload AAB baru ke Play, dan tanpa menaikkan `versionCode` sama sekali. Itulah
+# yang menjaga banner Play In-App Update (docs/distribution.md §5) tidak ikut muncul untuk
+# perubahan yang sebenarnya cuma Dart.
+#
+# Trigger: tag `pos-vMAJOR.MINOR.PATCH-N` — mis. `pos-v1.2.0-5` untuk patch ke-5 di atas rilis
+# native `pos-v1.2.0`. `N` cuma untuk penomoran/log; yang dikirim ke Shorebird adalah versi
+# BASE-nya (`1.2.0`), karena itulah versi yang `release-pos.yml` daftarkan lewat
+# `shorebird release android`. Keempat pattern tag di repo ini SENGAJA tidak tumpang tindih —
+# satu tag hanya bisa cocok salah satu, lihat docs/distribution.md §4.3.
+#
+# Prefix `pos-` menandakan aplikasi (repo ini monorepo, akan ada aplikasi lain), bukan bagian
+# dari versinya — versi dibaca sebagai `${GITHUB_REF_NAME#pos-v}`, jadi `pos-v1.2.0` → `1.2.0`.
+# Huruf `v` tetap di nama tag tapi TIDAK ikut ke nilai versi.
+#
+# Prasyarat: base version (`pos-v1.2.0`) HARUS sudah pernah dirilis lewat `release-pos.yml`
+# lebih dulu — `shorebird patch` menolak target rilis yang belum terdaftar di Shorebird.
+#
+# Rahasia yang dibutuhkan: ANDROID_KEY_* + SHOREBIRD_TOKEN, sama seperti `release-pos.yml`.
+# TIDAK butuh PLAY_SERVICE_ACCOUNT_JSON — patch tidak pernah menyentuh Play sama sekali.
+
+name: Shorebird Patch
+
+on:
+  push:
+    tags:
+      - "pos-v[0-9]+.[0-9]+.[0-9]+-[0-9]+*"
+      - "!pos-v[0-9]+.[0-9]+.[0-9]+-staging.*"
+
+concurrency:
+  group: shorebird-patch-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  FLUTTER_VERSION: "3.47.4"
+  NDK_VERSION: "28.2.13676358"
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    env:
+      SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
+
+    steps:
+      # `fetch-depth: 0`, bukan default (shallow): guard di bawah butuh `git diff` terhadap
+      # tag rilis native dasarnya, yang butuh histori penuh dan semua tag.
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # ── Versi ─────────────────────────────────────────────────────────────
+      # `pos-v1.2.0-5` → base `1.2.0` (dikirim ke Shorebird) + nomor patch `5` (cuma log).
+      # `BUILD_NUMBER` pakai rumus IDENTIK dengan `release-pos.yml`, supaya menunjuk build
+      # number yang sama persis dengan rilis native aslinya.
+      - name: Derive base version
+        id: version
+        run: |
+          TAG="${GITHUB_REF_NAME#pos-v}"     # 1.2.0-5
+          BASE="${TAG%-*}"                   # 1.2.0
+          PATCH_NUMBER="${TAG##*-}"          # 5
+
+          MAJOR="${BASE%%.*}"
+          REST="${BASE#*.}"
+          MINOR="${REST%%.*}"
+          PATCH="${REST#*.}"
+          BUILD_NUMBER=$(( MAJOR * 1000000 + MINOR * 1000 + PATCH ))
+
+          echo "base=$BASE" >> "$GITHUB_OUTPUT"
+          echo "release_version=$BASE+$BUILD_NUMBER" >> "$GITHUB_OUTPUT"
+          echo "Patch #$PATCH_NUMBER di atas rilis $BASE (release-version $BASE+$BUILD_NUMBER)"
+
+      # ── Pengaman: tolak kalau ini bukan Dart-only ───────────────────────────
+      # Heuristik, bukan bukti mutlak — tapi menangkap dua kelas kesalahan yang paling
+      # sering terjadi kalau seseorang tidak yakin perubahannya menyentuh native atau tidak:
+      #
+      #   1. `apps/pos/android/**` berubah — kode/config native diedit langsung.
+      #   2. `pubspec.lock` (root) berubah — dependency APA PUN naik/turun versi atau
+      #      ditambah, di package mana pun di workspace (bukan cuma `apps/pos`), yang bisa
+      #      diam-diam membawa plugin native baru tanpa menyentuh `apps/pos/pubspec.yaml`
+      #      sama sekali.
+      #
+      # Shorebird sendiri juga punya pengaman serupa (asset-diff check, ditolak tanpa
+      # `--allow-asset-diffs`) — tapi itu baru ketahuan SETELAH build selesai. Guard ini
+      # gagal lebih awal, dengan pesan yang menyebut persis file mana yang mencurigakan.
+      - name: Guard — tolak kalau perubahan ini menyentuh native
+        run: |
+          BASE_TAG="pos-v${{ steps.version.outputs.base }}"
+          if ! git rev-parse "$BASE_TAG" >/dev/null 2>&1; then
+            echo "::error::Tag rilis native dasar '$BASE_TAG' tidak ditemukan. Rilis native itu harus sudah dibuat (lewat release-pos.yml) sebelum di-patch."
+            exit 1
+          fi
+
+          CHANGED=$(git diff --name-only "$BASE_TAG" HEAD)
+          echo "Berkas yang berubah sejak $BASE_TAG:"
+          echo "$CHANGED"
+
+          SUSPECT=$(echo "$CHANGED" | grep -E '^apps/pos/android/|^pubspec\.lock$' || true)
+          if [ -n "$SUSPECT" ]; then
+            echo "::error::Perubahan ini menyentuh kode/dependency native, jadi BUKAN Dart-only — shorebird patch tidak akan membawanya. Berkas yang mencurigakan:"
+            echo "$SUSPECT"
+            echo "::error::Buat rilis native biasa (tag pos-vX.Y.Z TANPA akhiran), bukan tag patch (-N)."
+            exit 1
+          fi
+          echo "✅ Tidak ada perubahan native terdeteksi antara $BASE_TAG dan tag ini."
+
+      # ── Toolchain (sama seperti release-pos.yml) ────────────────────────────
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android NDK
+        run: sdkmanager "ndk;${NDK_VERSION}"
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('apps/pos/android/**/*.gradle*') }}
+          restore-keys: gradle-${{ runner.os }}-
+
+      - name: Resolve workspace
+        run: dart pub get
+
+      # ── Verifikasi ────────────────────────────────────────────────────────
+      # Patch tetap kode yang beredar ke tablet produksi — lolos gerbang yang sama dengan
+      # rilis native (AGENTS.md, `.claude/rules/testing.md` §7).
+      - name: Analyze
+        run: dart analyze
+
+      - name: Test pure Dart packages
+        run: |
+          for pkg in packages/pn_types packages/pn_pos; do
+            if [ -d "$pkg/test" ]; then
+              echo "── dart test: $pkg"
+              (cd "$pkg" && dart test)
+            else
+              echo "── skip $pkg (belum ada test/)"
+            fi
+          done
+
+      - name: Test Flutter packages
+        run: |
+          for pkg in packages/pn_ui apps/pos; do
+            if [ -d "$pkg/test" ]; then
+              echo "── flutter test: $pkg"
+              (cd "$pkg" && flutter test)
+            else
+              echo "── skip $pkg (belum ada test/)"
+            fi
+          done
+
+      # ── Signing ───────────────────────────────────────────────────────────
+      # `shorebird patch` membangun ulang app secara internal untuk dibandingkan dengan
+      # rilis yang sudah terdaftar — tetap butuh signing config yang sama alasannya dengan
+      # `release-pos.yml`.
+      - name: Setup Android signing
+        working-directory: apps/pos/android
+        run: |
+          base64 -d <<< "${{ secrets.ANDROID_KEY_BASE64 }}" > "$RUNNER_TEMP/keystore.jks"
+          {
+            echo "keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}"
+            echo "password=${{ secrets.ANDROID_KEY_PASSWORD }}"
+            echo "storeFile=$RUNNER_TEMP/keystore.jks"
+          } > keystore.properties
+
+      - name: Setup Shorebird
+        uses: shorebirdtech/setup-shorebird@v1
+        with:
+          cache: true
+
+      # `release-version` menunjuk PERSIS ke rilis yang `release-pos.yml` daftarkan lewat
+      # `shorebird release android` untuk tag native `v${{ steps.version.outputs.base }}` —
+      # gagal dengan jelas kalau rilis itu belum pernah ada di Shorebird.
+      - name: Send patch
+        uses: shorebirdtech/shorebird-patch@v1
+        with:
+          platform: android
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          working-directory: apps/pos
+          release-version: ${{ steps.version.outputs.release_version }}
+          args: --no-confirm

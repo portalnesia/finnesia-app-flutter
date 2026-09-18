@@ -1,0 +1,173 @@
+# ══ DINONAKTIFKAN SEMENTARA ══════════════════════════════════════════════════
+#
+# Berkas ini sengaja bernama `ci.yml.disabled`: GitHub hanya membaca `.yml` dan
+# `.yaml` di `.github/workflows/`, jadi workflow ini tidak berjalan. Alasannya batas
+# menit GitHub Actions (2000 menit). Isinya utuh dan tidak dihapus.
+#
+# Untuk mengaktifkan lagi: ganti nama menjadi `ci.yml`. Tidak ada yang perlu diubah.
+# Selama nonaktif, pengaman yang setara dijalankan developer: `./dev check`
+# (urutan yang sama dengan berkas ini). `release-pos.yml` tetap aktif untuk tag `v*`.
+# ═════════════════════════════════════════════════════════════════════════════
+
+# Verifikasi untuk setiap push dan pull request.
+#
+# Tujuannya menangkap pelanggaran aturan repo SEBELUM review, bukan menggantikan
+# verifikasi lokal. Urutannya sama dengan `AGENTS.md` §Verification dan
+# `.claude/rules/testing.md` §7.
+#
+# Dua hal yang TIDAK boleh diubah di sini tanpa berpikir:
+#
+#   1. `dart test` dijalankan PER MEMBER, bukan di root. Di root ia gagal dengan
+#      `No test files were passed and the default "test/" directory doesn't exist`
+#      (exit 65) — root workspace tidak punya folder `test/` dan tidak mengagregasi
+#      test member-nya.
+#   2. `rule_lint` ikut dijalankan. Ia menjaga agar `AGENTS.md` tetap indeks dan
+#      tidak menyalin isi `.claude/rules/`. Tanpa langkah ini, duplikasi bisa masuk
+#      tanpa terdeteksi.
+#
+# Yang TIDAK dilakukan di sini: `flutter build apk`. Itu tugas `release-pos.yml`,
+# dan ia butuh NDK 2.2 GB — memakainya di setiap PR memperlambat tanpa manfaat.
+
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+# Push berturut-turut ke branch yang sama membatalkan run sebelumnya: hasil run
+# lama tidak berguna begitu ada commit baru.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Harus sama dengan pin Flutter 3.47.4 (`gradle_utils.dart`).
+  FLUTTER_VERSION: "3.47.4"
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Pin versi, jangan `channel: stable`: template Flutter 3.47.4 mengunci
+      # Gradle 9.3.1 / AGP 9.1.0 / Kotlin 2.4.0 / NDK 28.2.13676358. Flutter yang
+      # lebih baru mem-pin set lain, dan CI akan berbeda dari mesin developer tanpa
+      # ada yang menyadarinya.
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      # ── Resolusi ───────────────────────────────────────────────────────────
+      # Satu `dart pub get` di root menyelesaikan seluruh workspace. Gagal di sini
+      # berarti ada pubspec member yang tidak konsisten.
+      - name: Resolve workspace
+        run: dart pub get
+
+      - name: Verify formatting
+        run: dart format --output=none --set-exit-if-changed .
+
+      # ── Analisis ───────────────────────────────────────────────────────────
+      - name: Analyze
+        run: dart analyze
+
+      # ── Codegen ────────────────────────────────────────────────────────────
+      # Generated files (`*.freezed.dart`, `*.g.dart`) are committed, so they can
+      # drift from the source that produces them: someone edits a model, forgets
+      # `build_runner build`, and the stale generated file still compiles. That is
+      # a silent wrong-behaviour bug, not a build failure.
+      #
+      # So CI regenerates them and fails if the result differs from what is
+      # committed.
+      #
+      # `git add -N` is required, not decoration: `git diff` ignores untracked
+      # files, so a generated file that is missing from the repo would compare as
+      # "no change" and the check would never fire. `-N` marks it intent-to-add so
+      # it appears in the diff. It writes to the index only, and the checkout is
+      # thrown away afterwards. Verified by corrupting a generated file and
+      # confirming this step fails, and by rebuilding a clean tree and confirming
+      # it passes.
+      #
+      # `apps/pos` is in the list because it has generated code of its own
+      # (`request_inspector.freezed.dart`), and `build_runner` is one of its dev
+      # dependencies. Every package that carries a `*.freezed.dart` or `*.g.dart`
+      # belongs here: `pn_ui` has none, so it is absent. Add it when it gets some.
+      - name: Regenerate code and verify it is committed
+        run: |
+          for pkg in packages/pn_types packages/pn_pos apps/pos; do
+            echo "── build_runner: $pkg"
+            (cd "$pkg" && dart run build_runner build)
+          done
+
+          # The screen texts too: `app_localizations*.dart` are generated from the ARB
+          # files, and an ARB edited without regenerating leaves the old words in the app.
+          echo "── gen-l10n: apps/pos"
+          (cd apps/pos && flutter gen-l10n)
+
+          git add -N -- '*.freezed.dart' '*.g.dart' 'apps/pos/lib/l10n/app_localizations*.dart'
+          if ! git diff --exit-code -- '*.freezed.dart' '*.g.dart' 'apps/pos/lib/l10n/app_localizations*.dart'; then
+            echo "::error::Generated files are stale. Run './dev gen' (or './dev l10n' after editing an ARB file) and commit the result."
+            exit 1
+          fi
+
+      # ── Aturan dependency ──────────────────────────────────────────────────
+      # `pn_pos` DILARANG mengimpor flutter: itu yang membuat logika uang bisa
+      # diuji dengan `dart test` (milidetik), bukan `flutter test` (detik).
+      # `.claude/rules/architecture.md` §3.
+      #
+      # Catatan penting: langkah ini adalah sinyal CEPAT, bukan penegaknya. Pub
+      # workspace berbagi satu `.dart_tool/package_config.json` di root yang memuat
+      # flutter (karena `pn_ui` membutuhkannya), jadi `dart analyze` TIDAK menangkap
+      # impor flutter di `pn_pos` — diverifikasi: ia keluar 0 issue. Yang benar-benar
+      # menegakkan adalah `dart test` di member itu, yang gagal mengompilasi source
+      # Flutter. Keduanya dijalankan.
+      - name: Enforce pn_pos has no flutter import
+        run: |
+          if grep -rn "^import 'package:flutter" packages/pn_pos/lib/; then
+            echo "::error::packages/pn_pos mengimpor flutter. Logika POS harus tetap murni — lihat .claude/rules/architecture.md §3."
+            exit 1
+          fi
+
+      # ── Test ───────────────────────────────────────────────────────────────
+      # `dart test` untuk logika murni (cepat, tanpa Flutter SDK), `flutter test`
+      # untuk widget. `.claude/rules/testing.md` §2.2.
+      - name: Test pure Dart packages
+        run: |
+          for pkg in packages/pn_types packages/pn_pos; do
+            if [ -d "$pkg/test" ]; then
+              echo "── dart test: $pkg"
+              (cd "$pkg" && dart test)
+            else
+              echo "── skip $pkg (belum ada test/)"
+            fi
+          done
+
+      - name: Test Flutter packages
+        run: |
+          for pkg in packages/pn_ui apps/pos; do
+            if [ -d "$pkg/test" ]; then
+              echo "── flutter test: $pkg"
+              (cd "$pkg" && flutter test)
+            else
+              echo "── skip $pkg (belum ada test/)"
+            fi
+          done
+
+      # ── Aturan agent ───────────────────────────────────────────────────────
+      # Menjaga `AGENTS.md` tetap indeks: tidak menyalin isi `.claude/rules/`,
+      # tidak menautkan berkas yang tidak ada, tidak meninggalkan aturan yang
+      # tidak disebut sama sekali.
+      - name: Check agent rules
+        run: dart run tools/rule_lint/bin/rule_lint.dart

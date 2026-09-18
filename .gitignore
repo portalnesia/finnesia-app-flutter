@@ -1,0 +1,38 @@
+# Dart / pub
+.dart_tool/
+**/.dart_tool/
+build/
+
+# Flutter
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# Android build + signing. None of these may ever be committed:
+# `.claude/rules/project.md` §7 and `.claude/rules/security.md` §1.
+**/android/.gradle/
+**/android/local.properties
+# Both names are listed on purpose. The local release build reads
+# `keystore.properties` from `apps/pos/android/`, and the Flutter docs use
+# `key.properties` — a file that leaks a keystore is not the place to be tidy.
+**/android/keystore.properties
+**/android/key.properties
+**/*.jks
+**/*.keystore
+.env
+
+# IDE
+.idea/
+*.iml
+plan/
+
+# Agent
+# Output tugas latar (`bg_run`, lane). Isinya log dan JSON sesi per tugas —
+# besar, tidak pernah dibaca ulang, dan berubah tiap kali agent berjalan.
+# Yang dilacak git adalah `.pi/skills/`, bukan `.pi/tasks/`.
+.pi/tasks/
+
+# OS
+.DS_Store
+Thumbs.db
+# Widget Preview related
+.widget_preview/

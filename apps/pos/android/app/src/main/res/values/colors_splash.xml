@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The colour behind the splash screen and behind the Flutter UI while it starts.
+
+  `splash_background` is the amber of the artwork, `rgb(255,152,0)` — the value the owner
+  named, and the one `site.webmanifest`'s `theme_color` and the PWA icons already use.
+
+  It is deliberately its own colour resource rather than a reference to
+  `ic_launcher_background`, even though the two are equal today: the icon background is part
+  of the mark, the splash background is part of the launch, and a change to one should not
+  silently move the other. (They are not identical to the theme's `accent` either — that is
+  `hsl(36 100% 50%)` = `#FF9900`, a pre-existing 1/255 difference this repo did not introduce
+  and does not settle.)
+
+  On Android 12+ the window background of the splash MUST be a single opaque colour
+  (developer.android.com/develop/ui/views/launch/splash-screen), so this is a colour and not
+  a drawable. There is no separate dark-mode value: the logo is one image for both themes
+  (owner decision K9), so an amber splash matches it in both.
+-->
+<resources>
+    <color name="splash_background">#FF9800</color>
+</resources>

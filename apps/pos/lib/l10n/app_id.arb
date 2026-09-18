@@ -1,0 +1,711 @@
+{
+  "@@locale": "id",
+  "appName": "Finnesia POS",
+  "shiftLoadFailed": "Belum bisa membaca data shift. Periksa koneksi lalu coba lagi.",
+  "shiftRequiredTitle": "Buka shift dulu",
+  "shiftRequiredDesc": "Hitung uang di laci, lalu masukkan sebagai modal awal sebelum mulai berjualan.",
+  "shiftOpeningCashLabel": "Modal awal",
+  "shiftOpenButton": "Buka shift",
+  "shiftKeypadBackspace": "Hapus angka",
+  "shiftOpenUnavailable": "Belum bisa menghubungi server. Periksa koneksi lalu coba lagi.",
+  "shiftOpening": "Membuka shift…",
+  "shiftOpenTitle": "Shift masih terbuka",
+  "shiftOpenDesc": "Sudah ada shift terbuka di outlet ini. Lanjutkan shift itu untuk mulai berjualan.",
+  "shiftOpenStaleDesc": "Shift ini masih terbuka. Periksa dulu angka di bawah sebelum melanjutkannya.",
+  "shiftNumberLabel": "Nomor shift",
+  "shiftOpenedAtLabel": "Dibuka",
+  "shiftCashierLabel": "Kasir",
+  "shiftHeldTitle": "Shift dipegang kasir lain",
+  "shiftUnknownCashier": "kasir lain",
+  "shiftContinue": "Lanjutkan shift {number}",
+  "@shiftContinue": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "shiftHeldDesc": "Shift {number} dibuka oleh {cashier} dan belum ditutup. Shift itu perlu ditutup dulu sebelum Anda bisa berjualan di outlet ini.",
+  "@shiftHeldDesc": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      },
+      "cashier": {
+        "type": "String"
+      }
+    }
+  },
+  "tillSearchHint": "Cari produk atau pindai barcode",
+  "tillCategoryAll": "Semua",
+  "tillCatalogLoadFailed": "Belum bisa membaca daftar produk. Periksa koneksi lalu coba lagi.",
+  "tillNoProducts": "Tidak ada produk",
+  "tillNoProductsDesc": "Coba kata kunci atau kategori lain.",
+  "tillOutOfStock": "Habis",
+  "tillCartTitle": "Keranjang",
+  "tillCartEmpty": "Keranjang kosong",
+  "tillCartEmptyDesc": "Ketuk produk atau pindai barcode untuk menambahkannya.",
+  "tillClearCart": "Kosongkan",
+  "tillClearTitle": "Kosongkan keranjang?",
+  "tillClearDesc": "Semua item di keranjang akan dihapus.",
+  "tillSubtotal": "Subtotal",
+  "tillDiscount": "Diskon",
+  "tillTotal": "Total",
+  "tillUndo": "Urungkan",
+  "tillLookupFailed": "Belum bisa mencari produk itu. Periksa koneksi lalu coba lagi.",
+  "tillItemCount": "{count, plural, =1{1 item} other{{count} item}}",
+  "@tillItemCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tillQtyLess": "Kurangi jumlah {name}",
+  "@tillQtyLess": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tillQtyMore": "Tambah jumlah {name}",
+  "@tillQtyMore": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tillRemoveLine": "Hapus {name}",
+  "@tillRemoveLine": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tillLineRemoved": "{name} dihapus",
+  "@tillLineRemoved": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tillStatusCashier": "Kasir: {name}",
+  "@tillStatusCashier": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tillStatusShift": "Shift {number}",
+  "@tillStatusShift": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "tillStatusQueue": "{count, plural, other{{count} belum terkirim}}",
+  "@tillStatusQueue": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tillStatusQueueFailed": "{count, plural, other{{count} belum terkirim, ada yang gagal}}",
+  "@tillStatusQueueFailed": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tillCodeNotFound": "Produk dengan kode {code} tidak ditemukan.",
+  "@tillCodeNotFound": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "commonRetry": "Coba lagi",
+  "commonLoading": "Memuat…",
+  "bootFailed": "Data perangkat belum bisa dibuka. Pairing tablet ini tidak dihapus. Coba lagi.",
+  "commonCancel": "Batal",
+  "commonClose": "Tutup",
+  "commonSave": "Simpan",
+  "commonSaving": "Menyimpan...",
+  "commonLoadFailed": "Gagal memuat data",
+  "commonSaveFailed": "Gagal menyimpan data",
+  "commonDelete": "Hapus angka terakhir",
+  "commonLanguageId": "Indonesia",
+  "commonLanguageEn": "English",
+  "commonLanguageLabel": "Bahasa",
+  "commonThemeLabel": "Tema",
+  "commonThemeSystem": "Ikuti sistem",
+  "commonThemeLight": "Terang",
+  "commonThemeDark": "Gelap",
+  "pairingTitle": "Pasangkan tablet ini",
+  "pairingSubtitle": "Masukkan kode dari dashboard Finnesia untuk menghubungkan tablet ini ke outlet Anda.",
+  "pairingDeviceNameLabel": "Nama tablet",
+  "pairingDeviceNamePlaceholder": "Kasir 1",
+  "pairingDeviceNameHint": "Tampil di dashboard agar setiap tablet mudah dikenali.",
+  "pairingCodeLabel": "Kode pairing",
+  "pairingCodeHint": "Kode ada di dashboard Finnesia, menu Outlet.",
+  "pairingSubmit": "Pasangkan",
+  "pairingSubmitting": "Memasangkan…",
+  "pairingScanButton": "Pindai QR",
+  "pairingScanTitle": "Pindai QR pairing",
+  "pairingScanHint": "Arahkan kamera ke QR di dashboard Finnesia.",
+  "pairingScanDenied": "Kamera belum diizinkan. Izinkan akses kamera untuk aplikasi ini di Pengaturan, atau ketik kodenya.",
+  "pairingScanUnavailable": "Kamera tidak bisa dipakai. Ketik kode pairing secara manual.",
+  "pairingInvalidCode": "Kode terdiri dari 6 huruf atau angka.",
+  "pairingCodeRejected": "Kode ini tidak dikenali, sudah dipakai, atau sudah kedaluwarsa. Buat kode baru di dashboard.",
+  "pairingUnavailable": "Tidak bisa terhubung ke server. Periksa koneksi internet, lalu coba lagi.",
+  "pairingStorageFailed": "Data tablet belum bisa disimpan. Coba lagi.",
+  "pairingDeviceLimitReached": "Outlet ini sudah mencapai batas tablet kasir. Hapus salah satu tablet di dashboard, lalu coba lagi.",
+  "pairingDeviceLimitReachedWithLimit": "Outlet ini sudah mencapai batas {limit} tablet kasir. Hapus salah satu tablet di dashboard, lalu coba lagi.",
+  "@pairingDeviceLimitReachedWithLimit": {
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "loginTitle": "Masuk",
+  "loginSubtitle": "Masuk dengan akun Anda untuk mulai berjualan di outlet ini.",
+  "loginDeviceLabel": "Perangkat",
+  "loginSubmit": "Masuk",
+  "loginSubmitting": "Menunggu login…",
+  "loginWaiting": "Selesaikan login di browser yang terbuka. Halaman ini akan lanjut sendiri setelah selesai.",
+  "loginNotPaired": "Perangkat ini belum dipasangkan. Pasangkan dulu sebelum masuk.",
+  "loginUnavailable": "Belum bisa menghubungi server. Periksa koneksi lalu coba lagi.",
+  "loginExpired": "Permintaan login sudah kedaluwarsa. Coba masuk lagi.",
+  "loginTimeout": "Waktu login habis. Coba masuk lagi.",
+  "loginRetry": "Coba lagi",
+  "loginResetButton": "Reset perangkat",
+  "loginResetTitle": "Reset perangkat?",
+  "loginResetDesc": "Tablet ini akan dilepas dari outlet dan dihapus dari dashboard, lalu Anda perlu kode pairing baru untuk menyambungkannya lagi.",
+  "loginResetHeldOrders": "{count, plural, other{{count} keranjang tertahan ikut dihapus.}}",
+  "@loginResetHeldOrders": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "loginResetConfirm": "Ya, reset",
+  "loginResetCancel": "Batal",
+  "loginResetServerFailed": "Tablet sudah dilepas di sini, tapi server belum bisa dihubungi. Perangkat mungkin masih terdaftar di dashboard.",
+  "loginResetQueueBlocked": "Reset belum bisa dilakukan: masih ada penjualan yang belum terkirim di tablet ini. Masuk lalu kirim dulu, atau buang di Penjualan tertunda, sebelum mereset.",
+  "menuTitle": "Menu",
+  "menuBack": "Kembali",
+  "menuAccountSection": "Akun",
+  "menuSessionSection": "Perangkat ini",
+  "menuCashierLabel": "Kasir",
+  "menuUnknownUser": "Tidak diketahui",
+  "menuDeviceLabel": "Perangkat",
+  "menuOutletLabel": "Outlet",
+  "menuShiftSection": "Shift",
+  "menuNoShift": "Tidak ada shift terbuka",
+  "menuShiftLoadFailed": "Gagal memuat data shift.",
+  "menuOutletLoadFailed": "Gagal memuat nama outlet.",
+  "menuSignOut": "Keluar",
+  "menuSignOutTitle": "Keluar dari akun ini?",
+  "menuSignOutDesc": "Tablet tetap terpasang di outlet ini, jadi tidak perlu pairing ulang. Anda perlu masuk lagi untuk berjualan.",
+  "menuSignOutConfirm": "Ya, keluar",
+  "menuSignOutFailed": "Gagal mengeluarkan sesi. Coba lagi.",
+  "menuSignOutBlocked": "{count, plural, other{Anda masih punya {count} penjualan yang belum terkirim. Kirim dulu sebelum keluar.}}",
+  "@menuSignOutBlocked": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "menuVersion": "Versi {version} ({build})",
+  "@menuVersion": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      },
+      "build": {
+        "type": "String"
+      }
+    }
+  },
+  "menuVersionUnknown": "Versi tidak diketahui",
+  "menuPrinterSection": "Printer",
+  "menuPrinterNone": "Belum ada printer",
+  "menuPrinterUnreadable": "Printer tersimpan tidak bisa dibaca",
+  "menuPrinterPair": "Sambungkan printer",
+  "menuPrinterChange": "Ganti printer",
+  "menuPrinterForget": "Lupakan printer",
+  "menuPrinterForgetTitle": "Lupakan printer ini?",
+  "menuPrinterForgetDesc": "Tablet tidak akan mencetak ke printer ini lagi sampai Anda menyambungkan printer.",
+  "menuPrinterForgetConfirm": "Ya, lupakan",
+  "menuPrinterForgetFailed": "Gagal melupakan printer. Coba lagi.",
+  "inspectorTitle": "Inspector request",
+  "inspectorEmpty": "Belum ada request yang tercatat.",
+  "inspectorClear": "Hapus semua",
+  "inspectorRefresh": "Muat ulang",
+  "inspectorRequestHeaders": "Header request",
+  "inspectorRequestBody": "Isi request",
+  "inspectorResponseHeaders": "Header respons",
+  "inspectorResponseBody": "Isi respons",
+  "menuOpen": "Menu",
+  "contactQuickAddTitle": "Tambah Pelanggan Baru",
+  "contactNameLabel": "Nama Pelanggan",
+  "contactNamePlaceholder": "Nama pelanggan...",
+  "contactPhoneLabel": "No. Telepon / HP",
+  "contactEmailLabel": "Email",
+  "contactCompanyLabel": "Nama Perusahaan (opsional)",
+  "contactAddressLabel": "Alamat",
+  "contactCreated": "Pelanggan berhasil ditambahkan",
+  "printerPairTitle": "Sambungkan Printer",
+  "printerPairDesc": "Pastikan printer menyala, lalu pindai untuk mencarinya. Printer yang dipilih akan diingat tablet ini.",
+  "printerScanButton": "Pindai printer",
+  "printerScanning": "Memindai…",
+  "printerNoneFound": "Tidak ada printer ditemukan. Pastikan printer menyala dan dalam jangkauan.",
+  "printerUnnamed": "Tanpa nama",
+  "printerPairing": "Menyambungkan…",
+  "printerPaired": "Printer tersambung: {name}",
+  "@printerPaired": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "printerPermissionDenied": "Akses Bluetooth ditolak. Izinkan Bluetooth untuk Finnesia POS di Pengaturan, lalu coba lagi.",
+  "printerBluetoothOff": "Bluetooth tablet sedang mati. Nyalakan Bluetooth lalu coba lagi.",
+  "printerScanFailed": "Gagal memindai printer.",
+  "printerPairFailed": "Gagal menyambungkan ke printer.",
+  "printerUnsupported": "Tablet ini tidak punya Bluetooth yang bisa dipakai untuk printer.",
+  "printerSaveFailed": "Printer tersambung, tetapi tablet gagal mengingatnya. Coba pilih lagi.",
+  "printerNotConnected": "Printer belum tersambung. Nyalakan printer lalu coba lagi.",
+  "printerPrintFailed": "Gagal mengirim ke printer.",
+  "printerPrintSuccess": "Laporan terkirim ke printer",
+  "printerPrintShiftReport": "Cetak Laporan",
+  "posActiveShift": "Shift Aktif",
+  "posNoActiveShift": "Tidak ada shift aktif",
+  "posShiftNumber": "Nomor Shift",
+  "posOpenedAt": "Dibuka Pada",
+  "posOpeningCash": "Kas Awal",
+  "posTotalSales": "Total Penjualan",
+  "posTotalTransactions": "Total Transaksi",
+  "posExpectedCash": "Kas Seharusnya",
+  "posShiftRequired": "Shift Diperlukan",
+  "posShiftRequiredDesc": "Anda harus membuka shift sebelum dapat bertransaksi.",
+  "posShiftAlreadyOpen": "Shift Masih Terbuka",
+  "posShiftAlreadyOpenDesc": "Sudah ada shift terbuka di outlet ini. Lanjutkan shift tersebut, atau tutup dulu sebelum memulai yang baru.",
+  "posShiftAlreadyOpenStaleDesc": "Shift ini masih terbuka. Periksa dulu, lalu lanjutkan atau tutup shift tersebut.",
+  "posContinueShift": "Lanjutkan Shift {number}",
+  "@posContinueShift": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "posShiftHeldByAnother": "Shift Dipegang Kasir Lain",
+  "posShiftHeldByAnotherDesc": "Shift {number} dibuka oleh {cashier} dan belum ditutup. Minta kasir tersebut menutupnya.",
+  "@posShiftHeldByAnotherDesc": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      },
+      "cashier": {
+        "type": "String"
+      }
+    }
+  },
+  "posShiftHeldByAnotherNoOverride": "Minta {cashier} menutup shiftnya, atau atasan yang memiliki izin Override Shift Kasir.",
+  "@posShiftHeldByAnotherNoOverride": {
+    "placeholders": {
+      "cashier": {
+        "type": "String"
+      }
+    }
+  },
+  "posOverrideCloseShift": "Tutup Shift (Override)",
+  "posOverrideCloseNotice": "Anda akan menutup shift milik {cashier}. Catatan wajib diisi.",
+  "@posOverrideCloseNotice": {
+    "placeholders": {
+      "cashier": {
+        "type": "String"
+      }
+    }
+  },
+  "posOverrideNoteRequired": "Menutup shift kasir lain wajib disertai catatan alasan",
+  "posUnknownCashier": "Tidak diketahui",
+  "posOpenShift": "Buka Shift",
+  "posOpenShiftSuccess": "Shift berhasil dibuka",
+  "posCloseShift": "Tutup Shift",
+  "posCloseShiftSuccess": "Shift berhasil ditutup",
+  "posShiftSummary": "Ringkasan Shift",
+  "posShiftDetail": "Detail Shift",
+  "posShiftOpen": "Shift Terbuka",
+  "posShiftClosed": "Shift Tertutup",
+  "posClosedAt": "Ditutup Pada",
+  "posOutlet": "Outlet",
+  "posNotes": "Catatan",
+  "posTransactions": "Transaksi",
+  "posEmptyTransactions": "Belum ada transaksi",
+  "posSalesByMethod": "Penjualan per Metode",
+  "posShiftReportTitle": "LAPORAN TUTUP SHIFT",
+  "posPrintedAt": "Dicetak",
+  "receiptTitle": "Struk Penjualan",
+  "receiptPrint": "Cetak struk",
+  "receiptSent": "Struk terkirim ke printer",
+  "receiptLoadFailed": "Struk belum bisa dimuat. Coba lagi.",
+  "receiptPaymentMethod": "Metode Pembayaran",
+  "receiptVoided": "*** TRANSAKSI DIBATALKAN ***",
+  "receiptNoItems": "Tidak ada rincian barang",
+  "receiptPaidBy": "Bayar ({method})",
+  "@receiptPaidBy": {
+    "placeholders": {
+      "method": {
+        "type": "String"
+      }
+    }
+  },
+  "posPaymentsByMethod": "Pembayaran per Metode",
+  "posTotal": "Total",
+  "posDepositSection": "Setoran",
+  "posCashSalesLabel": "Pembayaran Tunai",
+  "posTotalDeposit": "Total Setoran",
+  "posNonCashPayments": "Pembayaran Non Tunai",
+  "posNoNonCashPayments": "Tidak ada pembayaran non tunai di shift ini",
+  "posProductsSoldTitle": "Rincian Produk",
+  "posProductsSoldTotal": "Total Rincian Produk",
+  "posCountedCash": "Kas Dihitung",
+  "posVariance": "Selisih",
+  "posVarianceNote": "Catatan selisih wajib diisi bila ada selisih",
+  "posVarianceReason": "Alasan Selisih",
+  "posShiftNotesPlaceholder": "Catatan shift...",
+  "posCashier": "Kasir",
+  "posLoading": "Memuat...",
+  "posCashMovement": "Mutasi Kas",
+  "posCashMovements": "Mutasi Kas Laci",
+  "posNoCashMovements": "Tidak ada mutasi kas",
+  "posCashIn": "Kas Masuk",
+  "posCashOut": "Kas Keluar",
+  "posCashDrop": "Setor Kas",
+  "posAmount": "Jumlah",
+  "posCashInTotal": "Total Kas Masuk",
+  "posCashOutTotal": "Total Kas Keluar",
+  "posCashMovementReason": "Keterangan / Barang yang Dibeli",
+  "posCashMovementReasonPlaceholder": "misal: beli galon air minum",
+  "posCashMovementAccount": "Akun (opsional)",
+  "posCashMovementAccountRequired": "Akun",
+  "posCashMovementProduct": "Barang (opsional)",
+  "posCashMovementSelectProduct": "-- Pilih Barang --",
+  "posCashMovementNoProduct": "Barang tidak ditemukan",
+  "posCashMovementSuccess": "Mutasi kas berhasil dicatat",
+  "posSelectTenderAccount": "Pilih akun kas/bank",
+  "posSearchTenderAccount": "Cari akun...",
+  "posNoTenderAccount": "Akun tidak ditemukan",
+  "posSearchProduct": "Cari produk, SKU, atau barcode...",
+  "posAllCategories": "Semua",
+  "posNoProducts": "Tidak ada produk",
+  "posNoProductsDesc": "Coba kata kunci lain atau pilih kategori lain",
+  "posCatalogLoadFailed": "Gagal memuat katalog. Periksa koneksi lalu coba lagi.",
+  "posOutOfStock": "Habis",
+  "posNotFound": "Tidak ditemukan",
+  "posCart": "Keranjang",
+  "posItemCount": "{count} barang",
+  "@posItemCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "posCartEmpty": "Keranjang kosong",
+  "posCartEmptyDesc": "Scan barcode atau cari produk untuk menambah ke keranjang",
+  "posClearCart": "Kosongkan",
+  "posClearCartConfirm": "Kosongkan keranjang?",
+  "posClearCartConfirmDesc": "Semua barang di keranjang akan dihapus.",
+  "posRemoveItem": "Hapus Item",
+  "posQty": "Qty",
+  "posSubtotal": "Subtotal",
+  "posDiscount": "Diskon",
+  "posDiscountPercent": "Diskon (%)",
+  "posDiscountAmount": "Diskon (Rp)",
+  "posLineDiscount": "Diskon Baris",
+  "posBillDiscount": "Diskon Nota",
+  "posTax": "Pajak",
+  "posGrandTotal": "Grand Total",
+  "posViewCart": "Lihat Keranjang",
+  "posTransactionDetail": "Detail Transaksi",
+  "posAddTransactionDetail": "Tambah detail transaksi",
+  "posCustomer": "Pelanggan",
+  "posNoCustomer": "Tanpa Pelanggan",
+  "posSearchCustomer": "Cari pelanggan...",
+  "posAddContactNamed": "Tambah Kontak \"{q}\"",
+  "@posAddContactNamed": {
+    "placeholders": {
+      "q": {
+        "type": "String"
+      }
+    }
+  },
+  "posCustomerMemo": "Catatan Pelanggan",
+  "posCustomerMemoPlaceholder": "misal: Budi, take away",
+  "posTableNumber": "No. Meja",
+  "posTableNumberPlaceholder": "misal: 12",
+  "posQueueNumber": "No. Antrian",
+  "posQueueNumberPlaceholder": "misal: 45",
+  "posHoldOrder": "Tahan",
+  "posHoldLabel": "Nama/Keterangan",
+  "posHoldLabelPlaceholder": "mis. Bu Sri, meja 4",
+  "posHoldSuccess": "Transaksi ditahan",
+  "posHeldOrders": "Transaksi Ditahan",
+  "posNoHeldOrders": "Tidak ada transaksi ditahan",
+  "posResumeOrder": "Lanjutkan",
+  "posDropOrder": "Buang",
+  "posPay": "Bayar",
+  "posPaying": "Memproses...",
+  "posPayment": "Pembayaran",
+  "posAddTender": "Tambah Metode",
+  "posRemoveTender": "Hapus metode",
+  "posTenderMethodCASH": "Tunai",
+  "posTenderMethodTRANSFER": "Transfer",
+  "posTenderMethodEDC": "EDC",
+  "posTenderMethodQRIS": "QRIS",
+  "posTenderMethodKOMPLIMEN": "Komplimen",
+  "posTenderAmount": "Jumlah Pembayaran",
+  "posTenderReference": "Memo",
+  "posCashTendered": "Bayar",
+  "posExactAmount": "Uang Pas",
+  "posPaidAmount": "Terbayar",
+  "posRemaining": "Sisa",
+  "posChangeDue": "Kembalian",
+  "posConfirmPayment": "Selesaikan",
+  "posTenderOverpaidNonCash": "Pembayaran non-tunai tidak boleh melebihi total belanja. Kembalian hanya dari tunai.",
+  "posTenderEmptyCart": "Keranjang masih kosong",
+  "posInsufficientCash": "Uang kurang",
+  "posPaymentSuccess": "Pembayaran berhasil",
+  "posChangeTitle": "Kembalian",
+  "posNewSale": "Transaksi Baru",
+  "posReceiptNumber": "No. Transaksi",
+  "posReceiptTemporary": "SEMENTARA",
+  "posQueuedRef": "Kode",
+  "posOfflineNotSaved": "Belum terkirim ke server. Penjualan sudah tersimpan di tablet ini dan akan dikirim otomatis begitu ada koneksi.",
+  "posCheckoutStorageFailed": "Penjualan tidak bisa disimpan di tablet ini. Uang belum tercatat — jangan serahkan barang. Coba lagi.",
+  "queueTitle": "Penjualan tertunda",
+  "queueSendNow": "Kirim sekarang",
+  "queueEmpty": "Semua penjualan sudah terkirim.",
+  "queueLoadFailed": "Antrian tidak bisa dibaca. Periksa penyimpanan tablet ini, lalu coba lagi.",
+  "queueStatusPending": "Menunggu",
+  "queueStatusFailed": "Gagal",
+  "queueRetry": "Ulangi",
+  "queueDiscard": "Buang",
+  "queueDiscardTitle": "Buang penjualan ini?",
+  "queueDiscardDesc": "Barang sudah keluar dari toko. Membuang tanpa mengirim membuat catatan kas berkurang dari uang yang sebenarnya diterima.",
+  "menuQueueTitle": "Penjualan tertunda",
+  "menuQueueCount": "{count, plural, other{{count} menunggu dikirim}}",
+  "@menuQueueCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "menuQueueEmpty": "Semua sudah terkirim.",
+  "posCheckoutRejected": "Penjualan tidak tercatat",
+  "posPaymentFailed": "Penjualan belum bisa dikirim. Coba lagi.",
+  "tillDetailAdd": "Tambah detail transaksi",
+  "tillDetailCustomer": "Pelanggan: {name}",
+  "@tillDetailCustomer": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tillDetailMemo": "Catatan: {memo}",
+  "@tillDetailMemo": {
+    "placeholders": {
+      "memo": {
+        "type": "String"
+      }
+    }
+  },
+  "tillDetailTable": "Meja: {number}",
+  "@tillDetailTable": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "tillDetailQueue": "Antrian: {number}",
+  "@tillDetailQueue": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "tillDetailDone": "Selesai",
+  "tillDetailSelectCustomer": "Pilih pelanggan",
+  "tillDetailClearCustomer": "Hapus pelanggan",
+  "tillDetailCustomerNone": "Tidak ada pelanggan ditemukan.",
+  "tillDetailCustomerFailed": "Belum bisa membaca daftar pelanggan. Periksa koneksi lalu coba lagi.",
+  "tillDetailCreateFailed": "Pelanggan belum bisa disimpan. Coba lagi.",
+  "tillDetailCreateNoAnswer": "Belum bisa menghubungi server. Periksa koneksi lalu coba lagi.",
+  "tillDetailNameRequired": "Nama pelanggan belum diisi.",
+  "uiPrevious": "Sebelumnya",
+  "uiNext": "Berikutnya",
+  "menuShiftDetail": "Detail shift",
+  "menuShiftHistory": "Riwayat shift",
+  "shiftHistoryTitle": "Riwayat Shift",
+  "shiftHistoryAll": "Semua",
+  "shiftHistoryEmpty": "Belum ada shift.",
+  "shiftHistoryLoadFailed": "Riwayat shift belum bisa dimuat. Periksa koneksi, lalu coba lagi.",
+  "saleDetailTitle": "Detail penjualan",
+  "saleDetailLoadFailed": "Detail penjualan belum bisa dibaca. Periksa koneksi, lalu coba lagi.",
+  "saleDetailVoided": "Penjualan ini dibatalkan.",
+  "saleDetailCashier": "Kasir",
+  "saleDetailNoItems": "Rincian barang tidak tersedia untuk penjualan ini.",
+  "saleDetailUnknownProduct": "Barang tidak dikenal",
+  "saleDetailTax": "Pajak",
+  "saleDetailPayments": "Pembayaran",
+  "saleDetailTendered": "Uang diterima",
+  "saleDetailNotes": "Catatan",
+  "shiftDetailTitle": "Detail shift",
+  "shiftDetailOpen": "Terbuka",
+  "shiftDetailClosed": "Ditutup",
+  "shiftDetailNone": "Tidak ada shift yang terbuka. Buka shift dari layar kasir.",
+  "shiftDetailHeldDesc": "Shift {number} dibuka oleh {cashier}. Rinciannya hanya tampil untuk kasir itu, atau atasan dengan izin Override Shift Kasir.",
+  "@shiftDetailHeldDesc": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      },
+      "cashier": {
+        "type": "String"
+      }
+    }
+  },
+  "shiftDetailLoadFailed": "Rincian shift belum bisa dibaca. Periksa koneksi, lalu coba lagi.",
+  "shiftDetailClosedAtLabel": "Ditutup pada",
+  "shiftDetailOutletLabel": "Outlet",
+  "shiftDetailFiguresTitle": "Hitungan kas",
+  "shiftDetailTransactions": "Jumlah transaksi",
+  "shiftDetailTotalSales": "Total penjualan",
+  "shiftDetailOpeningCash": "Modal awal",
+  "shiftDetailCashIn": "Kas masuk",
+  "shiftDetailCashOut": "Kas keluar",
+  "shiftDetailCashDrop": "Setoran",
+  "shiftDetailCashOutAndDrop": "Kas keluar dan setoran",
+  "shiftDetailExpectedCash": "Kas yang seharusnya ada",
+  "shiftDetailCountedCash": "Kas terhitung",
+  "shiftDetailVarianceShort": "Kurang {amount}",
+  "@shiftDetailVarianceShort": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "shiftDetailVarianceOver": "Lebih {amount}",
+  "@shiftDetailVarianceOver": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "shiftDetailVarianceNone": "Pas",
+  "shiftDetailVarianceLabel": "Selisih",
+  "shiftDetailByMethodTitle": "Penjualan per metode",
+  "shiftDetailNoSales": "Belum ada penjualan di shift ini.",
+  "shiftDetailNotes": "Catatan",
+  "shiftDetailTabFigures": "Ringkasan",
+  "shiftDetailTabSales": "Transaksi",
+  "shiftDetailTabMovements": "Mutasi kas",
+  "shiftDetailSaleVoided": "Dibatalkan",
+  "shiftDetailMoreFailed": "Belum bisa memuat lebih banyak. Ketuk untuk mencoba lagi.",
+  "shiftDetailNoMovements": "Belum ada kas masuk atau keluar di shift ini.",
+  "closeShiftTitle": "Tutup shift",
+  "closeShiftLoadFailed": "Angka shift belum bisa dibaca. Periksa koneksi, lalu coba lagi.",
+  "closeShiftOverrideNotice": "Anda menutup shift milik {cashier}. Catatan wajib diisi.",
+  "@closeShiftOverrideNotice": {
+    "placeholders": {
+      "cashier": {
+        "type": "String"
+      }
+    }
+  },
+  "closeShiftNotesLabel": "Catatan",
+  "closeShiftNoteNeededVariance": "Drawer tidak sama dengan hitungan. Tulis alasannya sebelum menutup.",
+  "closeShiftNoteNeededOverride": "Anda bukan pemegang shift ini. Tulis alasan menutupnya sebelum menutup.",
+  "closeShiftNoteOptional": "Boleh dikosongkan",
+  "closeShiftButton": "Tutup shift",
+  "closeShiftClosing": "Menutup shift…",
+  "closeShiftDone": "Shift ditutup.",
+  "closeShiftRefused": "Shift belum bisa ditutup.",
+  "closeShiftUncertain": "Belum ada jawaban pasti dari server, jadi shift mungkin sudah tertutup. Periksa dulu sebelum mencoba menutup lagi.",
+  "shiftCloseBlockedByQueue": "{count, plural, other{{count} penjualan di outlet ini belum terkirim. Ketuk untuk membuka Penjualan tertunda.}}",
+  "@shiftCloseBlockedByQueue": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "cashMovementTitle": "Catat kas masuk atau keluar",
+  "cashMovementAmount": "Jumlah",
+  "cashMovementReasonRequired": "Alasan (wajib)",
+  "cashMovementReasonHint": "Misalnya: beli galon air",
+  "cashMovementAccount": "Akun",
+  "cashMovementAccountRequired": "Akun (wajib)",
+  "cashMovementAccountNone": "Pilih akun",
+  "cashMovementAccountSearch": "Cari akun",
+  "cashMovementAccountEmpty": "Akun tidak ditemukan.",
+  "cashMovementAccountFailed": "Akun belum bisa dibaca. Periksa koneksi, lalu coba lagi.",
+  "cashMovementSettingsFailed": "Pengaturan kas belum bisa dibaca, jadi catatan belum bisa disimpan. Periksa koneksi, lalu coba lagi.",
+  "cashMovementDone": "Kas tercatat.",
+  "cashMovementRefused": "Catatan kas belum bisa disimpan.",
+  "cashMovementUncertain": "Belum ada jawaban pasti dari server, jadi catatan ini mungkin sudah tersimpan. Periksa daftar Mutasi kas sebelum mencoba lagi.",
+  "tillHold": "Tahan",
+  "tillHoldTitle": "Tahan keranjang",
+  "tillHoldNameLabel": "Nama (boleh kosong)",
+  "tillHoldNameHint": "Misalnya: Meja 4",
+  "tillHoldDone": "Keranjang ditahan.",
+  "tillHoldNotStored": "Keranjang belum bisa disimpan di tablet ini, jadi tidak ditahan. Isinya tetap di layar.",
+  "tillResumeNotStored": "Keranjang yang sedang tampil belum bisa disimpan, jadi keranjang lain tidak dibuka. Isinya tetap di layar.",
+  "tillHeld": "Ditahan",
+  "tillHeldCount": "Ditahan ({count})",
+  "@tillHeldCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "heldTitle": "Keranjang ditahan",
+  "heldEmpty": "Tidak ada keranjang yang ditahan.",
+  "heldResume": "Lanjutkan",
+  "heldDrop": "Buang",
+  "heldDropTitle": "Buang keranjang ini?",
+  "heldDropDesc": "Isi keranjang {label} akan hilang dan tidak bisa dikembalikan.",
+  "@heldDropDesc": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "updateReadyMessage": "Pembaruan siap. Restart aplikasi untuk menerapkannya.",
+  "nativeUpdateReadyMessage": "Versi baru siap dipasang.",
+  "nativeUpdateAction": "Pasang"
+}

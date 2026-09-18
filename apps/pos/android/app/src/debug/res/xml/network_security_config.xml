@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Debug builds only. The `lokal` endpoint (README §13) is http://localhost:4000, and Android
+  refuses cleartext HTTP by default. This allows it for the two names a development backend has
+  — `localhost` (a physical tablet through `adb reverse tcp:4000 tcp:4000`) and `10.0.2.2` (the
+  emulator's alias for the host machine) — and for nothing else: every other host, staging and
+  production included, stays HTTPS-only. Release has no such file.
+-->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">localhost</domain>
+        <domain includeSubdomains="false">10.0.2.2</domain>
+    </domain-config>
+</network-security-config>

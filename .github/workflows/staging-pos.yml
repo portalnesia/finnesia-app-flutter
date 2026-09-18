@@ -1,0 +1,321 @@
+# Build STAGING: APK (profile build type) → draft GitHub Release.
+#
+# Bukan rilis. Tidak ada Play, tidak ada track, tidak ada Shorebird. Keputusan pemilik
+# 2026-09-28: staging adalah artefak internal yang dipasang tester dari berkas unduhan, jadi ia
+# tidak pernah menyentuh Store. Hanya production yang masuk Play (`release-pos.yml`).
+#
+# Formatnya APK, bukan AAB. AAB tidak bisa dipasang di perangkat; selama upload Play masih ada
+# itu tidak masalah, tapi tanpa upload Play satu-satunya gunanya adalah diunggah manual ke Play
+# Console oleh manusia. APK bisa dipasang tester langsung dari asset release.
+#
+# Rencana, alasan, dan angka yang sudah diukur: plan/staging/README.md.
+# Alur distribusi rilis (yang ini bukan): docs/distribution.md.
+#
+# Kenapa `--profile` dan bukan `--release` + `--dart-define`: `profile` adalah build type milik
+# Flutter yang dibuat dari debug (`FlutterPlugin.kt`), dan ia sudah membawa dua hal yang
+# dibutuhkan staging — `applicationIdSuffix` kosong (appId jadi `com.finnesia.pos`) dan
+# `dart.vm.product=false` (sehingga `isDebugApp` true, yang menyalakan host staging, pemilih
+# endpoint, dan inspector). Tidak ada kode Dart yang perlu diubah sama sekali.
+# Satu-satunya yang diwarisi salah adalah `signingConfig` (dari debug) — diperbaiki di
+# `apps/pos/android/app/build.gradle.kts` dengan `named("profile") { signingConfig = ... }`
+# di dalam `buildTypes`.
+#
+# Trigger: tag `pos-vMAJOR.MINOR.PATCH-staging.N` (mis. `pos-v1.2.0-staging.3`). `N` untuk
+# penomoran manusia; yang dibaca workflow adalah base `1.2.0`. Keempat pattern tag di repo ini
+# saling eksklusif — lihat plan/staging/README.md §9.
+#
+# Prefix `pos-` menandakan aplikasi (repo ini monorepo, akan ada aplikasi lain), bukan bagian
+# dari versinya.
+#
+# Rahasia yang dibutuhkan:
+#
+#   ANDROID_KEY_BASE64         base64 satu baris dari upload-keystore.jks
+#   ANDROID_KEY_ALIAS          alias di dalam keystore
+#   ANDROID_KEY_PASSWORD       password keystore
+#
+# `PLAY_SERVICE_ACCOUNT_JSON` TIDAK dipakai di sini sejak 2026-09-28 — tidak ada upload Play.
+#
+# Kenapa kuncinya sama dengan rilis, padahal ini "varian lain": karena ia **bukan app lain**.
+# Staging memakai `applicationId` yang sama dengan rilis (`com.finnesia.pos`), jadi ia adalah
+# **upgrade** dari install production di tablet yang sama, bukan app kedua. Menandatanganinya
+# dengan kunci berbeda berarti setiap unggahan berikutnya menuntut uninstall dulu di tablet
+# tester. Yang membedakannya dari production adalah label launcher (`Finnesia POS (tester)`).
+#
+# Konsekuensi yang disadari: karena appId-nya sama, staging dan production **tidak bisa
+# terpasang berdampingan** di satu perangkat.
+
+name: Staging POS
+
+on:
+  push:
+    tags:
+      - "pos-v[0-9]+.[0-9]+.[0-9]+-staging.[0-9]+*"
+
+# Satu build per tag. Tag tidak bisa dipush ulang, jadi run yang berjalan tidak perlu dibatalkan.
+concurrency:
+  group: staging-pos-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  FLUTTER_VERSION: "3.47.4"
+  # Harus sama dengan `ndkVersion` yang di-pin Flutter 3.47.4. Kalau tidak, Gradle gagal dengan
+  # "Package ndk not found" — dan `flutter doctor` tidak memberi tahu, karena doctor memeriksa
+  # keberadaan toolchain, bukan kecocokan versinya.
+  NDK_VERSION: "28.2.13676358"
+  # Sama dengan `applicationId` di apps/pos/android/app/build.gradle.kts. Bukan rahasia.
+  ANDROID_PACKAGE_NAME: "com.finnesia.pos"
+  # Host yang HARUS ada di artefak ini, dan host yang HARUS tidak ada di rilis (release-pos.yml).
+  # Dipakai oleh step pengaman di bawah, dan oleh detektornya.
+  STAGING_HOST: "apps-dev.finnesia.com"
+
+jobs:
+  staging:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # untuk membuat GitHub Release
+    env:
+      SHOREBIRD_TOKEN: "" # sengaja kosong: staging TIDAK memakai Shorebird
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ── Versi ─────────────────────────────────────────────────────────────
+      # `pos-v1.2.0-staging.3` → base `1.2.0` + nomor `3` (cuma log).
+      #
+      # `versionName` sengaja TIDAK memuat `-staging.3`: itu akan membuat `package_info_plus`
+      # melaporkan versi yang tidak dikenal di halaman About, dan versi base sudah cukup untuk
+      # membedakan build ini dari production. Nomor `N` ada di nama artefak dan di log.
+      - name: Derive version
+        id: version
+        run: |
+          TAG="${GITHUB_REF_NAME#pos-v}"      # 1.2.0-staging.3
+          BASE="${TAG%-staging.*}"           # 1.2.0
+          ITERATION="${TAG##*-staging.}"      # 3
+          echo "base=$BASE" >> "$GITHUB_OUTPUT"
+          echo "iteration=$ITERATION" >> "$GITHUB_OUTPUT"
+          echo "Staging #$ITERATION dari base $BASE"
+
+      # Rumus IDENTIK dengan release-pos.yml, supaya artefak staging dan rilis pada versi yang
+      # sama membawa `versionCode` yang sama. Itu aman karena staging tidak pernah masuk track
+      # Play: artefaknya hanya dipasang sebagai sideload dari release asset. Kalau kelak staging
+      # dipindah ke track sungguhan, aturan ini harus ditinjau ulang — di track, versionCode
+      # wajib naik monoton dan tidak boleh dipakai dua kali (plan/staging/README.md §6).
+      - name: Compute build number
+        id: build_number
+        run: |
+          VERSION="${{ steps.version.outputs.base }}"
+          MAJOR="${VERSION%%.*}"
+          REST="${VERSION#*.}"
+          MINOR="${REST%%.*}"
+          PATCH="${REST#*.}"
+          BUILD_NUMBER=$(( MAJOR * 1000000 + MINOR * 1000 + PATCH ))
+          echo "value=$BUILD_NUMBER" >> "$GITHUB_OUTPUT"
+          echo "versionName=$VERSION versionCode=$BUILD_NUMBER"
+
+      # ── Toolchain ─────────────────────────────────────────────────────────
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      # Tanpa langkah ini build Android gagal total. Flutter memanggil `sdkmanager` sendiri, dan
+      # di image runner `sdkmanager` adalah wrapper usang yang crash (NTSTATUS 0xC0000409) —
+      # lihat plan/scaffold/00-environment.md §3.
+      - name: Install Android NDK
+        run: sdkmanager "ndk;${NDK_VERSION}"
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('apps/pos/android/**/*.gradle*') }}
+          restore-keys: gradle-${{ runner.os }}-
+
+      - name: Resolve workspace
+        run: dart pub get
+
+      # ── Verifikasi ────────────────────────────────────────────────────────
+      # Urutan mengikuti AGENTS.md. Ini juga yang menjaga kontrak manifest staging: test
+      # `branding/staging_test.dart` membaca `src/profile/` dan membuktikan merge-nya memberi
+      # DUA host, dengan probe yang sudah divalidasi bisa gagal.
+      - name: Analyze
+        run: dart analyze
+
+      - name: Test pure Dart packages
+        run: |
+          for pkg in packages/pn_types packages/pn_pos; do
+            if [ -d "$pkg/test" ]; then
+              echo "── dart test: $pkg"
+              (cd "$pkg" && dart test)
+            fi
+          done
+
+      - name: Test Flutter packages
+        run: |
+          for pkg in packages/pn_ui apps/pos; do
+            if [ -d "$pkg/test" ]; then
+              echo "── flutter test: $pkg"
+              (cd "$pkg" && flutter test)
+            fi
+          done
+
+      # ── Signing ───────────────────────────────────────────────────────────
+      # Sama seperti release-pos.yml. Tanpa berkas ini build gagal dengan "Keystore file not
+      # set" — dan itu disengaja: lebih baik gagal daripada mengirim APK yang ditandatangani
+      # debug key.
+      #
+      # Untuk staging ini penting dua kali: kunci yang sama dengan rilis berarti APK lokal dan
+      # APK CI tidak berbeda penandatangan, sehingga tidak ada uninstall paksa antar-unggahan.
+      - name: Setup Android signing
+        working-directory: apps/pos/android
+        run: |
+          base64 -d <<< "${{ secrets.ANDROID_KEY_BASE64 }}" > "$RUNNER_TEMP/keystore.jks"
+          {
+            echo "keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}"
+            echo "password=${{ secrets.ANDROID_KEY_PASSWORD }}"
+            echo "storeFile=$RUNNER_TEMP/keystore.jks"
+          } > keystore.properties
+
+      # ── Build ─────────────────────────────────────────────────────────────
+      # `--profile`, bukan `--release`. `--target-platform` dibatasi sama dengan rilis
+      # (arm64 + armv7): itu seluruh tablet Android yang masih didukung, dan x86_64 hanya
+      # berguna untuk emulator — yang dibangun lokal lewat `./dev build staging`, bukan di CI.
+      - name: Build staging APK
+        working-directory: apps/pos
+        run: |
+          flutter build apk --profile \
+            --build-name "${{ steps.version.outputs.base }}" \
+            --build-number "${{ steps.build_number.outputs.value }}" \
+            --target-platform android-arm64,android-arm
+
+      - name: Locate APK
+        id: apk
+        run: |
+          # Debug dikecualikan supaya tidak salah ambil kalau ada sisa build lokal.
+          APK=$(find apps/pos/build/app/outputs/flutter-apk \
+            -type f -name '*.apk' -not -name '*-debug*.apk' | head -n1)
+          if [ -z "$APK" ]; then
+            echo "::error::APK tidak ditemukan di build/app/outputs/flutter-apk setelah build"
+            exit 1
+          fi
+
+          NAME="finnesia-pos-staging-${{ steps.version.outputs.base }}-${{ steps.version.outputs.iteration }}.apk"
+          echo "path=$APK" >> "$GITHUB_OUTPUT"
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+          ls -lh "$APK"
+
+      # ── Pengaman: APK staging harus build profile yang menunjuk staging ─────
+      # Diperiksa atas ARTIFACT, bukan input build.
+      #
+      # Dua tempat, karena host muncul di dua tempat yang berbeda bentuknya:
+      #
+      #   1. `libapp.so` (payload Dart) — memuat host endpoint dari `EndpointEnvironment`
+      #      (`packages/pn_types/lib/src/api/environment.dart`). Karena `isDebugApp` true di
+      #      build profile, ketiga host ikut terkompilasi: production, staging, dan lokal.
+      #   2. Manifest di dalam APK — memuat host App Link dari `intent-filter`. APK
+      #      mengompilasi manifest ke biner, dan host disimpan sebagai **UTF-16** di dalamnya,
+      #      jadi `strings` default melewatkannya. Yang membacanya: `aapt2 dump xmltree`,
+      #      sama seperti `release-pos.yml`.
+      #
+      # Detektornya divalidasi lebih dulu di kedua tempat (`.claude/rules/testing.md` §0.3):
+      # sebuah pemeriksaan yang tidak pernah menyala tidak bisa dibedakan dari yang rusak. Di
+      # step 2 itu terutama penting — kalau `aapt2` ternyata TIDAK menemukan package name,
+      # step-nya gagal, bukan lulus diam-diam.
+      - name: Staging APK must be the profile/staging build
+        working-directory: apps/pos
+        env:
+          APK: ${{ steps.apk.outputs.path }}
+        run: |
+          # ── 1. Payload Dart ────────────────────────────────────────────────
+          unzip -o -q "$APK" 'lib/*/libapp.so' -d /tmp/apk
+          SO=$(find /tmp/apk/lib -name 'libapp.so' | head -n1)
+          if [ -z "$SO" ]; then
+            echo "::error::libapp.so tidak ditemukan di APK; pemeriksaan tidak akan membuktikan apa pun"
+            exit 1
+          fi
+
+          # Host staging ada HANYA kalau `isDebugApp` true saat kompilasi, yaitu build profile.
+          # Itu pemeriksaan yang membuktikan "ini bukan build release".
+          grep -aq "$STAGING_HOST" "$SO" \
+            || { echo "::error::host staging TIDAK ada di payload — ini bukan build profile/staging?"; exit 1; }
+          echo "✅ payload Dart: host staging ada (isDebugApp true, ini build profile)"
+
+          # ── 2. Manifest (host App Link + applicationId) ────────────────────
+          # `aapt2*`, bukan `aapt2`: di Windows binary-nya bernama `aapt2.exe`, dan pola tanpa
+          # wildcard membuat langkah ini gagal di mesin developer meski lulus di runner.
+          AAPT2=$(find "${ANDROID_HOME:-$ANDROID_SDK_ROOT}" -path '*build-tools*' \
+            -name 'aapt2*' -type f | sort -V | tail -n1)
+          if [ -z "$AAPT2" ]; then
+            echo "::error::aapt2 tidak ditemukan; manifest tidak bisa diperiksa"
+            exit 1
+          fi
+
+          "$AAPT2" dump xmltree --file AndroidManifest.xml "$APK" > /tmp/manifest.txt
+
+          # Validasi detektor: package name HARUS terbaca. Kalau tidak, `aapt2` tidak cocok
+          # untuk manifest APK dan seluruh step ini tidak membuktikan apa pun.
+          grep -q "$ANDROID_PACKAGE_NAME" /tmp/manifest.txt \
+            || { echo "::error::detector rusak: package name tidak terbaca dari manifest APK — periksa cara membacanya"; exit 1; }
+          echo "✅ detektor manifest terbaca (package name ditemukan)"
+
+          # Host App Link staging harus ada, kalau tidak tombol "Kembali ke aplikasi" mati di
+          # tablet tester. Host production ikut karena `src/main/` di-merge setiap build type —
+          # jadi build ini punya DUA host, dan itu memang yang diinginkan.
+          grep -q "$STAGING_HOST" /tmp/manifest.txt \
+            || { echo "::error::host staging tidak ada di manifest APK; App Link mati di tablet tester"; exit 1; }
+          echo "✅ manifest: host staging ada (App Link hidup)"
+
+          grep -q 'apps.finnesia.com' /tmp/manifest.txt \
+            || { echo "::error::detector rusak: host produksi tidak ditemukan di manifest"; exit 1; }
+          echo "✅ manifest: host produksi ikut (dua host, hasil merge src/main + src/profile)"
+
+          # applicationId harus polos `com.finnesia.pos`, bukan `com.finnesia.pos.debug` dari
+          # buildTypes.debug.
+          grep -q "package=\"$ANDROID_PACKAGE_NAME\"" /tmp/manifest.txt \
+            || { echo "::error::applicationId APK bukan $ANDROID_PACKAGE_NAME"; exit 1; }
+          if grep -q "${ANDROID_PACKAGE_NAME}.debug" /tmp/manifest.txt; then
+            echo "::error::applicationId APK memuat .debug — build debug bocor ke staging?"
+            exit 1
+          fi
+          echo "✅ manifest: applicationId staging (${ANDROID_PACKAGE_NAME}, bukan .debug)"
+
+      # ── Terbitkan ─────────────────────────────────────────────────────────
+      # Artefak Actions disimpan supaya bisa diunduh dari halaman run — bukan jalur
+      # distribusinya. Jalur distribusinya draft GitHub Release di step berikutnya, karena itu
+      # yang bisa dikirim sebagai satu link ke tester.
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.apk.outputs.name }}
+          path: ${{ steps.apk.outputs.path }}
+          retention-days: 30
+
+      # Draft, bukan rilis langsung: APK tidak bisa diunduh sampai Anda publish dari dashboard.
+      # Rilis otomatis tanpa dilihat dulu bukan hal yang diinginkan untuk aplikasi yang
+      # menangani uang.
+      #
+      # Release-nya diberi nama berbeda dari rilis production supaya dua draft di halaman yang
+      # sama tidak tertukar; keduanya memakai pola tag yang saling eksklusif, jadi tidak mungkin
+      # menempel di tag yang sama.
+      - name: Create draft release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: "Finnesia POS (staging) v${{ steps.version.outputs.base }} #${{ steps.version.outputs.iteration }}"
+          draft: true
+          generate_release_notes: true
+          files: ${{ steps.apk.outputs.path }}

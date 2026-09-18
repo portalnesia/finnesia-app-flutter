@@ -1,0 +1,19 @@
+name: pn_types
+publish_to: none
+environment:
+  sdk: ^3.8.0
+resolution: workspace
+
+dependencies:
+  # `freezed` generates equality, copyWith, toString and fromJson. Writing those by
+  # hand is duplication — `.claude/rules/patterns.md` §2a.
+  #
+  # `freezed` runs on pure Dart without Flutter, so this package stays Flutter-free.
+  freezed_annotation: ^3.1.0
+  json_annotation: ^4.12.0
+
+dev_dependencies:
+  build_runner: ^2.4.0
+  freezed: ^4.0.1
+  json_serializable: ^6.14.1
+  test: ^1.25.0

@@ -1,0 +1,631 @@
+{
+  "@@locale": "en",
+  "appName": "Finnesia POS",
+  "shiftLoadFailed": "Could not read the shift data. Check the connection and try again.",
+  "shiftRequiredTitle": "Open a shift first",
+  "shiftRequiredDesc": "Count the cash in the drawer and enter it as the opening cash before you start selling.",
+  "shiftOpeningCashLabel": "Opening cash",
+  "shiftOpenButton": "Open shift",
+  "shiftKeypadBackspace": "Delete digit",
+  "shiftOpenUnavailable": "Could not reach the server. Check the connection and try again.",
+  "shiftOpening": "Opening shift…",
+  "shiftOpenTitle": "Shift still open",
+  "shiftOpenDesc": "A shift is already open at this outlet. Continue it to start selling.",
+  "shiftOpenStaleDesc": "This shift is still open. Check the figures below before you continue it.",
+  "shiftNumberLabel": "Shift number",
+  "shiftOpenedAtLabel": "Opened",
+  "shiftCashierLabel": "Cashier",
+  "shiftHeldTitle": "Shift held by another cashier",
+  "shiftUnknownCashier": "another cashier",
+  "shiftContinue": "Continue shift {number}",
+  "@shiftContinue": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "shiftHeldDesc": "Shift {number} was opened by {cashier} and is still open. It has to be closed before you can sell at this outlet.",
+  "@shiftHeldDesc": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      },
+      "cashier": {
+        "type": "String"
+      }
+    }
+  },
+  "tillSearchHint": "Search a product or scan a barcode",
+  "tillCategoryAll": "All",
+  "tillCatalogLoadFailed": "Could not read the product list. Check the connection and try again.",
+  "tillNoProducts": "No products",
+  "tillNoProductsDesc": "Try another search or category.",
+  "tillOutOfStock": "Out",
+  "tillCartTitle": "Cart",
+  "tillCartEmpty": "The cart is empty",
+  "tillCartEmptyDesc": "Tap a product or scan a barcode to add it.",
+  "tillClearCart": "Clear",
+  "tillClearTitle": "Clear the cart?",
+  "tillClearDesc": "Every item in the cart will be removed.",
+  "tillSubtotal": "Subtotal",
+  "tillDiscount": "Discount",
+  "tillTotal": "Total",
+  "tillUndo": "Undo",
+  "tillLookupFailed": "Could not look that product up. Check the connection and try again.",
+  "tillItemCount": "{count, plural, =1{1 item} other{{count} items}}",
+  "@tillItemCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tillQtyLess": "Decrease quantity of {name}",
+  "@tillQtyLess": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tillQtyMore": "Increase quantity of {name}",
+  "@tillQtyMore": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tillRemoveLine": "Remove {name}",
+  "@tillRemoveLine": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tillLineRemoved": "{name} removed",
+  "@tillLineRemoved": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tillStatusCashier": "Cashier: {name}",
+  "@tillStatusCashier": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tillStatusShift": "Shift {number}",
+  "@tillStatusShift": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "tillStatusQueue": "{count, plural, one{{count} not sent} other{{count} not sent}}",
+  "@tillStatusQueue": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tillStatusQueueFailed": "{count, plural, one{{count} not sent, one failed} other{{count} not sent, some failed}}",
+  "@tillStatusQueueFailed": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tillCodeNotFound": "No product with code {code}.",
+  "@tillCodeNotFound": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "commonRetry": "Try again",
+  "commonLoading": "Loading…",
+  "bootFailed": "The device data could not be opened. This tablet's pairing has not been removed. Try again.",
+  "commonCancel": "Cancel",
+  "commonClose": "Close",
+  "commonSave": "Save",
+  "commonSaving": "Saving...",
+  "commonLoadFailed": "Failed to load data",
+  "commonSaveFailed": "Failed to save data",
+  "commonDelete": "Delete the last digit",
+  "commonLanguageId": "Indonesia",
+  "commonLanguageEn": "English",
+  "commonLanguageLabel": "Language",
+  "commonThemeLabel": "Theme",
+  "commonThemeSystem": "Follow system",
+  "commonThemeLight": "Light",
+  "commonThemeDark": "Dark",
+  "pairingTitle": "Pair this tablet",
+  "pairingSubtitle": "Enter the code from your Finnesia dashboard to connect this tablet to your outlet.",
+  "pairingDeviceNameLabel": "Tablet name",
+  "pairingDeviceNamePlaceholder": "Register 1",
+  "pairingDeviceNameHint": "Shown in the dashboard so each tablet is easy to tell apart.",
+  "pairingCodeLabel": "Pairing code",
+  "pairingCodeHint": "You can find the code in the Finnesia dashboard, under Outlet.",
+  "pairingSubmit": "Pair",
+  "pairingSubmitting": "Pairing…",
+  "pairingScanButton": "Scan QR",
+  "pairingScanTitle": "Scan pairing QR",
+  "pairingScanHint": "Point the camera at the QR in the Finnesia dashboard.",
+  "pairingScanDenied": "Camera access is off. Allow it for this app in Settings, or type the code.",
+  "pairingScanUnavailable": "The camera cannot be used. Type the pairing code instead.",
+  "pairingInvalidCode": "The code is 6 letters or digits.",
+  "pairingCodeRejected": "This code was not recognized, has already been used, or has expired. Generate a new one in the dashboard.",
+  "pairingUnavailable": "Could not reach the server. Check your internet connection and try again.",
+  "pairingStorageFailed": "The tablet could not save its data. Try again.",
+  "pairingDeviceLimitReached": "This outlet has reached its tablet limit. Delete one of the tablets on the dashboard, then try again.",
+  "pairingDeviceLimitReachedWithLimit": "This outlet has reached its limit of {limit} cashier tablets. Delete one of them on the dashboard, then try again.",
+  "@pairingDeviceLimitReachedWithLimit": {
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "loginTitle": "Sign in",
+  "loginSubtitle": "Sign in with your account to start selling at this outlet.",
+  "loginDeviceLabel": "Device",
+  "loginSubmit": "Sign in",
+  "loginSubmitting": "Waiting for login…",
+  "loginWaiting": "Finish signing in on the browser that just opened. This page continues on its own once you are done.",
+  "loginNotPaired": "This device is not paired yet. Pair it before signing in.",
+  "loginUnavailable": "Could not reach the server. Check the connection and try again.",
+  "loginExpired": "That login request has expired. Try signing in again.",
+  "loginTimeout": "The login timed out. Try signing in again.",
+  "loginRetry": "Try again",
+  "loginResetButton": "Reset device",
+  "loginResetTitle": "Reset this device?",
+  "loginResetDesc": "This tablet will be released from the outlet and removed from the dashboard, and you will need a new pairing code to connect it again.",
+  "loginResetHeldOrders": "{count, plural, one{1 held basket will be deleted too.} other{{count} held baskets will be deleted too.}}",
+  "@loginResetHeldOrders": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "loginResetConfirm": "Yes, reset",
+  "loginResetCancel": "Cancel",
+  "loginResetServerFailed": "The tablet was released here, but the server could not be reached. It may still be listed in the dashboard.",
+  "loginResetQueueBlocked": "Reset is not possible yet: this tablet still has a sale that has not been sent. Sign in and send it, or discard it in Pending sales, before resetting.",
+  "menuTitle": "Menu",
+  "menuBack": "Back",
+  "menuAccountSection": "Account",
+  "menuSessionSection": "This device",
+  "menuCashierLabel": "Cashier",
+  "menuUnknownUser": "Unknown",
+  "menuDeviceLabel": "Device",
+  "menuOutletLabel": "Outlet",
+  "menuShiftSection": "Shift",
+  "menuNoShift": "No shift open",
+  "menuShiftLoadFailed": "Could not load the shift.",
+  "menuOutletLoadFailed": "Could not load the outlet name.",
+  "menuSignOut": "Sign out",
+  "menuSignOutTitle": "Sign out of this account?",
+  "menuSignOutDesc": "The tablet stays paired to this outlet, so there is no pairing to redo. You will need to sign in again to sell.",
+  "menuSignOutConfirm": "Yes, sign out",
+  "menuSignOutFailed": "Could not sign out. Try again.",
+  "menuSignOutBlocked": "{count, plural, one{You still have {count} sale that has not been sent. Send it before signing out.} other{You still have {count} sales that have not been sent. Send them before signing out.}}",
+  "@menuSignOutBlocked": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "menuVersion": "Version {version} ({build})",
+  "@menuVersion": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      },
+      "build": {
+        "type": "String"
+      }
+    }
+  },
+  "menuVersionUnknown": "Version unknown",
+  "menuPrinterSection": "Printer",
+  "menuPrinterNone": "No printer yet",
+  "menuPrinterUnreadable": "The saved printer cannot be read",
+  "menuPrinterPair": "Connect a printer",
+  "menuPrinterChange": "Change printer",
+  "menuPrinterForget": "Forget printer",
+  "menuPrinterForgetTitle": "Forget this printer?",
+  "menuPrinterForgetDesc": "The tablet will not print to this printer again until you connect one.",
+  "menuPrinterForgetConfirm": "Yes, forget it",
+  "menuPrinterForgetFailed": "Could not forget the printer. Try again.",
+  "inspectorTitle": "Request inspector",
+  "inspectorEmpty": "No requests recorded yet.",
+  "inspectorClear": "Clear all",
+  "inspectorRefresh": "Refresh",
+  "inspectorRequestHeaders": "Request headers",
+  "inspectorRequestBody": "Request body",
+  "inspectorResponseHeaders": "Response headers",
+  "inspectorResponseBody": "Response body",
+  "menuOpen": "Menu",
+  "contactQuickAddTitle": "Add New Customer",
+  "contactNameLabel": "Customer Name",
+  "contactNamePlaceholder": "Customer name...",
+  "contactPhoneLabel": "Phone Number",
+  "contactEmailLabel": "Email",
+  "contactCompanyLabel": "Company Name (optional)",
+  "contactAddressLabel": "Address",
+  "contactCreated": "Customer added",
+  "printerPairTitle": "Connect a Printer",
+  "printerPairDesc": "Make sure the printer is on, then scan to find it. The printer you pick is remembered by this tablet.",
+  "printerScanButton": "Scan for printers",
+  "printerScanning": "Scanning…",
+  "printerNoneFound": "No printer found. Make sure it is on and within range.",
+  "printerUnnamed": "Unnamed",
+  "printerPairing": "Connecting…",
+  "printerPaired": "Printer connected: {name}",
+  "printerPermissionDenied": "Bluetooth access is denied. Allow Bluetooth for Finnesia POS in Settings, then try again.",
+  "printerBluetoothOff": "The tablet’s Bluetooth is off. Turn it on and try again.",
+  "printerScanFailed": "Could not scan for printers.",
+  "printerPairFailed": "Could not connect to the printer.",
+  "printerUnsupported": "This tablet has no Bluetooth that can be used for a printer.",
+  "printerSaveFailed": "The printer connected, but the tablet could not remember it. Try choosing it again.",
+  "printerNotConnected": "No printer connected. Turn the printer on and try again.",
+  "printerPrintFailed": "Could not send the report to the printer.",
+  "printerPrintSuccess": "Report sent to the printer",
+  "printerPrintShiftReport": "Print Report",
+  "posActiveShift": "Active Shift",
+  "posNoActiveShift": "No active shift",
+  "posShiftNumber": "Shift Number",
+  "posOpenedAt": "Opened At",
+  "posOpeningCash": "Opening Cash",
+  "posTotalSales": "Total Sales",
+  "posTotalTransactions": "Total Transactions",
+  "posExpectedCash": "Expected Cash",
+  "posShiftRequired": "Shift Required",
+  "posShiftRequiredDesc": "You have to open a shift before you can sell.",
+  "posShiftAlreadyOpen": "Shift Still Open",
+  "posShiftAlreadyOpenDesc": "A shift is already open at this outlet. Continue it, or close it before starting a new one.",
+  "posShiftAlreadyOpenStaleDesc": "This shift is still open. Check it first, then continue or close it.",
+  "posContinueShift": "Continue Shift {number}",
+  "posShiftHeldByAnother": "Shift Held By Another Cashier",
+  "posShiftHeldByAnotherDesc": "Shift {number} was opened by {cashier} and has not been closed. Ask that cashier to close it.",
+  "posShiftHeldByAnotherNoOverride": "Ask {cashier} to close their shift, or a supervisor with the Override Cashier Shift permission.",
+  "posOverrideCloseShift": "Close Shift (Override)",
+  "posOverrideCloseNotice": "You are closing a shift held by {cashier}. A note is required.",
+  "posOverrideNoteRequired": "Closing a shift held by another cashier requires a note explaining why",
+  "posUnknownCashier": "Unknown",
+  "posOpenShift": "Open Shift",
+  "posOpenShiftSuccess": "Shift opened",
+  "posCloseShift": "Close Shift",
+  "posCloseShiftSuccess": "Shift closed",
+  "posShiftSummary": "Shift Summary",
+  "posShiftDetail": "Shift Detail",
+  "posShiftOpen": "Shift Open",
+  "posShiftClosed": "Shift Closed",
+  "posClosedAt": "Closed At",
+  "posOutlet": "Outlet",
+  "posNotes": "Notes",
+  "posTransactions": "Transactions",
+  "posEmptyTransactions": "No transactions yet",
+  "posSalesByMethod": "Sales by Method",
+  "posShiftReportTitle": "SHIFT CLOSING REPORT",
+  "posPrintedAt": "Printed",
+  "receiptTitle": "Sales Receipt",
+  "receiptPrint": "Print receipt",
+  "receiptSent": "Receipt sent to the printer",
+  "receiptLoadFailed": "The receipt could not be loaded. Try again.",
+  "receiptPaymentMethod": "Payment Method",
+  "receiptVoided": "*** TRANSACTION VOIDED ***",
+  "receiptNoItems": "No item details",
+  "receiptPaidBy": "Paid ({method})",
+  "@receiptPaidBy": {
+    "placeholders": {
+      "method": {
+        "type": "String"
+      }
+    }
+  },
+  "posPaymentsByMethod": "Payments by Method",
+  "posTotal": "Total",
+  "posDepositSection": "Deposit",
+  "posCashSalesLabel": "Cash Payments",
+  "posTotalDeposit": "Total Deposit",
+  "posNonCashPayments": "Non-Cash Payments",
+  "posNoNonCashPayments": "No non-cash payments in this shift",
+  "posProductsSoldTitle": "Products Sold",
+  "posProductsSoldTotal": "Products Sold Total",
+  "posCountedCash": "Counted Cash",
+  "posVariance": "Variance",
+  "posVarianceNote": "A note is required when the drawer does not match",
+  "posVarianceReason": "Variance Reason",
+  "posShiftNotesPlaceholder": "Shift note...",
+  "posCashier": "Cashier",
+  "posLoading": "Loading...",
+  "posCashMovement": "Cash Movement",
+  "posCashMovements": "Drawer Movements",
+  "posNoCashMovements": "No cash movements",
+  "posCashIn": "Cash In",
+  "posCashOut": "Cash Out",
+  "posCashDrop": "Cash Drop",
+  "posAmount": "Amount",
+  "posCashInTotal": "Total Cash In",
+  "posCashOutTotal": "Total Cash Out",
+  "posCashMovementReason": "Note / Goods Bought",
+  "posCashMovementReasonPlaceholder": "e.g. bought a water gallon",
+  "posCashMovementAccount": "Account (optional)",
+  "posCashMovementAccountRequired": "Account",
+  "posCashMovementProduct": "Goods (optional)",
+  "posCashMovementSelectProduct": "-- Select Goods --",
+  "posCashMovementNoProduct": "No goods found",
+  "posCashMovementSuccess": "Cash movement recorded",
+  "posSelectTenderAccount": "Select a cash/bank account",
+  "posSearchTenderAccount": "Search account...",
+  "posNoTenderAccount": "No account found",
+  "posSearchProduct": "Search product, SKU, or barcode...",
+  "posAllCategories": "All",
+  "posNoProducts": "No products",
+  "posNoProductsDesc": "Try another keyword or pick another category",
+  "posCatalogLoadFailed": "Could not load the catalogue. Check the connection and try again.",
+  "posOutOfStock": "Out",
+  "posNotFound": "Not found",
+  "posCart": "Cart",
+  "posItemCount": "{count, plural, =1{1 item} other{{count} items}}",
+  "posCartEmpty": "Cart is empty",
+  "posCartEmptyDesc": "Scan a barcode or search for a product to add it to the cart",
+  "posClearCart": "Clear",
+  "posClearCartConfirm": "Clear the cart?",
+  "posClearCartConfirmDesc": "Everything in the cart will be removed.",
+  "posRemoveItem": "Remove Item",
+  "posQty": "Qty",
+  "posSubtotal": "Subtotal",
+  "posDiscount": "Discount",
+  "posDiscountPercent": "Discount (%)",
+  "posDiscountAmount": "Discount (Rp)",
+  "posLineDiscount": "Line Discount",
+  "posBillDiscount": "Bill Discount",
+  "posTax": "Tax",
+  "posGrandTotal": "Grand Total",
+  "posViewCart": "View Cart",
+  "posTransactionDetail": "Transaction Detail",
+  "posAddTransactionDetail": "Add transaction detail",
+  "posCustomer": "Customer",
+  "posNoCustomer": "No Customer",
+  "posSearchCustomer": "Search customer...",
+  "posAddContactNamed": "Add contact \"{q}\"",
+  "posCustomerMemo": "Customer Note",
+  "posCustomerMemoPlaceholder": "e.g. Budi, take away",
+  "posTableNumber": "Table No.",
+  "posTableNumberPlaceholder": "e.g. 12",
+  "posQueueNumber": "Queue No.",
+  "posQueueNumberPlaceholder": "e.g. 45",
+  "posHoldOrder": "Hold",
+  "posHoldLabel": "Name/Note",
+  "posHoldLabelPlaceholder": "e.g. Mrs Sri, table 4",
+  "posHoldSuccess": "Order held",
+  "posHeldOrders": "Held Orders",
+  "posNoHeldOrders": "No held orders",
+  "posResumeOrder": "Resume",
+  "posDropOrder": "Drop",
+  "posPay": "Pay",
+  "posPaying": "Processing...",
+  "posPayment": "Payment",
+  "posAddTender": "Add Method",
+  "posRemoveTender": "Remove method",
+  "posTenderMethodCASH": "Cash",
+  "posTenderMethodTRANSFER": "Transfer",
+  "posTenderMethodEDC": "EDC",
+  "posTenderMethodQRIS": "QRIS",
+  "posTenderMethodKOMPLIMEN": "Complimentary",
+  "posTenderAmount": "Payment Amount",
+  "posTenderReference": "Memo",
+  "posCashTendered": "Tendered",
+  "posExactAmount": "Exact Amount",
+  "posPaidAmount": "Paid",
+  "posRemaining": "Remaining",
+  "posChangeDue": "Change",
+  "posConfirmPayment": "Complete",
+  "posTenderOverpaidNonCash": "A non-cash payment cannot exceed the bill. Change only ever comes from cash.",
+  "posTenderEmptyCart": "The cart is still empty",
+  "posInsufficientCash": "Not enough money",
+  "posPaymentSuccess": "Payment successful",
+  "posChangeTitle": "Change",
+  "posNewSale": "New Sale",
+  "posReceiptNumber": "Sale No.",
+  "posReceiptTemporary": "NOT SENT",
+  "posQueuedRef": "Code",
+  "posOfflineNotSaved": "Not sent to the server yet. The sale is saved on this tablet and will be sent automatically once there is a connection.",
+  "posCheckoutStorageFailed": "The sale could not be saved on this tablet. Nothing has been recorded — do not hand over the goods. Try again.",
+  "queueTitle": "Pending sales",
+  "queueSendNow": "Send now",
+  "queueEmpty": "Every sale has been sent.",
+  "queueLoadFailed": "The queue could not be read. Check this tablet's storage, then try again.",
+  "queueStatusPending": "Waiting",
+  "queueStatusFailed": "Failed",
+  "queueRetry": "Retry",
+  "queueDiscard": "Discard",
+  "queueDiscardTitle": "Discard this sale?",
+  "queueDiscardDesc": "The goods have already left the shop. Discarding it without sending leaves the drawer short of what was actually received.",
+  "menuQueueTitle": "Pending sales",
+  "menuQueueCount": "{count, plural, one{{count} waiting to send} other{{count} waiting to send}}",
+  "@menuQueueCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "menuQueueEmpty": "Every sale has been sent.",
+  "posCheckoutRejected": "The sale was not recorded",
+  "posPaymentFailed": "The sale could not be sent. Try again.",
+  "tillDetailAdd": "Add transaction detail",
+  "tillDetailCustomer": "Customer: {name}",
+  "tillDetailMemo": "Note: {memo}",
+  "tillDetailTable": "Table: {number}",
+  "tillDetailQueue": "Queue: {number}",
+  "tillDetailDone": "Done",
+  "tillDetailSelectCustomer": "Select customer",
+  "tillDetailClearCustomer": "Clear customer",
+  "tillDetailCustomerNone": "No customer found.",
+  "tillDetailCustomerFailed": "The customer list could not be read. Check the connection and try again.",
+  "tillDetailCreateFailed": "The customer could not be saved. Try again.",
+  "tillDetailCreateNoAnswer": "The server could not be reached. Check the connection and try again.",
+  "tillDetailNameRequired": "The customer name is still empty.",
+  "uiPrevious": "Previous",
+  "uiNext": "Next",
+  "menuShiftDetail": "Shift detail",
+  "menuShiftHistory": "Shift history",
+  "shiftHistoryTitle": "Shift History",
+  "shiftHistoryAll": "All",
+  "shiftHistoryEmpty": "No shifts yet.",
+  "shiftHistoryLoadFailed": "The shift history could not be loaded. Check the connection and try again.",
+  "saleDetailTitle": "Sale detail",
+  "saleDetailLoadFailed": "The sale could not be read. Check the connection and try again.",
+  "saleDetailVoided": "This sale was voided.",
+  "saleDetailCashier": "Cashier",
+  "saleDetailNoItems": "The goods for this sale are not available.",
+  "saleDetailUnknownProduct": "Unknown item",
+  "saleDetailTax": "Tax",
+  "saleDetailPayments": "Payments",
+  "saleDetailTendered": "Received",
+  "saleDetailNotes": "Notes",
+  "shiftDetailTitle": "Shift detail",
+  "shiftDetailOpen": "Open",
+  "shiftDetailClosed": "Closed",
+  "shiftDetailNone": "No shift is open. Open one from the till.",
+  "shiftDetailHeldDesc": "Shift {number} was opened by {cashier}. Its details are only shown to that cashier, or to a supervisor with the Override Cashier Shift permission.",
+  "@shiftDetailHeldDesc": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      },
+      "cashier": {
+        "type": "String"
+      }
+    }
+  },
+  "shiftDetailLoadFailed": "The shift could not be read. Check the connection and try again.",
+  "shiftDetailClosedAtLabel": "Closed at",
+  "shiftDetailOutletLabel": "Outlet",
+  "shiftDetailFiguresTitle": "Cash count",
+  "shiftDetailTransactions": "Transactions",
+  "shiftDetailTotalSales": "Total sales",
+  "shiftDetailOpeningCash": "Opening cash",
+  "shiftDetailCashIn": "Cash in",
+  "shiftDetailCashOut": "Cash out",
+  "shiftDetailCashDrop": "Cash drop",
+  "shiftDetailCashOutAndDrop": "Cash out and drops",
+  "shiftDetailExpectedCash": "Expected cash",
+  "shiftDetailCountedCash": "Counted cash",
+  "shiftDetailVarianceShort": "Short {amount}",
+  "@shiftDetailVarianceShort": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "shiftDetailVarianceOver": "Over {amount}",
+  "@shiftDetailVarianceOver": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "shiftDetailVarianceNone": "Exact",
+  "shiftDetailVarianceLabel": "Variance",
+  "shiftDetailByMethodTitle": "Sales by method",
+  "shiftDetailNoSales": "No sales in this shift yet.",
+  "shiftDetailNotes": "Notes",
+  "shiftDetailTabFigures": "Summary",
+  "shiftDetailTabSales": "Sales",
+  "shiftDetailTabMovements": "Cash movements",
+  "shiftDetailSaleVoided": "Voided",
+  "shiftDetailMoreFailed": "Could not load more. Tap to try again.",
+  "shiftDetailNoMovements": "No cash in or out in this shift yet.",
+  "closeShiftTitle": "Close shift",
+  "closeShiftLoadFailed": "The shift figures could not be read. Check the connection and try again.",
+  "closeShiftOverrideNotice": "You are closing a shift held by {cashier}. A note is required.",
+  "@closeShiftOverrideNotice": {
+    "placeholders": {
+      "cashier": {
+        "type": "String"
+      }
+    }
+  },
+  "closeShiftNotesLabel": "Note",
+  "closeShiftNoteNeededVariance": "The drawer does not match the count. Write the reason before closing.",
+  "closeShiftNoteNeededOverride": "This is not your shift. Write why you are closing it before closing.",
+  "closeShiftNoteOptional": "Optional",
+  "closeShiftButton": "Close shift",
+  "closeShiftClosing": "Closing shift…",
+  "closeShiftDone": "Shift closed.",
+  "closeShiftRefused": "The shift could not be closed.",
+  "closeShiftUncertain": "There was no clear answer from the server, so the shift may already be closed. Check before trying to close it again.",
+  "shiftCloseBlockedByQueue": "{count, plural, one{{count} sale at this outlet has not been sent. Tap to open Pending sales.} other{{count} sales at this outlet have not been sent. Tap to open Pending sales.}}",
+  "@shiftCloseBlockedByQueue": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "cashMovementTitle": "Record cash in or out",
+  "cashMovementAmount": "Amount",
+  "cashMovementReasonRequired": "Reason (required)",
+  "cashMovementReasonHint": "For example: bought a water gallon",
+  "cashMovementAccount": "Account",
+  "cashMovementAccountRequired": "Account (required)",
+  "cashMovementAccountNone": "Pick an account",
+  "cashMovementAccountSearch": "Search accounts",
+  "cashMovementAccountEmpty": "No account found.",
+  "cashMovementAccountFailed": "The accounts could not be read. Check the connection and try again.",
+  "cashMovementSettingsFailed": "The cash settings could not be read, so this cannot be saved yet. Check the connection and try again.",
+  "cashMovementDone": "Cash recorded.",
+  "cashMovementRefused": "The cash movement could not be saved.",
+  "cashMovementUncertain": "There was no clear answer from the server, so this may already be saved. Check the cash movements list before trying again.",
+  "tillHold": "Hold",
+  "tillHoldTitle": "Hold this basket",
+  "tillHoldNameLabel": "Name (optional)",
+  "tillHoldNameHint": "For example: Table 4",
+  "tillHoldDone": "Basket held.",
+  "tillHoldNotStored": "The basket could not be saved on this tablet, so it was not held. It is still on the screen.",
+  "tillResumeNotStored": "The basket on the screen could not be saved, so the other one was not opened. It is still on the screen.",
+  "tillHeld": "Held",
+  "tillHeldCount": "Held ({count})",
+  "@tillHeldCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "heldTitle": "Held baskets",
+  "heldEmpty": "No baskets are held.",
+  "heldResume": "Resume",
+  "heldDrop": "Discard",
+  "heldDropTitle": "Discard this basket?",
+  "heldDropDesc": "The contents of basket {label} will be lost and cannot be recovered.",
+  "@heldDropDesc": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "updateReadyMessage": "Update ready. Restart the app to apply it.",
+  "nativeUpdateReadyMessage": "New version ready to install.",
+  "nativeUpdateAction": "Install"
+}

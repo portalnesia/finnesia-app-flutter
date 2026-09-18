@@ -1,0 +1,16 @@
+/*
+ * Copyright (c) Portalnesia - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
+ * Written by Putu Aditya <aditya@portalnesia.com>
+ */
+
+import 'package:pn_types/src/native/opener_port.dart';
+import 'package:pos/native/opener/opener_url_launcher.dart';
+
+OpenerPort get opener => _opener;
+OpenerPort _opener = UrlLauncherOpener();
+
+/// Replaces the implementation. Called by a test with a fake; not by the app
+/// (`.claude/rules/native-ports.md` §2.4).
+void setOpener(OpenerPort impl) => _opener = impl;

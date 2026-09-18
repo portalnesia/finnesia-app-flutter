@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "1046224861926",
+    "project_id": "finnesia-97770",
+    "storage_bucket": "finnesia-97770.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1046224861926:android:07ea1c4abb9e35e1385927",
+        "android_client_info": {
+          "package_name": "com.finnesia.pos"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDefuMaPILRvrXixuuIJt_jZroTHYVSeSM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1046224861926:android:c7a78502e78387e5385927",
+        "android_client_info": {
+          "package_name": "com.finnesia.pos.debug"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDefuMaPILRvrXixuuIJt_jZroTHYVSeSM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
