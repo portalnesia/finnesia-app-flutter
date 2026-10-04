@@ -1,22 +1,25 @@
 ---
 name: developer
 description: >
-  Panduan agent developer POS Flutter: mengeksekusi prompt lane sesuai spesifikasi senior tanpa
-  menebak arah. Bukti wajib (RED dulu, mutation check), satu file satu lane, larangan perintah tak
-  terbatas dan git write, verifikasi bertingkat, format laporan. Gunakan saat mengimplementasikan
-  satu lane di repo ini.
+  Panduan agent developer: mengeksekusi prompt lane sesuai spesifikasi senior tanpa menebak arah.
+  Bukti wajib (RED dulu, mutation check), satu file satu lane, larangan perintah tak terbatas dan
+  git write, verifikasi berurutan, format laporan. Gunakan saat mengimplementasikan satu lane.
 ---
 
 # Panduan Developer
 
 > Alur: `PO → PM → senior → developer`. **Kamu mengeksekusi, bukan memutuskan arah.**
 > Prompt lane sudah memuat keputusan; menebak = kode benar menurutmu, salah menurut spesifikasi.
-> Detail penuh: `docs/agents/developer.md` (PM: `docs/agents/orchestrator-paseo.md`,
-> reviewer: `docs/agents/reviewer.md`, senior: `docs/agents/senior-engineer.md`).
+> Skill pendamping: `orchestrator-paseo` (PM), `senior-engineer` (penulis spesifikasi).
 
 ---
 
 ## 1. Empat penyebab lane gagal
+
+Senior sudah **menyapu** area yang relevan (akar masalah, bukti, tabel sweep seluruh kelas
+masalah) **dan** menuliskan spesifikasi implementasinya, dalam satu dokumen. Kalau kamu menemukan
+tempat lain yang kena kelas masalah yang sama tapi tidak ada di tabel sweep, **laporkan ke PM** —
+jangan tambahkan sendiri di luar spesifikasi.
 
 ### 1.1 Menebak saat spesifikasi kurang
 
@@ -34,39 +37,28 @@ Lane paralel berbagi satu working tree. Aturan pengamannya: **satu file = satu l
 
 ### 1.3 Perintah tak terbatas
 
+Insiden nyata: agent menggantung belasan menit karena `grep -rn` menyapu `.dart_tool`
+ratusan MB.
+
 **Dilarang mutlak:**
 
 - `find /`, `find /c`, `find /d`, atau pencarian apa pun di luar repo.
-- `grep -r` dari root. Grep yang menyapu banyak folder **wajib** mengecualikan direktori besar
-  **di sisi pencarian**, bukan disaring setelahnya dengan pipe:
-
-  ```bash
-  grep -rn --include="*.dart" \
-    --exclude-dir=.dart_tool --exclude-dir=build --exclude-dir=.git \
-    --exclude-dir=windows --exclude-dir=android \
-    "MethodChannel" apps/pos/lib packages/*/lib
-  ```
-
-  `grep -r ... | grep -v .dart_tool` tetap menelusuri seluruh `.dart_tool` lalu membuang hasilnya —
-  lambat, dan hasilnya sama saja. `build/` di repo ini memuat ratusan MB artefak build.
+- `grep -r` dari root. Grep yang menyapu banyak folder **wajib**
+  `--exclude-dir=.dart_tool --exclude-dir=build --exclude-dir=.git`.
 - `bash -lc` (login shell menggantung di environment ini). Pakai `bash -c`.
-- Python heredoc, atau mengubah file lewat skrip (`sed -i`, `awk` yang menulis, `node -e`).
+- Heredoc yang menulis file, atau mengubah file lewat skrip (`sed -i`, `node -e`, `python`).
   **Semua edit lewat tool `edit`/`write`.**
 - Pipe dan `tail` di perintah latar (dialek shell berbeda antara cmd dan bash).
 - **Menjalankan `flutter run` atau watcher apa pun** — prosesnya memblokir dan lane akan
-  menggantung. Kalau butuh app berjalan, PM yang menyediakannya.
+  menggantung.
 
-**Batas waktu:** satu perintah = satu tujuan, dan harus terbatas. Kalau tidak ada output dalam
-**~3 menit**, hentikan dan laporkan.
+**Batas waktu:** satu perintah = satu tujuan, dan harus terbatas. Tidak ada output dalam **~3
+menit** → hentikan dan laporkan.
 
-> **Catatan Windows:** di repo ini `dart` dan `flutter` tidak selalu ada di PATH shell latar. Pakai
-> path lengkap `"D:/Program Files/flutter/bin/cache/dart-sdk/bin/dart.exe"` bila `dart` gagal, atau
-> jalankan lewat `./dev` / `dev.cmd`.
+### 1.4 Test seluruh repo terus-menerus
 
-### 1.4 Menjalankan test seluruh repo terus-menerus
-
-`flutter test` di `apps/pos` saja **6–12 menit** di mesin ini. Menjalankannya untuk perubahan satu
-baris adalah pemborosan, dan pemilik sudah menegurnya.
+`flutter test` di `apps/pos` saja **6–12 menit** di mesin ini. Menjalankannya untuk perubahan
+satu baris adalah pemborosan.
 
 ```bash
 # Saat bekerja: file yang disentuh saja
@@ -91,14 +83,14 @@ Atau satu perintah: `./dev check` (urutan yang sama plus `gen-check` dan `guard`
 | Jenis perubahan | Bukti wajib |
 | --- | --- |
 | Mengubah perilaku | **RED dulu**: test gagal sebelum, hijau sesudah. Tunjukkan keduanya. |
-| Memperbaiki bug | Test RED terhadap kode yang **belum disentuh**, lalu hilang setelah fix. |
 | Format byte ESC/POS | Bandingkan byte dengan sisi TypeScript untuk input yang sama, atau kunci dengan test. |
 | Angka (pembulatan uang, chunk, query count) | **Hitung sendiri**, tunjukkan sebelum → sesudah. |
-| Sapuan massal | **Hitung sebelum → sesudah** dengan perintah, plus **test pengunci** yang gagal kalau pola itu kembali. |
+| Sapuan massal | **Hitung sebelum → sesudah** dengan perintah + **test pengunci** yang gagal kalau pola itu kembali. |
+| Memperbaiki bug | Test RED terhadap kode yang **belum disentuh**, lalu hilang setelah fix. |
 
-**Test yang lolos terhadap kode yang salah tidak membuktikan apa pun.** Sebelum melapor, lakukan
-**mutation check**: rusak sengaja kode yang kamu tulis, jalankan test, pastikan test **gagal**.
-Kalau test tetap hijau, test itu tidak menguji apa yang kamu kira.
+**Test yang lolos terhadap kode yang salah tidak membuktikan apa pun.** Sebelum melapor lakukan
+**mutation check**: rusak sengaja kode yang kamu tulis, jalankan test, pastikan test **GAGAL**.
+Tetap hijau = test tidak menguji apa yang kamu kira.
 
 TDD-nya mutlak: fix ditulis **setelah** test yang gagal ada. Menulis fix dulu lalu me-revert-nya
 untuk "melihat RED" **tetap pelanggaran** — `.claude/rules/testing.md` §0.1.
@@ -111,9 +103,20 @@ untuk "melihat RED" **tetap pelanggaran** — `.claude/rules/testing.md` §0.1.
 tiap task begitu hijau. **Satu task = satu baris** — jangan menumpuk di akhir, jangan menggabungkan
 dua task jadi satu baris. **Verifikasi dulu, baru tandai**; jangan menandai dari ingatan.
 
+**Verifikasi sebelum melapor** (`./dev check` mencakup semuanya, atau manual):
+
+```bash
+dart pub get
+dart format .
+dart analyze                                  # harus 0 issue
+dart test                                     # pn_types + pn_pos
+flutter test                                  # apps/pos
+dart run tools/rule_lint/bin/rule_lint.dart   # harus exit 0
+```
+
 `flutter build apk --debug` / `flutter build windows --debug` **hanya** bila perubahan menyentuh
 `android/`, `windows/`, dependency di `pubspec.yaml`, atau resource native
-(`.claude/rules/testing.md` §7.2). Catat hasilnya **sekali**, jangan diulang per microstep.
+(`.claude/rules/testing.md` §7.2). Catat hasilnya **sekali**.
 
 Catat **angka** hasilnya (pass/fail per perintah) di laporan.
 
@@ -126,8 +129,8 @@ kurang): laporkan dengan bukti; PM yang memutuskan revisi.
 ## 4. Batas kamu
 
 **BOLEH:** mengubah file **milik lane-mu** sesuai daftar di prompt · menjalankan test, analyze,
-format, perintah baca (`grep`, `ls`, `git status`/`diff`/`log`) · penilaian teknis **lokal**
-(cara menulis test, urutan edit, memilih helper).
+format, perintah baca (`grep`, `ls`, `git status`/`diff`/`log`) · penilaian teknis
+**lokal** (cara menulis test, urutan edit, memilih helper).
 
 **TIDAK BOLEH:**
 

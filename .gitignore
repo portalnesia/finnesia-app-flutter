@@ -28,7 +28,7 @@ plan/
 # Agent
 # Output tugas latar (`bg_run`, lane). Isinya log dan JSON sesi per tugas —
 # besar, tidak pernah dibaca ulang, dan berubah tiap kali agent berjalan.
-# Yang dilacak git adalah `.pi/skills/`, bukan `.pi/tasks/`.
+# Yang dilacak git adalah `.claude/skills/`, bukan `.pi/tasks/`.
 .pi/tasks/
 
 # OS

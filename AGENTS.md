@@ -59,15 +59,13 @@ tanpa menyalin isinya.
 Pekerjaan ber-agent di repo ini dibagi per peran. Dokumennya **terpisah dari aturan** di
 `.claude/rules/` dan tidak dirangkum di sini — baca sesuai peran yang kamu jalankan:
 
-| Peran | Dokumen lengkap | Versi ringkas (skill) |
-| ----- | --------------- | --------------------- |
-| Developer — mengeksekusi satu lane | [`docs/agents/developer.md`](docs/agents/developer.md) | [`.pi/skills/developer/SKILL.md`](.pi/skills/developer/SKILL.md) |
-| Reviewer — investigasi read-only | [`docs/agents/reviewer.md`](docs/agents/reviewer.md) | [`.pi/skills/reviewer/SKILL.md`](.pi/skills/reviewer/SKILL.md) |
-| Senior engineer — menulis spesifikasi | [`docs/agents/senior-engineer.md`](docs/agents/senior-engineer.md) | [`.pi/skills/senior-engineer/SKILL.md`](.pi/skills/senior-engineer/SKILL.md) |
-| Project manager (Paseo) — orkestrasi lane | [`docs/agents/orchestrator-paseo.md`](docs/agents/orchestrator-paseo.md) | [`.pi/skills/orchestrator-paseo/SKILL.md`](.pi/skills/orchestrator-paseo/SKILL.md) |
+| Peran | Skill |
+| ----- | ----- |
+| Developer — mengeksekusi satu lane | [`.claude/skills/developer/SKILL.md`](.claude/skills/developer/SKILL.md) |
+| Senior engineer — menyapu + menulis spesifikasi | [`.claude/skills/senior-engineer/SKILL.md`](.claude/skills/senior-engineer/SKILL.md) |
+| Project manager (Paseo) — orkestrasi lane | [`.claude/skills/orchestrator-paseo/SKILL.md`](.claude/skills/orchestrator-paseo/SKILL.md) |
 
-Alurnya: `PO → PM → senior → developer`, dengan reviewer read-only untuk mengubah keluhan
-menjadi akar masalah yang terbukti.
+Alurnya: `PO → PM → senior → developer`.
 
 ---
 

@@ -32,7 +32,7 @@ sudah tidak sinkron. `tools/rule_lint` memeriksanya otomatis.
 | Indeks semua aturan | [`AGENTS.md`](../AGENTS.md) |
 | Isi aturan | [`.claude/rules/`](../.claude/rules/) |
 | Perintah verifikasi | [`AGENTS.md` §Verification](../AGENTS.md) |
-| Panduan peran agent | [`docs/agents/`](../docs/agents/) · [`.pi/skills/`](../.pi/skills/) |
+| Panduan peran agent | [`.claude/skills/`](../.claude/skills/) |
 | Rencana scaffold | [`plan/scaffold/`](../plan/scaffold/) |
 
 Verifikasi sebelum menyatakan selesai:
