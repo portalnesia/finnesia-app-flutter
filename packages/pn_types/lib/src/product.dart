@@ -8,6 +8,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 import 'category.dart';
+import 'file_ref.dart';
 
 part 'product.freezed.dart';
 part 'product.g.dart';
@@ -67,6 +68,7 @@ enum ProductType {
 /// | [unitId], [sellPrice] | checkout payload |
 /// | [type] | `resolveProductStockBadge` |
 /// | [category] | kitchen/bar ticket grouping (`topLevelCategory`) |
+/// | [image] | the catalogue tile's photo (`renderableUrl`, else the fallback icon) |
 /// | [isActive] | the catalogue grid (a deactivated product is listed but not sold) |
 ///
 /// `fromJson` reads exactly these fields and ignores the rest of the record. That is a
@@ -100,6 +102,10 @@ abstract class Product with _$Product {
     /// The product's own category, which may be nested one level. `topLevelCategory`
     /// rolls a sub-category up to its parent for kitchen/bar tickets.
     Category? category,
+
+    /// The catalogue photo, as a file reference: the tile renders it only when
+    /// [FileRef.renderableUrl] is non-null, and falls back to an icon otherwise.
+    @JsonKey(name: 'image') FileRef? image,
 
     /// Null on rows that predate the field, which the till reads as active
     /// (`p.is_active !== false`).

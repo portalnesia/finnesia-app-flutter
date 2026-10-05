@@ -318,6 +318,9 @@ class L10nId extends L10n {
   }
 
   @override
+  String get tenantLogoLabel => 'Logo tenant';
+
+  @override
   String get loginTitle => 'Masuk';
 
   @override

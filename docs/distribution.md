@@ -1,6 +1,6 @@
 # Distribusi & Rilis
 
-Diperbarui: 2026-09-28.
+Diperbarui: 2026-10-05.
 
 Dokumen ini menjelaskan bagaimana Finnesia POS sampai ke perangkat kasir: pipeline CI/CD-nya,
 prasyarat manual satu kali yang harus disiapkan sebelum pipeline itu bisa jalan, dan alur
@@ -25,15 +25,16 @@ Ada **empat artefak**, dan **tiga** di antaranya rilis:
 
 | Artefak | Workflow | Untuk siapa | Pernah dirilis? |
 | ------- | -------- | ----------- | --------------- |
-| **Rilis native** (`pos-v1.2.0`) | `release-pos.yml` | tablet, lewat Play Store | **ya** — dipromosikan manual |
+| **Rilis native** (`pos-v1.2.0`) | `release-pos.yml`, lalu `publish-to-store.yml` | tablet, lewat Play Store | **ya** — dipromosikan manual |
 | **Patch Dart** (`pos-v1.2.0-5`) | `shorebird-patch.yml` | tablet yang sudah terpasang rilis | tidak (OTA, bukan rilis baru) |
 | **Staging** (`pos-v1.2.0-staging.3`) | `staging-pos.yml` | tim internal | **tidak pernah** |
 | **Windows** (`pos-v1.2.0`) | `windows-pos.yml` | desktop, lewat Microsoft Store | **belum** — paketnya dibangun CI, diunggah manual |
 
 **Store hanya untuk production.** Keputusan pemilik 2026-09-28: Android staging dan Windows
-berhenti di GitHub Release saja, dan hanya `release-pos.yml` yang mengunggah ke Store
-(Play Store untuk Android). Windows tetap dipaketkan dengan identitas Store dan diunggah ke
-Partner Center **oleh pemilik, manual**.
+berhenti di GitHub Release saja, dan hanya alur Android production yang mengunggah ke Store
+(Play Store) — dan itu lewat `publish-to-store.yml`, **setelah** draft GitHub Release
+dipublikasikan manusia (§1.5), bukan di run build. Windows tetap dipaketkan dengan identitas
+Store dan diunggah ke Partner Center **oleh pemilik, manual**.
 
 Staging punya dokumen sendiri — rencana, alasan, dan angka yang sudah diukur:
 [`plan/staging/README.md`](../plan/staging/README.md). Ringkasnya: ia build type `profile`
@@ -92,28 +93,112 @@ Sumber: [Understanding Android developer verification](https://support.google.co
 
 ## 1. Alur pipeline (`release-pos.yml`)
 
-Trigger: **hanya** `push` tag `pos-v*` — tidak ada `workflow_dispatch`.
+Trigger: `push` tag `pos-v*` **polos** (rilis native), atau `workflow_dispatch` lewat
+[`release-dispatch.yml`](../.github/workflows/release-dispatch.yml) (§1.2).
 
 ```
 git tag pos-v1.2.0 && git push origin pos-v1.2.0
         │
         ▼
-release-pos.yml (job tunggal)
+release-pos.yml (job tunggal)        ← TIDAK ada upload ke Store di run ini
         │
         ├─ dart analyze · dart test · flutter test   (gagal → rilis tidak dibangun)
-        ├─ build APK (--release, arm64+arm)  ──────────────► GitHub Release (draft)
-        └─ build AAB (--release)             ──────────────► Play Console, track `internal`
+        ├─ build APK (--release, arm64+arm)  ──┐
+        └─ build AAB (--release / shorebird)  ──┴──► GitHub Release (DRAFT): APK + AAB
+                                                          │
+                                       ANDA menekan Publish │ (gerbang manusia)
+                                                          ▼
+                                       publish-to-store.yml → Play Console, track `internal`
 ```
 
 - **APK** → attach ke GitHub Release sebagai **draft** (tidak otomatis publik — harus
   di-publish manual dari dashboard GitHub). Dipakai untuk sideload/fallback.
-- **AAB** → upload ke Play Console, **selalu ke track `internal`**. Tidak ada pilihan track
-  di CI — lihat §3 kenapa.
+- **AAB** → attach ke draft **bersama APK**. AAB adalah bukti tersimpan apa yang benar-benar
+  dikirim ke Play nanti.
+- **Upload ke Play bukan urusan run build.** Ia berjalan di run terpisah,
+  `publish-to-store.yml`, hanya setelah manusia menekan Publish, dan hanya untuk tag polos: ia mengunduh AAB dari asset release
+  dengan `gh release download`, lalu meng-upload ke track `internal` dengan `status: completed`
+  (`§1.1`). Tidak ada Shorebird di sana.
 - Pengaman host non-produksi (`.claude/rules/security.md`) hanya diperiksa di APK, bukan
   diulang untuk AAB — alasannya ada di komentar workflow-nya: keduanya dibangun dari source
   dan versi yang identik, jadi memeriksa AAB terpisah memeriksa hal yang sama dua kali.
 
-### 1.1 Alur staging (`staging-pos.yml`) — bukan rilis
+### 1.1 Upload ke Play (`publish-to-store.yml`) — satu-satunya jalan ke store
+
+```
+git tag pos-v1.2.0 && git push origin pos-v1.2.0
+        │
+        ▼
+release-pos.yml → draft GitHub Release (APK + AAB)
+        │
+        ▼   ANDA menekan Publish di halaman Releases
+publish-to-store.yml  (on: release types: [published])
+        ├─ gh release download <tag> --pattern '*.aab'
+        └─ upload-google-play: track internal, status completed
+```
+
+| | Nilai yang berlaku |
+| --- | --- |
+| Trigger | `release: types: [published]` — **bukan** pembuatan draft. Draft yang belum dipublikasikan memicu apa pun |
+| Filter tag | Di level **job**, bukan di `on:` (event `release` tidak mendukung filter tag di sana): tag harus diawali `pos-v`, dan bagian versi setelah `pos-v` dibuang tidak boleh memuat `-` |
+| Yang diunduh | AAB dari **asset release**, bukan artifact Actions (artifact hidup 30 hari dan butuh `run-id` + token lintas run) |
+| Track | `internal`, `status: completed`. Tidak ada pilihan track di CI — lihat §3 |
+| Secret | `PLAY_SERVICE_ACCOUNT_JSON` saja. `SHOREBIRD_TOKEN` tidak dibutuhkan: Shorebird sudah selesai di run build, dan tidak ada OTA yang boleh ikut terkirim tanpa dilihat |
+| Yang tidak pernah naik | Release staging (`pos-vX.Y.Z-staging.N`); tag patch (`-N`) tidak membuat GitHub release sama sekali |
+
+> [!NOTE]
+> Filter tag memakai `replace(tag, 'pos-v', '')` sebelum mengecek `-`, karena prefix `pos-v`
+> sendiri mengandung hyphen — tanpa `replace` itu, filter akan menolak **segala** tag POS
+> termasuk tag polos yang justru harus naik.
+
+### 1.2 Dispatcher manual (`release-dispatch.yml`) — pintu kedua
+
+Dispatcher **tidak membangun apa pun**. Ia memvalidasi kombinasi input, membuat tag kalau
+diminta, lalu memanggil workflow yang sudah ada sebagai reusable workflow (logika build tidak
+digabung di sana).
+
+| Input | Nilai |
+| --- | --- |
+| `aplikasi` | `pos` (hanya itu) |
+| `env` | `staging` · `production` · `patch` |
+| `device` | `android` · `windows` · `all` |
+| `draft release` | `no` = uji coba, artifact saja · `yes` = build + tag + draft release |
+| `version` | Wajib bila `draft release = yes` (jadi nama tag). `staging`: `X.Y.Z-staging.N` · `production`: `X.Y.Z` · `patch`: `X.Y.Z-N` |
+
+**Gerbang lebih dulu.** Kombinasi yang tidak ada di matriks ditolak di job `validate` **sebelum**
+build jalan, lewat `dart run tools/dev/bin/dev.dart dispatch …`: `::error::` di stderr (annotation
+GitHub) plus exit 64. Valid keluar 0 tanpa output. Sumber kebenaran aturan ini adalah fungsi
+Dart murni `tools/dev/lib/dispatch.dart` yang diuji `dart test`, bukan rantai `if:` YAML — YAML
+tidak bisa diuji di repo ini, jadi aturan akan lapuk diam-diam saat input bertambah.
+
+Kombinasi yang ditolak: `staging` + `windows`/`all` (tidak ada varian windows untuk staging),
+`patch` + `windows`/`all`, dan `patch` + `draft release = no` (patch adalah aksi terhadap rilis
+yang sudah ada; uji-coba tanpa target tidak punya base, dengan target mendorong OTA ke tablet
+production). `draft release = yes` tanpa `version` ditolak untuk semua env.
+
+| env | `device` | draft `no` | draft `yes` |
+| --- | --- | --- | --- |
+| staging | android | artifact saja, `version` diabaikan | tag `pos-vX.Y.Z-staging.N` + draft berisi APK |
+| production | android | **APK saja**, tanpa AAB, tanpa `shorebird release` | tag `pos-vX.Y.Z` + draft berisi APK + AAB; upload ke Play menyusul setelah Publish |
+| production | windows | MSIX artifact saja | tag `pos-vX.Y.Z` + draft berisi MSIX |
+| production | all | APK + MSIX artifact saja | satu draft berisi APK + AAB + MSIX |
+| patch | android | **ditolak** | tag `pos-vX.Y.Z-N`, kirim patch ke base `X.Y.Z`, tanpa draft release |
+
+> [!IMPORTANT]
+> Uji-coba production android sengaja **APK saja, tanpa AAB, tanpa `shorebird release`**, dan
+> itu struktural, bukan sekadar pilihan. Shorebird menolak dua release untuk versi yang sama:
+> kalau uji-coba menjalankan `shorebird release` dengan versi 1.2.0, versi itu tercatat di
+> Shorebird dan rilis production 1.2.0 yang sebenarnya **gagal**. Run uji-coba memakan slot
+> versi production. Deteksi "versi sudah dipakai Shorebird" tidak bisa dilakukan lokal (repo
+> tidak punya akses API Shorebird tanpa network); perlindungannya dua lapis yang jujur:
+> struktural (uji-coba tidak pernah memanggil `shorebird release`) plus fail-fast dari Shorebird
+> sendiri, yang pesannya menyebut versi yang bentrok.
+
+Dispatcher **menambah** pintu masuk, tidak mengganti: `on.push.tags` tetap ada di keempat workflow
+lama, dan eksklusivitas pola tag tetap dikunci test — satu `git push --tags` tidak boleh pernah
+memicu dua workflow.
+
+### 1.3 Alur staging (`staging-pos.yml`) — bukan rilis
 
 ```
 git tag pos-v1.2.0-staging.3 && git push origin pos-v1.2.0-staging.3
@@ -139,8 +224,8 @@ Perbedaan yang perlu disadari, dan tidak ada yang opsional:
 | Host yang dijawab | `apps.finnesia.com` saja | **keduanya** (`apps.finnesia.com` + `apps-dev.finnesia.com`) |
 | Signing | upload key, dari secrets CI | **upload key yang sama**, dari secrets CI |
 | Store | track `internal`, **dipromosikan** | **tidak ada** |
-| GitHub Release | ya (draft) | **ya (draft)** |
-| Shorebird | ya | **tidak** |
+| GitHub Release | ya (draft, berisi APK **dan** AAB) | **ya (draft, berisi APK saja)** |
+| Shorebird | ya (baseline di run build) | **tidak** |
 
 - **Kenapa `--profile`:** build type itu milik Flutter sendiri, dibuat dari debug. Ia sudah
   membawa appId polos dan `dart.vm.product=false` — yang terakhir itulah yang menyalakan host
@@ -207,6 +292,50 @@ bukan link Play Console. Tidak ada batas 60 hari dan tidak ada cap 100 pengguna 
 membatasi siapa yang bisa memasang adalah akses ke repo ini, karena release asset di repo
 publik bisa diunduh siapa saja yang tahu URL-nya.
 
+### 1.4 Cara menjalankan dan memverifikasinya
+
+Dispatcher adalah cara paling murah untuk mencoba sebelum menyentuh tag, karena tidak
+menulis apa pun di luar Actions.
+
+**Menolak kombinasi di dalam repo, tanpa runner.** Aturan matriksnya adalah fungsi Dart murni
+`tools/dev/lib/dispatch.dart`, jadi bisa dijalankan lokal persis seperti di workflow:
+
+```bash
+dart run tools/dev/bin/dev.dart dispatch --env staging --device windows --draft yes --version 1.2.0
+# ::error:: staging tidak punya varian windows, pakai device=android   (stderr, exit 64)
+
+dart run tools/dev/bin/dev.dart dispatch --env production --device android --draft yes --version 1.2.0
+# exit 0, tanpa output
+```
+
+**Urutan verifikasi di GitHub Actions (manual, butuh runner).** Untuk `production` /
+`android` / `draft release = yes`:
+
+1. Cek run `Release Dispatch` hijau, dan job `validate` tidak memunculkan annotation `::error::`.
+2. Cek tag `pos-v1.2.0` **ada dan menunjuk commit yang di-dispatch**. Job `tag` membuatnya
+   eksplisit dari `context.sha` justru supaya draft tidak menempel pada commit default branch
+   yang salah.
+3. Cek draft GitHub Release berisi **dua** asset: `.apk` dan `.aab`. Kalau AAB tidak ada,
+   `shorebird release android` tidak jalan.
+4. **Anda** menekan Publish. Baru saat itu run `Publish to Store` jalan.
+5. Cek `Publish to Store` hijau, lalu AAB-nya benar-benar muncul di Play Console track
+   `internal` dengan status `completed`.
+
+**Yang tidak bisa diverifikasi tanpa runner.** Repo ini tidak punya harness workflow dan
+`actionlint` tidak terpasang, jadi YAML hanya bisa dibuktikan dengan grep lewat
+`distribution_workflows_test.dart`. Yang tetap perlu satu run nyata:
+
+- apakah `workflow_call` benar-benar ter-resolve dan secret eksplisit benar-benar sampai ke
+  callee;
+- apakah tag yang dibuat dispatcher benar-benar commit yang di-dispatch (langkah 2 di atas);
+- apakah `gh release download` menemukan AAB di asset release;
+- apakah upload Play benar-benar berhasil (langkah 5).
+
+Urutan run yang cukup dan paling murah: satu `production`/`android`/`no` (artifact saja, tanpa
+efek samping) untuk memeriksa langkah 1-3, lalu satu `staging`/`android`/`yes` untuk memeriksa
+nama draft, lalu satu Publish sungguhan untuk langkah 5. Tidak ada test yang menggantikan tiga
+run itu.
+
 ---
 
 ## 2. Prasyarat manual (sekali saja)
@@ -270,7 +399,7 @@ untuk project itu, lalu klik **Enable**. Tanpa ini, semua panggilan API ditolak.
 2. **Invite new users** → tempel **email service account** dari langkah 2.
 3. Di bagian **App permissions**, pilih `com.finnesia.pos`, lalu centang izin yang dibutuhkan:
    - **Release apps to testing tracks** — untuk upload AAB ke track `internal`
-     (`release-pos.yml`). Satu-satunya workflow yang memakai izin ini.
+     (`publish-to-store.yml`). Satu-satunya workflow yang memakai izin ini.
    - Tambahkan izin lain yang Anda perlukan (mis. production release kalau nanti dipromosikan
      manual dari dashboard).
 
@@ -292,7 +421,7 @@ Salin **seluruh isi** berkas JSON dari langkah 2 → GitHub Secret
 > **Service account tanpa izin akan gagal di step upload, bukan di step auth.** Gejalanya
 > "package not found" atau "permission denied" pada `upload-google-play` — bukan error
 > kredensial. Kalau itu muncul padahal key-nya benar, periksa Langkah 3 lebih dulu.
-> Ini hanya berlaku untuk `release-pos.yml`; workflow lain tidak menyentuh Play.
+> Ini hanya berlaku untuk `publish-to-store.yml`; workflow lain tidak menyentuh Play.
 
 ### 2.5 Ringkasan secret yang dibutuhkan CI
 
@@ -301,7 +430,7 @@ Salin **seluruh isi** berkas JSON dari langkah 2 → GitHub Secret
 | `ANDROID_KEY_BASE64` | base64 satu baris dari `upload-keystore.jks` | signing APK+AAB (rilis **dan** staging) |
 | `ANDROID_KEY_ALIAS` | alias di dalam keystore | signing |
 | `ANDROID_KEY_PASSWORD` | password keystore | signing |
-| `PLAY_SERVICE_ACCOUNT_JSON` | isi JSON key service account (§2.4) | upload AAB ke Play (track `internal`) — **hanya `release-pos.yml`** |
+| `PLAY_SERVICE_ACCOUNT_JSON` | isi JSON key service account (§2.4) | upload AAB ke Play (track `internal`) — **hanya `publish-to-store.yml`** |
 | `SHOREBIRD_TOKEN` | API key dari Shorebird console (Account → API keys) | `shorebird release android` di CI — **rilis saja** |
 
 Tiga yang pertama sudah ada (keystore yang sama dengan rilis sebelumnya
@@ -312,6 +441,10 @@ Tiga yang pertama sudah ada (keystore yang sama dengan rilis sebelumnya
 
 `windows-pos.yml` **tidak memakai satu secret pun**. Ia tidak butuh signing (Store
 menandatangani ulang) dan tidak butuh kredensial Partner Center sejak unggahnya manual.
+
+`publish-to-store.yml` memakai **hanya** `PLAY_SERVICE_ACCOUNT_JSON`, plus `GITHUB_TOKEN` bawaan
+untuk `gh release download`. Ia tidak memakai `SHOREBIRD_TOKEN`: Shorebird sudah selesai di run
+build, dan tidak ada OTA yang boleh ikut terkirim tanpa dilihat.
 
 > [!NOTE]
 > **Secret Entra tidak lagi dipakai.** `AZURE_AD_TENANT_ID`, `AZURE_AD_APPLICATION_CLIENT_ID`,
@@ -329,7 +462,7 @@ CI **tidak** memilih track. Setiap rilis dari tag selalu masuk ke `internal`, la
 artifact yang sama persis yang jalan di `production`.
 
 ```
-internal (CI, tiap tag)
+internal (setelah draft di-Publish, `publish-to-store.yml`)
    │  promote manual, kapan pun siap
    ▼
 closed (butuh 12 tester opt-in, 14 hari BERTURUT-TURUT — SEKALI, bukan tiap rilis)
@@ -372,16 +505,18 @@ akhiran:
 
 | Tag | Workflow | Apa yang terjadi | `versionCode` naik? |
 | --- | -------- | ----------------- | -------------------- |
-| `pos-v1.2.0` (polos) | `release-pos.yml` | Rilis native: APK → draft GitHub Release, AAB → Play track `internal`, **dan** `shorebird release android` mendaftarkan versi ini sebagai target patch | Ya |
+| `pos-v1.2.0` (polos) | `release-pos.yml` | Rilis native: APK **dan** AAB → asset **draft** GitHub Release, **dan** `shorebird release android` mendaftarkan versi ini sebagai target patch. Upload AAB ke Play track `internal` **tidak** terjadi di sini: ia berjalan di `publish-to-store.yml` setelah draft dipublikasikan | Ya |
 | `pos-v1.2.0` (polos, job lain) | `windows-pos.yml` | MSIX → **draft GitHub Release yang sama**; unggah ke Partner Center manual | Ya (nomor sama) |
 | `pos-v1.2.0-5` (`-N` nomor patch) | `shorebird-patch.yml` | Kirim patch Dart-only ke rilis `pos-v1.2.0` yang **sudah ada** — tidak ada build native baru, tidak ada upload Play | **Tidak sama sekali** |
-| `pos-v1.2.0-staging.3` (`-staging.N`) | `staging-pos.yml` | APK staging (`--profile`) → draft GitHub Release. Tidak ada Play, tidak ada Shorebird | Nilai sama dengan rilis versi itu |
+| `pos-v1.2.0-staging.3` (`-staging.N`) | `staging-pos.yml` | APK staging (`--profile`) → draft GitHub Release. **Tidak pernah membangun AAB**, jadi tidak ada Play dan tidak ada Shorebird | Nilai sama dengan rilis versi itu |
 
 Keempat pattern trigger (`on.push.tags`) sengaja dibuat **saling eksklusif** supaya satu tag
 yang di-push tidak pernah memicu lebih dari satu workflow, dan tidak pernah lolos ke workflow
 yang salah. Dua di antaranya (`release-pos.yml`, `windows-pos.yml`) memang memicu di tag yang
 sama — itu disengaja, karena Windows ikut satu nomor versi dan menulis satu GitHub Release
-yang sama.
+yang sama. Eksklusivitas itu **tidak berubah** ketika dispatcher ditambahkan: `release-dispatch.yml`
+menambah pintu `workflow_dispatch` + `workflow_call`, dan tidak menyentuh satu karakter pun
+dari pola `on.push.tags` yang ada.
 
 Pola positifnya ditulis lebar (`...*`) dan eksklusinya ditulis eksplisit sebagai negasi
 (`!...`), bukan diserahkan pada asumsi bahwa GitHub meng-anchor pola ke seluruh nama ref:

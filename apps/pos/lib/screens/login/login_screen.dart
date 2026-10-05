@@ -6,6 +6,7 @@
  */
 
 import 'package:flutter/material.dart';
+import 'package:pn_types/src/file_ref.dart';
 import 'package:pn_ui/src/theme/app_theme.dart';
 import 'package:pn_ui/src/widgets/top_notice.dart';
 import 'package:pos/app/app_scope.dart';
@@ -48,13 +49,12 @@ class _Body extends StatelessWidget {
     final session = services.session.current;
     final branding = session?.branding;
     // Most tenants never configure branding, and the product name is the documented fallback
-    // rather than an error path (the backend's `logo_url` is optional for the same reason).
+    // rather than an error path (the backend's `logo` is optional for the same reason).
     final appName = branding?.appName ?? l10n.appName;
-    final logoUrl = branding?.logoUrl;
 
     final card = _Card(
       appName: appName,
-      logoUrl: logoUrl,
+      logo: branding?.logo,
       deviceName: session?.deviceName,
       controller: controller,
     );
@@ -80,13 +80,13 @@ class _Body extends StatelessWidget {
 class _Card extends StatelessWidget {
   const _Card({
     required this.appName,
-    required this.logoUrl,
+    required this.logo,
     required this.deviceName,
     required this.controller,
   });
 
   final String appName;
-  final String? logoUrl;
+  final FileRef? logo;
   final String? deviceName;
   final LoginController controller;
 
@@ -101,7 +101,7 @@ class _Card extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        _Identity(appName: appName, logoUrl: logoUrl),
+        _Identity(appName: appName, logo: logo),
         const SizedBox(height: 24),
         Text(l10n.loginSubtitle, style: theme.bodyMedium),
         if (deviceName != null && deviceName!.isNotEmpty) ...[
@@ -179,34 +179,52 @@ class _Card extends StatelessWidget {
 /// Who the cashier is signing in to: the tenant's logo when it has one, the Finnesia logo when
 /// it does not (`dto/pos.go`: "Empty means the default Finnesia logo").
 class _Identity extends StatelessWidget {
-  const _Identity({required this.appName, required this.logoUrl});
+  const _Identity({required this.appName, required this.logo});
 
   final String appName;
-  final String? logoUrl;
+  final FileRef? logo;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context).textTheme;
-    final url = logoUrl;
+    final l10n = L10n.of(context);
+    final url = logo?.renderableUrl;
+    final fallback = FinnesiaLogo(
+      width: double.infinity,
+      height: double.infinity,
+      fit: BoxFit.contain,
+      semanticLabel: l10n.tenantLogoLabel,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (url == null || url.isEmpty)
-          FinnesiaLogo(width: 240, semanticLabel: appName)
-        else
-          // Plain Image.network, not a cached loader: one image, fetched once, from the tenant's
-          // own branding config. A cache library for a single logo would be a dependency for
-          // nothing.
-          Image.network(
-            url,
-            height: 40,
-            // The tenant's own logo, so it is content rather than decoration: a screen reader
-            // should say whose logo it is.
-            semanticLabel: appName,
-            errorBuilder: (context, _, _) =>
-                FinnesiaLogo(width: 240, semanticLabel: appName),
-          ),
+        // One 4:1 frame whichever logo is in it. A tenant logo is not 4:1 and a caller's height
+        // alone would leave it at whatever ratio the file happens to be, so the identity block
+        // would resize as branding is configured. Both branches fill the same frame the same
+        // way, or the fallback logo would read at a different scale from the tenant's.
+        AspectRatio(
+          aspectRatio: 4 / 1,
+          child: url == null
+              ? fallback
+              : Image.network(
+                  // Plain Image.network, not a cached loader: one image, fetched once, from the
+                  // tenant's own branding config. A cache library for a single logo would be a
+                  // dependency for nothing.
+                  url,
+                  width: double.infinity,
+                  height: double.infinity,
+                  // Contain, not cover: a tenant logo cropped to 4:1 is a logo with half its
+                  // name missing. The leftover width is the frame's, not the picture's.
+                  fit: BoxFit.contain,
+                  // The tenant's own logo, so it is content rather than decoration: a screen
+                  // reader should say whose logo it is.
+                  semanticLabel: l10n.tenantLogoLabel,
+                  // A logo that 404s is drawn into this same frame, not beside it, so the block
+                  // keeps its shape instead of jumping when the file cannot be fetched.
+                  errorBuilder: (_, _, _) => fallback,
+                ),
+        ),
         const SizedBox(height: 16),
         Semantics(
           header: true,

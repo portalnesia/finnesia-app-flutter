@@ -13,6 +13,7 @@ import 'package:pn_ui/src/theme/app_theme.dart';
 import 'package:pn_ui/src/theme/tokens.dart';
 import 'package:pn_ui/src/widgets/state_view.dart';
 import 'package:pos/app/app_scope.dart';
+import 'package:pos/branding/company_avatar.dart';
 import 'package:pos/l10n/app_localizations.dart';
 import 'package:pos/printer/print_shift_report.dart';
 import 'package:pos/screens/common/print_flow.dart';
@@ -87,7 +88,16 @@ class _ShiftScreenState extends State<ShiftScreen> {
               listenable: controller.summary,
               builder: (context, _) => ScreenHeader(
                 title: l10n.shiftDetailTitle,
-                trailing: _statusBadge(controller, l10n),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Wrapped, not replaced: the shift's own status stays where it was, and the
+                    // avatar sits after it. A null status (nothing read yet) draws nothing at
+                    // all, and the avatar is still the company this tablet is on.
+                    ?_statusBadge(controller, l10n),
+                    const CompanyAvatar(),
+                  ],
+                ),
               ),
             ),
             Expanded(

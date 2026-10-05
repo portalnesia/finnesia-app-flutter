@@ -595,6 +595,12 @@ abstract class L10n {
   /// **'Outlet ini sudah mencapai batas {limit} tablet kasir. Hapus salah satu tablet di dashboard, lalu coba lagi.'**
   String pairingDeviceLimitReachedWithLimit(int limit);
 
+  /// No description provided for @tenantLogoLabel.
+  ///
+  /// In id, this message translates to:
+  /// **'Logo tenant'**
+  String get tenantLogoLabel;
+
   /// No description provided for @loginTitle.
   ///
   /// In id, this message translates to:

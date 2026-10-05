@@ -7,6 +7,7 @@
 
 import 'dart:convert';
 
+import 'package:pn_types/src/file_ref.dart';
 import 'package:pn_types/src/session.dart';
 import 'package:pn_types/src/tenant.dart';
 import 'package:test/test.dart';
@@ -143,13 +144,12 @@ void main() {
     test('reads the activation response\'s snake_case names', () {
       final b = PosBranding.fromJson(
         jsonDecode(
-              '{"app_name":"Toko","logo_url":"https://l","custom_domain":"erp.toko.id","account_mode":"managed"}',
+              '{"app_name":"Toko","custom_domain":"erp.toko.id","account_mode":"managed"}',
             )
             as Map<String, dynamic>,
       );
 
       expect(b.appName, 'Toko');
-      expect(b.logoUrl, 'https://l');
       expect(b.customDomain, 'erp.toko.id');
       expect(b.accountMode, 'managed');
     });
@@ -159,6 +159,66 @@ void main() {
 
       expect(b.appName, isNull);
       expect(b.customDomain, isNull);
+      expect(b.logo, isNull);
+    });
+
+    // The logo is a `FileRef` object now, not a URL string: the activation response ships the
+    // file's `status` alongside it, and a `pending` or `detached` file must not be rendered.
+    test('reads the logo as a file reference', () {
+      final b = PosBranding.fromJson(
+        jsonDecode(
+              '{"app_name":"Toko","logo":{"id":"file_1","name":"logo.png",'
+              '"size_bytes":1234,"content_type":"image/png","status":"attached",'
+              '"url":"https://cdn.example/logo.png",'
+              '"created_at":"2026-01-01T00:00:00Z"}}',
+            )
+            as Map<String, dynamic>,
+      );
+
+      expect(b.logo?.id, 'file_1');
+      expect(b.logo?.renderableUrl, 'https://cdn.example/logo.png');
+    });
+
+    test('reads a detached logo as nothing to render', () {
+      final b = PosBranding.fromJson(
+        jsonDecode(
+              '{"logo":{"id":"file_1","status":"detached","url":"https://cdn.example/l.png"}}',
+            )
+            as Map<String, dynamic>,
+      );
+
+      expect(b.logo, isNotNull);
+      expect(b.logo?.renderableUrl, isNull);
+    });
+
+    // A backend that has not shipped the object yet still sends the old string key. It is
+    // ignored, so `logo` reads as null and the login falls back to the Finnesia logo — the
+    // pairing itself must not fail.
+    test('ignores the old logo_url string instead of failing to parse', () {
+      final b = PosBranding.fromJson(
+        jsonDecode('{"app_name":"Toko","logo_url":"https://cdn.example/l.png"}')
+            as Map<String, dynamic>,
+      );
+
+      expect(b.appName, 'Toko');
+      expect(b.logo, isNull);
+    });
+
+    test('survives a round trip with the logo attached', () {
+      final s = roundTrip(
+        paired.copyWith(
+          branding: const PosBranding(
+            appName: 'Toko Budi',
+            logo: FileRef(
+              id: 'file_1',
+              status: 'attached',
+              url: 'https://u/l.png',
+            ),
+          ),
+        ),
+      );
+
+      expect(s.branding?.logo?.renderableUrl, 'https://u/l.png');
     });
   });
 

@@ -44,7 +44,12 @@ final activated = jsonEncode({
     },
     'branding': {
       'app_name': 'Toko Budi',
-      'logo_url': 'https://cdn.example.com/logo.png',
+      'logo': {
+        'id': 'f1',
+        'name': 'logo.png',
+        'status': 'attached',
+        'url': 'https://cdn.example.com/logo.png',
+      },
       'account_mode': 'self_service',
     },
     'device_token': 'dev_tok_1',
@@ -90,7 +95,12 @@ String activatedWithDomain(String? customDomain) => jsonEncode({
     },
     'branding': {
       'app_name': 'ERP A',
-      'logo_url': 'https://erp.perusahaan.com/logo.png',
+      'logo': {
+        'id': 'f1',
+        'name': 'logo.png',
+        'status': 'attached',
+        'url': 'https://erp.perusahaan.com/logo.png',
+      },
       'custom_domain': customDomain,
       'account_mode': 'enterprise',
     },
@@ -570,9 +580,41 @@ void main() {
 
       final branding = (await storedSession(store))!.branding!;
       expect(branding.appName, 'Toko Budi');
-      expect(branding.logoUrl, 'https://cdn.example.com/logo.png');
+      expect(branding.logo?.renderableUrl, 'https://cdn.example.com/logo.png');
       expect(branding.accountMode, 'self_service');
     });
+
+    // The backend sends the logo as a FileRef object, but a tablet already paired against a
+    // server that still sends the old `logo_url` string must keep working. The old key is
+    // ignored rather than parsed into something, so the login screen falls back to the
+    // Finnesia logo instead of failing the whole activation.
+    test(
+      'pairs against a server that still sends only the old logo_url string',
+      () async {
+        final store = FakeStorePort();
+        final body = jsonEncode({
+          'data': {
+            'device': {
+              'id': '01JDEV',
+              'company_id': 'comp_1',
+              'outlet_id': 'out_1',
+              'name': 'Tablet Kasir 1',
+            },
+            'branding': {
+              'app_name': 'Toko Budi',
+              'logo_url': 'https://cdn.example.com/logo.png',
+              'account_mode': 'self_service',
+            },
+          },
+        });
+
+        await pairDevice('AB3K7M', depsFor(store, answering(body)));
+
+        final branding = (await storedSession(store))!.branding!;
+        expect(branding.appName, 'Toko Budi');
+        expect(branding.logo, isNull);
+      },
+    );
 
     test('stores the company and outlet the code resolved to, and no session token', () async {
       final store = FakeStorePort();

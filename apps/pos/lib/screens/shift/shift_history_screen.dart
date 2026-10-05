@@ -12,6 +12,7 @@ import 'package:pn_types/src/pos_shift.dart';
 import 'package:pn_ui/src/theme/app_theme.dart';
 import 'package:pn_ui/src/theme/tokens.dart';
 import 'package:pos/app/app_scope.dart';
+import 'package:pos/branding/company_avatar.dart';
 import 'package:pos/l10n/app_localizations.dart';
 import 'package:pos/screens/common/entry_row.dart';
 import 'package:pos/screens/common/paged_list.dart';
@@ -61,7 +62,10 @@ class _ShiftHistoryScreenState extends State<ShiftHistoryScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            ScreenHeader(title: l10n.shiftHistoryTitle),
+            ScreenHeader(
+              title: l10n.shiftHistoryTitle,
+              trailing: const CompanyAvatar(),
+            ),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
               child: ListenableBuilder(

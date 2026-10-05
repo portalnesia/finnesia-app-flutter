@@ -336,6 +336,30 @@ void main() {
       expect(transport.requests, hasLength(1));
     });
 
+    // The drawer with no movements at all: Go marshals its nil slice to `null`, so the endpoint
+    // has to read that as an empty list. Otherwise the tab shows "Unexpected response from server"
+    // and a retry button that asks for the same payload and fails the same way.
+    test('a drawer with no movements shows none, not an error', () async {
+      final (:controller, :transport) = rig();
+      transport.respond(ok(shiftJson()));
+      transport.respond(ok(summaryJson()));
+      transport.respond(ok(null)); // `{"data":null}`, what the server sends
+      transport.respond(page(<Map<String, Object?>>[]));
+
+      await controller.load();
+
+      expect(controller.movements.state, isA<Ready<dynamic>>());
+      expect((controller.movements.state as Ready).data, isEmpty);
+      expect(
+        uriOf(
+          transport.requests.firstWhere(
+            (r) => uriOf(r).path.endsWith('/cash-movements'),
+          ),
+        ).path,
+        '/api/v1/pos/shifts/s1/cash-movements',
+      );
+    });
+
     test(
       'a failed summary does not blank the sales or the movements',
       () async {

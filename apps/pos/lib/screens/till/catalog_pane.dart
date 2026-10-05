@@ -10,6 +10,7 @@ import 'package:pn_pos/src/format.dart';
 import 'package:pn_pos/src/pos_product_stock.dart';
 import 'package:pn_types/src/product.dart';
 import 'package:pn_ui/src/theme/app_theme.dart';
+import 'package:pn_ui/src/theme/palette.dart';
 import 'package:pn_ui/src/theme/tokens.dart';
 import 'package:pn_ui/src/widgets/money_text.dart';
 import 'package:pn_ui/src/widgets/state_view.dart';
@@ -172,7 +173,11 @@ class _Grid extends StatelessWidget {
         padding: const EdgeInsets.all(12),
         gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
           maxCrossAxisExtent: 190,
-          mainAxisExtent: 104,
+          // A tile is photo + name + price, not name + price. 240 is the smallest multiple of 8
+          // that holds a square photo across a five-column catalogue (816 wide, tile 156.8,
+          // minus the card's own padding 10: photo 137) plus a footer that still fits at a
+          // text scale of 1.3. Rounded down, the price row would be cut off.
+          mainAxisExtent: 240,
           mainAxisSpacing: 8,
           crossAxisSpacing: 8,
         ),
@@ -234,14 +239,27 @@ class ProductCard extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.all(10),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              // Square, but the first thing to give way: the tile's height is fixed and a
+              // two-line name at text 1.3 plus a price can need more than the rest of the tile
+              // has left. `Flexible` loose lets the photo shrink to whatever square fits, and
+              // the weight against the `Spacer` below means the leftover goes to the gap, not
+              // to the photo, so the price stays at the bottom of the tile.
+              Flexible(
+                flex: 100,
+                child: AspectRatio(aspectRatio: 1, child: _photo(context, pn)),
+              ),
+              // Small on purpose: every pixel of gap here is a pixel the name and the price do
+              // not get.
+              const SizedBox(height: 4),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
                     child: Text(
                       product.name,
+                      // Two lines and no more: the name must not push the price off the tile.
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: theme.titleSmall,
@@ -260,14 +278,48 @@ class ProductCard extends StatelessWidget {
                 ],
               ),
               const Spacer(),
-              MoneyText(
-                formatCurrency(product.sellPrice ?? 0),
-                style: theme.titleMedium,
+              // Scale down rather than overflow: a price in millions at a large text size is
+              // still a price, and losing it costs the cashier the tile
+              // (`till_screen.dart:584-585` does the same for the total).
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: MoneyText(
+                  formatCurrency(product.sellPrice ?? 0),
+                  style: theme.titleMedium,
+                ),
               ),
             ],
           ),
         ),
       ),
     );
+  }
+
+  /// The product's own photo, or an icon in its place.
+  ///
+  /// Most products in a small shop have no photo at all, and a catalogue where four tiles in
+  /// five are an empty square is worse than one that says "no picture" once, the same way
+  /// everywhere. The web app draws a `Package` icon here (`pos-product-grid.tsx:185-196`).
+  Widget _photo(BuildContext context, PnPalette pn) {
+    final fallback = ColoredBox(
+      color: pn.surfaceMuted,
+      child: Center(
+        child: Icon(Icons.inventory_2_outlined, size: 32, color: pn.inkMuted),
+      ),
+    );
+    final url = product.image?.renderableUrl;
+
+    // `cover`, not `contain`: a product photo of any ratio fills the square and loses its edges,
+    // rather than the goods shrinking to a stamp in the middle of an empty tile.
+    return url == null
+        ? fallback
+        : Image.network(
+            url,
+            fit: BoxFit.cover,
+            // The same icon, so a photo that cannot be fetched leaves the grid the way it was
+            // drawn rather than with a hole in it.
+            errorBuilder: (_, _, _) => fallback,
+          );
   }
 }

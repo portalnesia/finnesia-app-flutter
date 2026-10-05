@@ -50,6 +50,29 @@ on:
   push:
     tags:
       - "pos-v[0-9]+.[0-9]+.[0-9]+-staging.[0-9]+*"
+  # Pintu kedua: `release-dispatch.yml` memanggil workflow ini, bukan mengulang logikanya.
+  workflow_call:
+    inputs:
+      version:
+        description: "X.Y.Z-staging.N (staging). Kosong = artifact saja; tag dibaca dari GITHUB_REF_NAME"
+        required: false
+        default: ""
+        type: string
+      # Default `yes`, bukan `no`: jalan push-tag tidak punya input sama sekali, dan default yang
+      # aman di pintu yang tidak menyuruh apa-apa adalah "rilis sungguhan", yaitu perilaku sebelum
+      # dispatcher ada.
+      draft_release:
+        description: "yes = tag + draft release, no = artifact Actions saja (uji coba)"
+        required: false
+        default: "yes"
+        type: string
+    secrets:
+      ANDROID_KEY_BASE64:
+        required: true
+      ANDROID_KEY_ALIAS:
+        required: true
+      ANDROID_KEY_PASSWORD:
+        required: true
 
 # Satu build per tag. Tag tidak bisa dipush ulang, jadi run yang berjalan tidak perlu dibatalkan.
 concurrency:
@@ -83,18 +106,46 @@ jobs:
       # ── Versi ─────────────────────────────────────────────────────────────
       # `pos-v1.2.0-staging.3` → base `1.2.0` + nomor `3` (cuma log).
       #
+      # Dua pintu masuk hidup berdampingan: dipicu tag, atau dipicu dispatcher lewat
+      # `workflow_call`. `GITHUB_REF_NAME` hanya dibaca di pintu tag — saat dispatch ia berisi nama
+      # BRANCH (`main`), dan `main` bukan versi. Uji-coba (`draft release = no`) tidak punya versi:
+      # `version` diabaikannya, jadi yang dipakai versi fallback yang bisa dipecah.
+      #
+      # Iteration staging datang dari input, bukan dihitung di sini: `pos-v1.2.0-staging.3` dipecah
+      # persis seperti tag-nya dipecah.
+      #
       # `versionName` sengaja TIDAK memuat `-staging.3`: itu akan membuat `package_info_plus`
       # melaporkan versi yang tidak dikenal di halaman About, dan versi base sudah cukup untuk
       # membedakan build ini dari production. Nomor `N` ada di nama artefak dan di log.
       - name: Derive version
         id: version
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+          DRAFT_RELEASE: ${{ inputs.draft_release }}
         run: |
-          TAG="${GITHUB_REF_NAME#pos-v}"      # 1.2.0-staging.3
-          BASE="${TAG%-staging.*}"           # 1.2.0
-          ITERATION="${TAG##*-staging.}"      # 3
+          if [ "$DRAFT_RELEASE" = "no" ]; then
+            TAG=""
+          elif [ -n "$INPUT_VERSION" ]; then
+            TAG="$INPUT_VERSION"
+          else
+            TAG="${GITHUB_REF_NAME#pos-v}"      # 1.2.0-staging.3
+          fi
+
+          if [ -z "$TAG" ]; then
+            BASE="0.0.0"
+            ITERATION="0"
+            RELEASE_TAG=""
+            echo "Uji coba: version input diabaikan, memakai $BASE."
+          else
+            BASE="${TAG%-staging.*}"           # 1.2.0
+            ITERATION="${TAG##*-staging.}"      # 3
+            RELEASE_TAG="pos-v$TAG"
+          fi
+
           echo "base=$BASE" >> "$GITHUB_OUTPUT"
           echo "iteration=$ITERATION" >> "$GITHUB_OUTPUT"
-          echo "Staging #$ITERATION dari base $BASE"
+          echo "tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
+          echo "Staging #$ITERATION dari base $BASE${RELEASE_TAG:+ (tag $RELEASE_TAG)}"
 
       # Rumus IDENTIK dengan release-pos.yml, supaya artefak staging dan rilis pada versi yang
       # sama membawa `versionCode` yang sama. Itu aman karena staging tidak pernah masuk track
@@ -311,10 +362,14 @@ jobs:
       # Release-nya diberi nama berbeda dari rilis production supaya dua draft di halaman yang
       # sama tidak tertukar; keduanya memakai pola tag yang saling eksklusif, jadi tidak mungkin
       # menempel di tag yang sama.
+      #
+      # `tag_name` bukan `github.ref_name` karena pintu dispatcher tidak punya tag: `github.ref_name`
+      # di sana berisi nama branch, dan action itu akan membuat release pada branch itu.
       - name: Create draft release
+        if: inputs.draft_release != 'no'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name }}
+          tag_name: ${{ steps.version.outputs.tag }}
           name: "Finnesia POS (staging) v${{ steps.version.outputs.base }} #${{ steps.version.outputs.iteration }}"
           draft: true
           generate_release_notes: true

@@ -22,6 +22,7 @@ import 'package:pn_types/src/session.dart';
 import 'package:pn_ui/src/theme/tokens.dart';
 import 'package:pos/app/app_scope.dart';
 import 'package:pos/app/pos_app.dart';
+import 'package:pos/branding/company_avatar.dart';
 import 'package:pos/l10n/app_localizations.dart';
 import 'package:pos/printer/printer_service.dart';
 import 'package:pos/screens/menu/menu_screen.dart';
@@ -324,6 +325,14 @@ void main() {
       await pumpMenu(tester, http: MenuHttp(shiftOpen: false));
 
       expect(find.text('Tidak ada shift terbuka'), findsOneWidget);
+    });
+
+    // On every screen opened after login, not only the ones whose header was free. An avatar
+    // that appears on some screens and not others reads to a cashier as a fault.
+    testWidgets('the company avatar is in the header', (tester) async {
+      await pumpMenu(tester);
+
+      expect(find.byType(CompanyAvatar), findsOneWidget);
     });
   });
 

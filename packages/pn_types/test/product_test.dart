@@ -118,6 +118,37 @@ void main() {
       );
     });
 
+    // The catalogue ships the photo as a file reference, so the tile can ask whether it is
+    // attached before it renders anything.
+    test('reads the product image as a file reference', () {
+      final p = parse(
+        '{"id":"p","name":"n","unit_id":"u","image":{"id":"file_9",'
+        '"name":"kopi.png","size_bytes":99,"content_type":"image/png",'
+        '"status":"attached","url":"https://cdn.example/kopi.png",'
+        '"created_at":"2026-01-01T00:00:00Z"}}',
+      );
+
+      expect(p.image?.id, 'file_9');
+      expect(p.image?.url, 'https://cdn.example/kopi.png');
+      expect(p.image?.renderableUrl, 'https://cdn.example/kopi.png');
+    });
+
+    test('reads a pending image as nothing to render', () {
+      final p = parse(
+        '{"id":"p","name":"n","unit_id":"u","image":{"id":"f","status":"pending",'
+        '"url":"https://cdn.example/kopi.png"}}',
+      );
+
+      expect(p.image, isNotNull);
+      expect(p.image?.renderableUrl, isNull);
+    });
+
+    test('leaves the image null when the catalogue row has none', () {
+      final p = parse('{"id":"p","name":"n","unit_id":"u"}');
+
+      expect(p.image, isNull);
+    });
+
     test('rejects a payload without unit_id', () {
       // unit_id, not unitId: the camelCase spelling must not be accepted.
       expect(

@@ -10,6 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pn_types/src/session.dart';
 import 'package:pn_types/src/native/public_http_fake.dart';
 import 'package:pos/app/pos_app.dart';
+import 'package:pos/branding/company_avatar.dart';
 import 'package:pos/http/inspector/request_inspector.dart';
 import 'package:pos/l10n/app_localizations.dart';
 import 'package:pos/screens/menu/inspector_screen.dart';
@@ -162,6 +163,17 @@ void main() {
 
       expect(find.text(l10n.inspectorEmpty), findsOneWidget);
       expect(inspector.entries, isEmpty);
+    });
+
+    // The avatar went into the header's trailing slot, which already had two buttons in it.
+    // Wrapping rather than replacing is the whole point: a cashier who loses Refresh because a
+    // logo was added has to debug the app, not the screen.
+    testWidgets('keeps both actions beside the company avatar', (tester) async {
+      await pumpInspector(tester, RequestInspector());
+
+      expect(find.byType(CompanyAvatar), findsOneWidget);
+      expect(find.byTooltip(l10n.inspectorRefresh), findsOneWidget);
+      expect(find.byTooltip(l10n.inspectorClear), findsOneWidget);
     });
 
     testWidgets('refreshing shows what came in after it was opened', (

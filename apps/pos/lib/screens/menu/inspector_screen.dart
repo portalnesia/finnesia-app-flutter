@@ -8,6 +8,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:pos/branding/company_avatar.dart';
 import 'package:pos/http/inspector/request_inspector.dart';
 import 'package:pos/l10n/app_localizations.dart';
 import 'package:pos/screens/common/screen_header.dart';
@@ -50,6 +51,9 @@ class _InspectorScreenState extends State<InspectorScreen> {
                     icon: const Icon(Icons.delete_outline),
                     onPressed: () => setState(widget.inspector.clear),
                   ),
+                  // Wrapped rather than replaced: these two actions stay, and the avatar sits
+                  // at the far end of the same row.
+                  const CompanyAvatar(),
                 ],
               ),
             ),

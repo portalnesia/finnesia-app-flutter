@@ -80,9 +80,14 @@ abstract final class PosApi {
     (dto) => dto.toJson(),
   );
 
+  // The only POS list endpoint the server does not paginate, so a drawer with no movements
+  // arrives as `{"data":null}` (a Go nil slice) instead of `[]`. Null here means "none", the
+  // same reading `parseStrings` and `ShiftSummaryResponse` give the collections Go nils.
   static final shiftsCashMovements = ReadEndpointP<ById, List<POSCashMovement>>(
     (p) => '/api/v1/pos/shifts/${Uri.encodeComponent(p.id)}/cash-movements',
-    parseList(POSCashMovement.fromJson),
+    (data) => data == null
+        ? <POSCashMovement>[]
+        : parseList(POSCashMovement.fromJson)(data),
   );
 
   // The response carries nothing.

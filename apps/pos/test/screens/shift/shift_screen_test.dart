@@ -19,6 +19,7 @@ import 'package:pn_types/src/session.dart';
 import 'package:pn_types/src/tenant.dart';
 import 'package:pos/app/app_scope.dart';
 import 'package:pos/app/pos_app.dart';
+import 'package:pos/branding/company_avatar.dart';
 import 'package:pos/l10n/app_localizations.dart';
 import 'package:pos/screens/queue/pending_sales_screen.dart';
 import 'package:pos/printer/printer_service.dart';
@@ -454,6 +455,21 @@ void main() {
 
       await pumpShift(tester, http);
 
+      expect(find.text(l10n.shiftDetailOpen), findsOneWidget);
+    });
+
+    // The avatar went into a trailing slot that already held the shift's own status. Wrapping
+    // rather than replacing is what keeps the cashier able to see whether the drawer is open
+    // from the header.
+    testWidgets('keeps the shift status beside the company avatar', (
+      tester,
+    ) async {
+      final http = RoutedHttp();
+      backend(http);
+
+      await pumpShift(tester, http);
+
+      expect(find.byType(CompanyAvatar), findsOneWidget);
       expect(find.text(l10n.shiftDetailOpen), findsOneWidget);
     });
 

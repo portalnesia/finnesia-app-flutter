@@ -36,6 +36,24 @@ on:
     tags:
       - "pos-v[0-9]+.[0-9]+.[0-9]+*"
       - "!pos-v[0-9]+.[0-9]+.[0-9]+-*"
+  # Pintu kedua: `release-dispatch.yml` memanggil workflow ini, bukan mengulang logikanya.
+  # Tidak ada blok `secrets:` di sini dan itu disengaja — workflow ini butuh nol secret, dan
+  # `secrets: inherit` dari pemanggil akan meneruskan semua secret ke sini tanpa terlihat.
+  workflow_call:
+    inputs:
+      version:
+        description: "X.Y.Z (production). Kosong = artifact saja; tag dibaca dari GITHUB_REF_NAME"
+        required: false
+        default: ""
+        type: string
+      # Default `yes`, bukan `no`: jalan push-tag tidak punya input sama sekali, dan default yang
+      # aman di pintu yang tidak menyuruh apa-apa adalah "rilis sungguhan", yaitu perilaku sebelum
+      # dispatcher ada.
+      draft_release:
+        description: "yes = tag + draft release, no = artifact Actions saja (uji coba)"
+        required: false
+        default: "yes"
+        type: string
 
 # Satu build per tag. Tag tidak bisa dipush ulang, jadi run yang berjalan tidak dibatalkan.
 #
@@ -69,10 +87,40 @@ jobs:
 
       # Rumus build number identik dengan release-pos.yml, supaya satu versi punya satu
       # nomor di kedua platform.
+      #
+      # Dua pintu masuk hidup berdampingan: dipicu tag, atau dipicu dispatcher lewat
+      # `workflow_call`. `GITHUB_REF_NAME` hanya dibaca di pintu tag — saat dispatch ia berisi nama
+      # BRANCH (`main`), dan `main` bukan versi. Uji-coba (`draft release = no`) mengabaikan
+      # `version`, jadi yang dipakai versi fallback: `0.0.0` dan bukan `0.0.0+local`, karena build
+      # metadata ikut terbawa kepecahan versi di bawah (`PATCH` jadi `0+local`) dan membuat
+      # aritmetikanya gagal.
       - name: Derive version
         id: version
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+          DRAFT_RELEASE: ${{ inputs.draft_release }}
         run: |
-          VERSION="${GITHUB_REF_NAME#pos-v}"
+          if [ "$DRAFT_RELEASE" = "no" ]; then
+            VERSION=""
+          elif [ -n "$INPUT_VERSION" ]; then
+            VERSION="$INPUT_VERSION"
+          else
+            VERSION="${GITHUB_REF_NAME#pos-v}"
+          fi
+
+          if [ -z "$VERSION" ]; then
+            VERSION="0.0.0"
+            echo "Uji coba: version input diabaikan, memakai $VERSION."
+          fi
+
+          # Tag rilis hanya dibangun dari versi yang sudah dipastikan: di pintu dispatch
+          # `GITHUB_REF_NAME` berisi nama branch, dan action itu akan membuat release di sana.
+          if [ "$DRAFT_RELEASE" = "no" ]; then
+            TAG=""
+          else
+            TAG="pos-v$VERSION"
+          fi
+
           MAJOR="${VERSION%%.*}"
           REST="${VERSION#*.}"
           MINOR="${REST%%.*}"
@@ -80,11 +128,12 @@ jobs:
           BUILD_NUMBER=$(( MAJOR * 1000000 + MINOR * 1000 + PATCH ))
 
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "build_number=$BUILD_NUMBER" >> "$GITHUB_OUTPUT"
           # MSIX butuh empat bagian, yang keempat dipesan Store. Major 0 ditolak — dijaga
           # test/branding/store_identity_test.dart.
           echo "msix_version=${VERSION}.0" >> "$GITHUB_OUTPUT"
-          echo "Versi dari tag: $VERSION (MSIX ${VERSION}.0, build $BUILD_NUMBER)"
+          echo "Versi $VERSION (MSIX ${VERSION}.0, build $BUILD_NUMBER)${TAG:+ (tag $TAG)}"
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -197,13 +246,16 @@ jobs:
       #      keduanya berbaris, bukan berpacu.
       #   2. `name:` SENGAJA tidak diisi di sini. Action-nya memakai `input_name ||
       #      existingRelease.name || tag`, jadi membiarkannya kosong MEMPERTAHANKAN nama yang
-      #      `release-pos.yml` pasang ("Finnesia POS vX.Y.Z"). Kalau diisi, judul release akan
+      #      #      `release-pos.yml` pasang ("Finnesia POS vX.Y.Z"). Kalau diisi, judul release akan
       #      berubah jadi "... Windows ..." setiap kali job ini selesai belakangan, padahal
       #      release-nya juga memuat APK Android.
+      #   3. `tag_name` bukan `github.ref_name`: pintu dispatcher tidak punya tag, dan
+      #      `github.ref_name` di sana berisi nama branch.
       - name: Create draft release
+        if: inputs.draft_release != 'no'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name }}
+          tag_name: ${{ steps.version.outputs.tag }}
           draft: true
           generate_release_notes: true
           files: ${{ steps.msix.outputs.path }}

@@ -218,9 +218,9 @@ Detail: `.claude/rules/architecture.md` §5 dan `.claude/rules/testing.md` §8.
 
 | Hal | Keputusan |
 | --- | --------- |
-| Output | APK (sideload ke tablet) **dan** AAB ke Play Console internal track |
-| Trigger | push tag `v*` (rilis) · push ke `main` (staging) |
-| CI | GitHub Actions — `release-pos.yml` (APK + AAB → Play Console), `staging-pos.yml` (AAB profile), `windows-pos.yml`, `shorebird-patch.yml`. `ci.yml` **dinonaktifkan sementara** (batas menit), berkasnya `ci.yml.disabled`; penggantinya `./dev check` |
+| Output | APK ke tablet (sideload) **dan** AAB ke Play Console internal track. Mechanism-nya: `release-pos.yml` membangun keduanya lalu melampirkan keduanya sebagai asset **draft** GitHub Release; upload ke Play baru jalan setelah draft itu **dipublikasikan** manusia, di workflow `publish-to-store.yml` (AAB diambil dari asset release, `track: internal`, `status: completed`). Tidak ada Shorebird di run itu |
+| Trigger | tag `pos-v*` polos (rilis production) · tag `pos-v*-staging.N` (staging) · tag `pos-v*-N` (patch OTA) · **plus** `workflow_dispatch` lewat `release-dispatch.yml` (dispatcher menambah pintu masuk; trigger tag tetap ada dan tidak berubah) |
+| CI | GitHub Actions — `release-dispatch.yml` (dispatcher manual: validasi kombinasi dulu, baru panggil workflow di bawah), `release-pos.yml` (APK + AAB → draft GitHub Release, Shorebird baseline), `publish-to-store.yml` (upload AAB ke Play `internal`, hanya setelah draft dipublikasikan), `staging-pos.yml` (**APK** profile), `windows-pos.yml` (MSIX → draft yang sama), `shorebird-patch.yml` (patch OTA). `ci.yml` **dinonaktifkan sementara** (batas menit), berkasnya `ci.yml.disabled`; penggantinya `./dev check` |
 | Signing | GitHub Secrets — **tidak ada berkas sensitif di repo** |
 
 **Yang TIDAK masuk repo:** `keystore.properties`, `key.properties`, `*.jks`, `.env`.

@@ -321,6 +321,9 @@ class L10nEn extends L10n {
   }
 
   @override
+  String get tenantLogoLabel => 'Tenant logo';
+
+  @override
   String get loginTitle => 'Sign in';
 
   @override

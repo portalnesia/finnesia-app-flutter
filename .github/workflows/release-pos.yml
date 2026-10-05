@@ -1,17 +1,22 @@
-# Build rilis Android: APK (GitHub Release) + AAB (Play Console, track `internal`), dari tag.
+# Build rilis Android: APK + AAB, keduanya dilampirkan ke DRAFT GitHub Release. Tidak ada upload
+# ke Play di file ini lagi — dipisah ke `publish-to-store.yml`.
 #
 # Alur distribusi lengkap dan langkah setup manual: docs/distribution.md.
 #
-#   - APK → GitHub Release (draft): sideload/fallback sebelum Play Store siap.
-#   - AAB → Play Console track `internal`, lewat `shorebird release android` (bukan
-#     `flutter build appbundle` langsung), yang sekaligus mendaftarkan rilis ini sebagai
-#     target patch OTA. Cara mencabut Shorebird ada di komentar blok "── Shorebird" di
-#     bawah. Promosi ke track lain dilakukan MANUAL di Play Console — docs/distribution.md
-#     §Promote.
-#   - Upload pertama ke Play Console WAJIB manual lewat web UI sekali dulu — Play
-#     Developer API menolak package yang belum pernah punya release.
+#   - APK + AAB → draft GitHub Release. APK untuk sideload/fallback; AAB adalah BERKAS YANG
+#     BENAR-BENARNA dikirim ke Play nanti, disimpan di sebelah APK sebagai buktinya.
+#   - AAB dibangun lewat `shorebird release android`, bukan `flutter build appbundle` langsung, jadi
+#     rilis ini sekaligus mendaftarkan diri sebagai target patch OTA. Yang mendorong kode ke tablet
+#     adalah `shorebird patch`, tindakan manusia terpisah. Cara mencabut Shorebird ada di komentar
+#     blok "── Shorebird" di bawah. Promosi ke track lain dilakukan MANUAL di Play Console —
+#     docs/distribution.md §Promote.
+#   - Upload ke Play terjadi setelah manusia menekan Publish di halaman Releases: `publish-to-store.yml`
+#     mengunduh AAB dari asset release itu dan menguploadnya ke track `internal`. Upload pertama ke
+#     Play Console WAJIB manual lewat web UI sekali dulu — Play Developer API menolak package yang
+#     belum pernah punya release.
 #
-# Trigger: tag `pos-vMAJOR.MINOR.PATCH` polos (tanpa akhiran) — rilis NATIVE.
+# Trigger: tag `pos-vMAJOR.MINOR.PATCH` polos (tanpa akhiran) — rilis NATIVE. Bisa juga dipanggil
+# sebagai reusable workflow oleh `release-dispatch.yml`; kedua pintu hidup berdampingan.
 #
 # Repo ini monorepo dan akan memuat aplikasi lain, jadi tag diberi prefix aplikasi: `pos-`
 # menandakan workflow POS, sementara versi yang dibaca adalah bagian setelahnya (`pos-v1.2.0`
@@ -31,10 +36,10 @@
 #   ANDROID_KEY_BASE64         base64 satu baris dari upload-keystore.jks
 #   ANDROID_KEY_ALIAS          alias di dalam keystore
 #   ANDROID_KEY_PASSWORD       password keystore
-#   PLAY_SERVICE_ACCOUNT_JSON  isi lengkap JSON key service account Play Developer API
 #   SHOREBIRD_TOKEN            API key dari Shorebird console (docs.shorebird.dev/account/api-keys)
 #
-# Cara membuat PLAY_SERVICE_ACCOUNT_JSON: docs/distribution.md §Setup.
+# Kunci JSON service account Play TIDAK dipakai di sini sejak 2026-10-05: yang mengupload ke
+# Console adalah `publish-to-store.yml`, dipanggil oleh event Publish.
 
 name: Release POS
 
@@ -43,6 +48,32 @@ on:
     tags:
       - "pos-v[0-9]+.[0-9]+.[0-9]+*"
       - "!pos-v[0-9]+.[0-9]+.[0-9]+-*"
+  # Pintu kedua: `release-dispatch.yml` memanggil workflow ini, bukan mengulang logikanya.
+  workflow_call:
+    inputs:
+      version:
+        description: "X.Y.Z (production). Kosong = artifact saja; tag dibaca dari GITHUB_REF_NAME"
+        required: false
+        default: ""
+        type: string
+      # `yes` = tag + draft release. `no` = uji coba: artifact Actions saja, tanpa Shorebird
+      # release. Default `yes`, bukan `no`, karena jalan push-tag tidak punya input sama sekali:
+      # nilai default yang aman di pintu yang tidak menyuruh apa-apa adalah "rilis sungguhan",
+      # yaitu perilaku sebelum dispatcher ada.
+      draft_release:
+        description: "yes = tag + draft release, no = artifact Actions saja (uji coba)"
+        required: false
+        default: "yes"
+        type: string
+    secrets:
+      ANDROID_KEY_BASE64:
+        required: true
+      ANDROID_KEY_ALIAS:
+        required: true
+      ANDROID_KEY_PASSWORD:
+        required: true
+      SHOREBIRD_TOKEN:
+        required: false
 
 # Satu rilis per tag. Tag tidak bisa dipush ulang, jadi run yang sedang berjalan
 # tidak perlu dibatalkan.
@@ -76,15 +107,45 @@ jobs:
         uses: actions/checkout@v4
 
       # ── Versi ─────────────────────────────────────────────────────────────
-      # Trigger workflow ini selalu `pos-vMAJOR.MINOR.PATCH` polos (dijaga oleh pattern di
-      # `on.push.tags`), jadi versi selalu tiga angka bersih, tanpa akhiran apa pun. Prefix
-      # `pos-` dibuang di sini — ia menandakan aplikasi, bukan bagian dari versinya.
+      # Dua pintu masuk hidup berdampingan: dipicu tag (`on.push.tags`), atau dipicu dispatcher
+      # lewat `workflow_call`. Yang menang adalah `inputs.version` kalau ada; kalau tidak, versinya
+      # dibaca dari nama tag. `GITHUB_REF_NAME` hanya dibaca di pintu tag: saat dispatch ia berisi
+      # nama BRANCH (`main`), dan `main` bukan versi.
+      #
+      # Uji coba (`draft release = no`) tidak punya versi sama sekali — dispatcher ignorar
+      # `version` untuknya. Versi fallback-nya `0.0.0`, bukan `0.0.0+local`: build metadata `+local`
+      # ikut terbawa kepecahan versi di step di bawah (`PATCH` jadi `0+local`) dan membuat
+      # aritmetikanya gagal, bukan hanya-strings.
       - name: Derive version
         id: version
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+          DRAFT_RELEASE: ${{ inputs.draft_release }}
         run: |
-          VERSION="${GITHUB_REF_NAME#pos-v}"
+          if [ "$DRAFT_RELEASE" = "no" ]; then
+            VERSION=""
+          elif [ -n "$INPUT_VERSION" ]; then
+            VERSION="$INPUT_VERSION"
+          else
+            VERSION="${GITHUB_REF_NAME#pos-v}"
+          fi
+
+          if [ -z "$VERSION" ]; then
+            VERSION="0.0.0"
+            echo "Uji coba: version input diabaikan, memakai $VERSION."
+          fi
+
+          # Tag rilis tidak boleh diambil dari `GITHUB_REF_NAME` di pintu dispatch, jadi ia hanya
+          # dibangun dari versi yang sudah dipastikan di atas. Uji-coba tidak punya tag.
+          if [ "$DRAFT_RELEASE" = "no" ]; then
+            TAG=""
+          else
+            TAG="pos-v$VERSION"
+          fi
+
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "Versi dari tag: $VERSION"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "Versi: $VERSION${TAG:+ (tag $TAG)}"
 
       # `versionCode` diturunkan dari versi tag supaya setiap rilis punya nilai yang naik
       # secara monoton — Android (dan Play Console) menolak rilis kalau versionCode tidak
@@ -219,12 +280,20 @@ jobs:
       #
       # Tidak ada bagian lain di workflow ini yang perlu diubah — "Locate AAB" mencari
       # di path output yang sama untuk kedua cara.
+      # Dua step Shorebird ini dikunci di `draft release = no`. Alasannya struktural, bukan
+      #Hsembunyi: Shorebird menolak dua release untuk versi yang sama (shorebirdtech/shorebird#1174),
+      # jadi uji-coba yang menjalankan `shorebird release` dengan 1.2.0 akan memakan slot versi
+      # production dan membuat rilis 1.2.0 yang sebenarnya gagal belakangan. Karena itu uji-coba
+      # tidak pernah memanggil `shorebird release` — dan AAB tidak dibangun di sana, sebab tanpa AAB
+      # tidak ada yang perlu diunduh ke Play.
       - name: Setup Shorebird
+        if: inputs.draft_release != 'no'
         uses: shorebirdtech/setup-shorebird@v1
         with:
           cache: true
 
       - name: Build release AAB (shorebird release android)
+        if: inputs.draft_release != 'no'
         uses: shorebirdtech/shorebird-release@v1
         with:
           platform: android
@@ -250,8 +319,10 @@ jobs:
           echo "name=finnesia-pos-${{ steps.version.outputs.version }}.apk" >> "$GITHUB_OUTPUT"
           ls -lh "$APK"
 
+      # yang tidak dibangun di uji-coba, jadi langkah ini ikut dikunci.
       - name: Locate AAB
         id: aab
+        if: inputs.draft_release != 'no'
         run: |
           AAB=$(find apps/pos/build/app/outputs/bundle/release \
             -type f -name '*.aab' | head -n1)
@@ -355,24 +426,21 @@ jobs:
       # Draft, bukan rilis langsung: APK tidak bisa diunduh sampai Anda publish dari
       # dashboard. Rilis otomatis tanpa dilihat dulu bukan hal yang diinginkan untuk
       # aplikasi yang menangani uang.
+      #
+      # AAB ikut terlampir di sebelah APK. Ia bukan duplikat: AAB inilah yang
+      # akan diunduh `publish-to-store.yml` dari asset release ini dan diupload ke Play
+      # setelah Anda menekan Publish. Yang terlampir harus persis yang terkirim.
+      #
+      # `tag_name` bukan `github.ref_name` karena pintu dispatcher tidak punya tag: `github.ref_name`
+      # di sana berisi nama branch, dan action itu akan membuat release pada branch itu.
       - name: Create draft release
+        if: inputs.draft_release != 'no'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name }}
+          tag_name: ${{ steps.version.outputs.tag }}
           name: "Finnesia POS v${{ steps.version.outputs.version }}"
           draft: true
           generate_release_notes: true
-          files: ${{ steps.apk.outputs.path }}
-
-      # Selalu ke track `internal` — promosi ke `closed`/`open`/`production` dilakukan
-      # manual di Play Console (docs/distribution.md §Promote), bukan dipilih di sini.
-      # Gagal dengan jelas kalau `PLAY_SERVICE_ACCOUNT_JSON` belum diisi atau package
-      # belum pernah di-upload manual — itu prasyarat satu kali, lihat docs/distribution.md.
-      - name: Publish to Play Console (internal track)
-        uses: r0adkll/upload-google-play@v1
-        with:
-          serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
-          packageName: ${{ env.ANDROID_PACKAGE_NAME }}
-          releaseFiles: ${{ steps.aab.outputs.path }}
-          track: internal
-          status: completed
+          files: |
+            ${{ steps.apk.outputs.path }}
+            ${{ steps.aab.outputs.path }}

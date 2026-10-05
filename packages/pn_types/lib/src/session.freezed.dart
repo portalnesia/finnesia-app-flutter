@@ -16,7 +16,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$PosBranding {
 
-@JsonKey(name: 'app_name') String? get appName;@JsonKey(name: 'logo_url') String? get logoUrl;@JsonKey(name: 'custom_domain') String? get customDomain;@JsonKey(name: 'account_mode') String? get accountMode;
+@JsonKey(name: 'app_name') String? get appName;@JsonKey(name: 'logo') FileRef? get logo;@JsonKey(name: 'custom_domain') String? get customDomain;@JsonKey(name: 'account_mode') String? get accountMode;
 /// Create a copy of PosBranding
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -30,20 +30,20 @@ $PosBrandingCopyWith<PosBranding> get copyWith => _$PosBrandingCopyWithImpl<PosB
 @override
 bool operator ==(Object other) {
   final _this = this as PosBranding;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PosBranding&&(identical(other.appName, _this.appName) || other.appName == _this.appName)&&(identical(other.logoUrl, _this.logoUrl) || other.logoUrl == _this.logoUrl)&&(identical(other.customDomain, _this.customDomain) || other.customDomain == _this.customDomain)&&(identical(other.accountMode, _this.accountMode) || other.accountMode == _this.accountMode));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PosBranding&&(identical(other.appName, _this.appName) || other.appName == _this.appName)&&(identical(other.logo, _this.logo) || other.logo == _this.logo)&&(identical(other.customDomain, _this.customDomain) || other.customDomain == _this.customDomain)&&(identical(other.accountMode, _this.accountMode) || other.accountMode == _this.accountMode));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as PosBranding;
-  return Object.hash(runtimeType,_this.appName,_this.logoUrl,_this.customDomain,_this.accountMode);
+  return Object.hash(runtimeType,_this.appName,_this.logo,_this.customDomain,_this.accountMode);
 }
 
 @override
 String toString() {
   final _this = this as PosBranding;
-  return 'PosBranding(appName: ${_this.appName}, logoUrl: ${_this.logoUrl}, customDomain: ${_this.customDomain}, accountMode: ${_this.accountMode})';
+  return 'PosBranding(appName: ${_this.appName}, logo: ${_this.logo}, customDomain: ${_this.customDomain}, accountMode: ${_this.accountMode})';
 }
 
 
@@ -54,11 +54,11 @@ abstract mixin class $PosBrandingCopyWith<$Res>  {
   factory $PosBrandingCopyWith(PosBranding value, $Res Function(PosBranding) _then) = _$PosBrandingCopyWithImpl;
 @useResult
 $Res call({
-@JsonKey(name: 'app_name') String? appName,@JsonKey(name: 'logo_url') String? logoUrl,@JsonKey(name: 'custom_domain') String? customDomain,@JsonKey(name: 'account_mode') String? accountMode
+@JsonKey(name: 'app_name') String? appName,@JsonKey(name: 'logo') FileRef? logo,@JsonKey(name: 'custom_domain') String? customDomain,@JsonKey(name: 'account_mode') String? accountMode
 });
 
 
-
+$FileRefCopyWith<$Res>? get logo;
 
 }
 /// @nodoc
@@ -71,16 +71,28 @@ class _$PosBrandingCopyWithImpl<$Res>
 
 /// Create a copy of PosBranding
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? appName = freezed,Object? logoUrl = freezed,Object? customDomain = freezed,Object? accountMode = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? appName = freezed,Object? logo = freezed,Object? customDomain = freezed,Object? accountMode = freezed,}) {
   return _then(PosBranding(
 appName: freezed == appName ? _self.appName : appName // ignore: cast_nullable_to_non_nullable
-as String?,logoUrl: freezed == logoUrl ? _self.logoUrl : logoUrl // ignore: cast_nullable_to_non_nullable
-as String?,customDomain: freezed == customDomain ? _self.customDomain : customDomain // ignore: cast_nullable_to_non_nullable
+as String?,logo: freezed == logo ? _self.logo : logo // ignore: cast_nullable_to_non_nullable
+as FileRef?,customDomain: freezed == customDomain ? _self.customDomain : customDomain // ignore: cast_nullable_to_non_nullable
 as String?,accountMode: freezed == accountMode ? _self.accountMode : accountMode // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }
+/// Create a copy of PosBranding
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$FileRefCopyWith<$Res>? get logo {
+    if (_self.logo == null) {
+    return null;
+  }
 
+  return $FileRefCopyWith<$Res>(_self.logo!, (value) {
+    return _then(_self.copyWith(logo: value));
+  });
+}
 }
 
 
@@ -162,10 +174,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'app_name')  String? appName, @JsonKey(name: 'logo_url')  String? logoUrl, @JsonKey(name: 'custom_domain')  String? customDomain, @JsonKey(name: 'account_mode')  String? accountMode)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'app_name')  String? appName, @JsonKey(name: 'logo')  FileRef? logo, @JsonKey(name: 'custom_domain')  String? customDomain, @JsonKey(name: 'account_mode')  String? accountMode)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _PosBranding() when $default != null:
-return $default(_that.appName,_that.logoUrl,_that.customDomain,_that.accountMode);case _:
+return $default(_that.appName,_that.logo,_that.customDomain,_that.accountMode);case _:
   return orElse();
 
 }
@@ -183,10 +195,10 @@ return $default(_that.appName,_that.logoUrl,_that.customDomain,_that.accountMode
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'app_name')  String? appName, @JsonKey(name: 'logo_url')  String? logoUrl, @JsonKey(name: 'custom_domain')  String? customDomain, @JsonKey(name: 'account_mode')  String? accountMode)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'app_name')  String? appName, @JsonKey(name: 'logo')  FileRef? logo, @JsonKey(name: 'custom_domain')  String? customDomain, @JsonKey(name: 'account_mode')  String? accountMode)  $default,) {final _that = this;
 switch (_that) {
 case _PosBranding():
-return $default(_that.appName,_that.logoUrl,_that.customDomain,_that.accountMode);case _:
+return $default(_that.appName,_that.logo,_that.customDomain,_that.accountMode);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -203,10 +215,10 @@ return $default(_that.appName,_that.logoUrl,_that.customDomain,_that.accountMode
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'app_name')  String? appName, @JsonKey(name: 'logo_url')  String? logoUrl, @JsonKey(name: 'custom_domain')  String? customDomain, @JsonKey(name: 'account_mode')  String? accountMode)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'app_name')  String? appName, @JsonKey(name: 'logo')  FileRef? logo, @JsonKey(name: 'custom_domain')  String? customDomain, @JsonKey(name: 'account_mode')  String? accountMode)?  $default,) {final _that = this;
 switch (_that) {
 case _PosBranding() when $default != null:
-return $default(_that.appName,_that.logoUrl,_that.customDomain,_that.accountMode);case _:
+return $default(_that.appName,_that.logo,_that.customDomain,_that.accountMode);case _:
   return null;
 
 }
@@ -218,11 +230,11 @@ return $default(_that.appName,_that.logoUrl,_that.customDomain,_that.accountMode
 @JsonSerializable()
 
 class _PosBranding implements PosBranding {
-  const _PosBranding({@JsonKey(name: 'app_name') this.appName, @JsonKey(name: 'logo_url') this.logoUrl, @JsonKey(name: 'custom_domain') this.customDomain, @JsonKey(name: 'account_mode') this.accountMode});
+  const _PosBranding({@JsonKey(name: 'app_name') this.appName, @JsonKey(name: 'logo') this.logo, @JsonKey(name: 'custom_domain') this.customDomain, @JsonKey(name: 'account_mode') this.accountMode});
   factory _PosBranding.fromJson(Map<String, dynamic> json) => _$PosBrandingFromJson(json);
 
 @override@JsonKey(name: 'app_name') final  String? appName;
-@override@JsonKey(name: 'logo_url') final  String? logoUrl;
+@override@JsonKey(name: 'logo') final  FileRef? logo;
 @override@JsonKey(name: 'custom_domain') final  String? customDomain;
 @override@JsonKey(name: 'account_mode') final  String? accountMode;
 
@@ -239,18 +251,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _PosBranding&&(identical(other.appName, appName) || other.appName == appName)&&(identical(other.logoUrl, logoUrl) || other.logoUrl == logoUrl)&&(identical(other.customDomain, customDomain) || other.customDomain == customDomain)&&(identical(other.accountMode, accountMode) || other.accountMode == accountMode));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _PosBranding&&(identical(other.appName, appName) || other.appName == appName)&&(identical(other.logo, logo) || other.logo == logo)&&(identical(other.customDomain, customDomain) || other.customDomain == customDomain)&&(identical(other.accountMode, accountMode) || other.accountMode == accountMode));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,appName,logoUrl,customDomain,accountMode);
+    return Object.hash(runtimeType,appName,logo,customDomain,accountMode);
 }
 
 @override
 String toString() {
-    return 'PosBranding(appName: $appName, logoUrl: $logoUrl, customDomain: $customDomain, accountMode: $accountMode)';
+    return 'PosBranding(appName: $appName, logo: $logo, customDomain: $customDomain, accountMode: $accountMode)';
 }
 
 
@@ -261,11 +273,11 @@ abstract mixin class _$PosBrandingCopyWith<$Res> implements $PosBrandingCopyWith
   factory _$PosBrandingCopyWith(_PosBranding value, $Res Function(_PosBranding) _then) = __$PosBrandingCopyWithImpl;
 @override @useResult
 $Res call({
-@JsonKey(name: 'app_name') String? appName,@JsonKey(name: 'logo_url') String? logoUrl,@JsonKey(name: 'custom_domain') String? customDomain,@JsonKey(name: 'account_mode') String? accountMode
+@JsonKey(name: 'app_name') String? appName,@JsonKey(name: 'logo') FileRef? logo,@JsonKey(name: 'custom_domain') String? customDomain,@JsonKey(name: 'account_mode') String? accountMode
 });
 
 
-
+@override $FileRefCopyWith<$Res>? get logo;
 
 }
 /// @nodoc
@@ -278,17 +290,29 @@ class __$PosBrandingCopyWithImpl<$Res>
 
 /// Create a copy of PosBranding
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? appName = freezed,Object? logoUrl = freezed,Object? customDomain = freezed,Object? accountMode = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? appName = freezed,Object? logo = freezed,Object? customDomain = freezed,Object? accountMode = freezed,}) {
   return _then(_PosBranding(
 appName: freezed == appName ? _self.appName : appName // ignore: cast_nullable_to_non_nullable
-as String?,logoUrl: freezed == logoUrl ? _self.logoUrl : logoUrl // ignore: cast_nullable_to_non_nullable
-as String?,customDomain: freezed == customDomain ? _self.customDomain : customDomain // ignore: cast_nullable_to_non_nullable
+as String?,logo: freezed == logo ? _self.logo : logo // ignore: cast_nullable_to_non_nullable
+as FileRef?,customDomain: freezed == customDomain ? _self.customDomain : customDomain // ignore: cast_nullable_to_non_nullable
 as String?,accountMode: freezed == accountMode ? _self.accountMode : accountMode // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }
 
+/// Create a copy of PosBranding
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$FileRefCopyWith<$Res>? get logo {
+    if (_self.logo == null) {
+    return null;
+  }
 
+  return $FileRefCopyWith<$Res>(_self.logo!, (value) {
+    return _then(_self.copyWith(logo: value));
+  });
+}
 }
 
 

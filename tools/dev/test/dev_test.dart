@@ -339,6 +339,108 @@ void main() {
     });
   });
 
+  // The gate the dispatcher workflow calls. It plans nothing: the whole job is whether the exit
+  // code is 0 or not, so `check` must not start paying for it (SPEC §5.1).
+  group('dispatch', () {
+    test('runs nothing at all for an accepted combination', () {
+      expect(
+          planFor([
+            'dispatch',
+            '--env',
+            'staging',
+            '--device',
+            'android',
+            '--draft',
+            'no'
+          ]),
+          isEmpty);
+      expect(
+          planFor([
+            'dispatch',
+            '--env',
+            'production',
+            '--device',
+            'all',
+            '--draft',
+            'yes',
+            '--version',
+            '1.2.0'
+          ]),
+          isEmpty);
+    });
+
+    // Exit 64 plus a `::error::` line is what `bin/dev.dart` already does with a
+    // `UsageException`, and it is what the YAML gate reads. Without the prefix the refusal is
+    // only visible in the raw log.
+    test('refuses a combination as an ::error::, so the job exits non-zero',
+        () {
+      expect(
+        () => planFor([
+          'dispatch',
+          '--env',
+          'staging',
+          '--device',
+          'windows',
+          '--draft',
+          'no'
+        ]),
+        usageError('::error::'),
+      );
+      expect(
+        () => planFor([
+          'dispatch',
+          '--env',
+          'staging',
+          '--device',
+          'windows',
+          '--draft',
+          'no'
+        ]),
+        usageError('windows'),
+      );
+    });
+
+    test('refuses draft release = yes without a version', () {
+      expect(
+        () => planFor([
+          'dispatch',
+          '--env',
+          'production',
+          '--device',
+          'android',
+          '--draft',
+          'yes'
+        ]),
+        usageError('::error::'),
+      );
+    });
+
+    test('refuses flags it does not know, by name', () {
+      expect(
+        () => planFor([
+          'dispatch',
+          '--env',
+          'staging',
+          '--device',
+          'android',
+          '--draft',
+          'no',
+          '--tag',
+          'pos-v1.2.0'
+        ]),
+        usageError('::error::'),
+      );
+      expect(() => planFor(['dispatch']), usageError('::error::'));
+    });
+
+    test('is not part of check, which stays the CI list', () {
+      expect(
+        planFor(['check']).map((s) => s.builtin ?? s.executable),
+        isNot(contains('dispatch')),
+      );
+    });
+  });
+
   group('test', () {
     test('pure packages with dart test, Flutter ones with flutter test', () {
       expect(planFor(['test']), [
@@ -428,6 +530,43 @@ void main() {
     });
   });
 
+  // CI runs this step on its own, so it has to be reachable without running all of `check`. It is
+  // the same `Step` object `check` uses: a second literal would be the list of paths written twice,
+  // and the copy is the thing that goes stale when a package is added.
+  group('format', () {
+    test('runs the same step check runs, and nothing else', () {
+      final format = planFor(['format']).single;
+      final inCheck = planFor(['check']).singleWhere(
+          (s) => s.executable == 'dart' && s.args.contains('format'));
+
+      expect(identical(format, inCheck), isTrue,
+          reason:
+              '`format` and `check` must share one Step, not two copies of it');
+
+      expect(format.executable, 'dart');
+      expect(format.directory, '.');
+      expect(format.args, [
+        'format',
+        '--output=none',
+        '--set-exit-if-changed',
+        ...formatTargets,
+      ]);
+      expect(formatTargets, hasLength(19));
+    });
+
+    test('names the source roots, never the whole tree', () {
+      final targets = planFor(['format']).single.args;
+
+      expect(targets, isNot(contains('.')));
+      // A package added to `packages` and left out of `formatTargets` would never be formatted,
+      // and CI would not say so.
+      for (final package in packages) {
+        expect(targets, contains('${package.directory}/lib'));
+        expect(targets, contains('${package.directory}/test'));
+      }
+    });
+  });
+
   // The order of AGENTS.md §Verification and CI: an earlier failure stops the later steps.
   group('check', () {
     // Every step of `ci.yml` that is a check and not the setup of a runner, in its order. The two
@@ -439,7 +578,8 @@ void main() {
               : '${s.executable} ${s.args.join(' ')} @${s.directory}'),
           [
             'dart pub get @.',
-            'dart format --output=none --set-exit-if-changed . @.',
+            'dart format --output=none --set-exit-if-changed '
+                '${formatTargets.join(' ')} @.',
             'dart analyze @.',
             'builtin gen-fresh packages/pn_types packages/pn_pos apps/pos',
             'builtin no-flutter-imports packages/pn_types/lib packages/pn_pos/lib',
@@ -449,6 +589,29 @@ void main() {
             'flutter test @apps/pos',
             'dart run tools/rule_lint/bin/rule_lint.dart @.',
           ]);
+    });
+
+    test('formats the source roots by name, never the whole tree', () {
+      final format = planFor(['check']).singleWhere(
+          (s) => s.executable == 'dart' && s.args.contains('format'));
+
+      expect(format.directory, '.');
+      expect(format.args, isNot(contains('.')));
+
+      final targets =
+          format.args.skipWhile((a) => a != '--set-exit-if-changed').skip(1);
+
+      // A package added to `packages` and forgotten here would never be formatted, and nothing
+      // else in `check` would say so.
+      for (final package in packages) {
+        expect(targets, contains('${package.directory}/lib'));
+        expect(targets, contains('${package.directory}/test'));
+      }
+      for (final tool in toolDirectories) {
+        expect(targets, contains('$tool/bin'));
+        expect(targets, contains('$tool/lib'));
+        expect(targets, contains('$tool/test'));
+      }
     });
 
     test('leaves out the tests of a package that has none', () {

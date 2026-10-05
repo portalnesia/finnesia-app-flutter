@@ -1,0 +1,63 @@
+# Satu-satunya jalan ke Play Console.
+#
+# Berjalan SETELAH manusia menekan Publish di halaman Releases — bukan saat build. Run build
+# (release-pos.yml) hanya membangun dan melampirkan APK + AAB ke draft; file mana yang benar-benar
+# masuk store adalah keputusan manusia, jadi gerbang humansnya di sini, bukan di sana.
+#
+# Trigger: `release: types: [published]`. Sebuah draft tidak memicu apa pun: promoted-nya tetap
+# manual di Console (docs/distribution.md §Promote).
+#
+# Filter tag ada di level JOB, bukan di `on:` — event `release` tidak mendukung filter tag di
+# `on:`. Dua aturan: tag harus diawali `pos-v` (repo ini monorepo, aplikasi lain punya prefixnya)
+# dan tidak boleh memuat `-` (tag `pos-vX.Y.Z-staging.N` milik staging, yang tidak pernah menyentuh
+# Play; tag `pos-vX.Y.Z-N` milik patch dan tidak pernah membuat release sama sekali).
+#
+# AAB diambil dari asset release dengan `gh release download`, bukan dari artifact Actions: artifact
+# hidup 30 hari dan butuh `run-id` + token lintas run, sedangkan asset release adalah berkas yang
+# baru saja dilihat manusia sebelum menekan Publish.
+#
+# Token Shorebird tidak dibutuhkan di sini: Shorebird sudah selesai di run build, dan tidak ada
+# OTA yang boleh ikut terkirim tanpa dilihat.
+
+name: Publish to Store
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  play:
+    # Hanya tag polos `pos-vX.Y.Z`.
+    #
+    # Perhatikan `replace` di aturan kedua. `!contains(tag_name, '-')` versi draft spesifikasi akan
+    # menolak SEGALA tag POS, karena prefix `pos-v` sendiri mengandung hyphen — termasuk tag polos
+    # yang justru harus naik. Yang diperiksa adalah bagian versi setelah prefix dibuang.
+    if: startsWith(github.event.release.tag_name, 'pos-v') && !contains(replace(github.event.release.tag_name, 'pos-v', ''), '-')
+    runs-on: ubuntu-latest
+    # `gh release download` hanya membaca, jadi `read` sudah cukup. Tidak menulis apa pun ke repo.
+    permissions:
+      contents: read
+    # Satu release di-Publish satu kali, jadi antrean per tag sudah cukup. Group ini sengaja
+    # terpisah dari `release-pos-${github.ref}` milik dua penulis draft: file ini tidak menulis
+    # draft, jadi tidak boleh ikut berebut antrean yang belumoriau itu.
+    concurrency:
+      group: publish-to-store-${{ github.event.release.tag_name }}
+      cancel-in-progress: false
+
+    steps:
+      - name: Download AAB from the published release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p /tmp/store
+          gh release download "${{ github.event.release.tag_name }}" --pattern '*.aab' --dir /tmp/store
+          ls -lh /tmp/store
+
+      - name: Publish to Play Console (internal track)
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: com.finnesia.pos
+          releaseFiles: /tmp/store/*.aab
+          track: internal
+          status: completed

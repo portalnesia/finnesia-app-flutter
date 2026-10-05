@@ -25,7 +25,9 @@ mixin _$Product {
 /// [ProductType.tryParse]: a newer catalogue must not crash the till.
 @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue) ProductType? get type;/// The product's own category, which may be nested one level. `topLevelCategory`
 /// rolls a sub-category up to its parent for kitchen/bar tickets.
- Category? get category;/// Null on rows that predate the field, which the till reads as active
+ Category? get category;/// The catalogue photo, as a file reference: the tile renders it only when
+/// [FileRef.renderableUrl] is non-null, and falls back to an icon otherwise.
+@JsonKey(name: 'image') FileRef? get image;/// Null on rows that predate the field, which the till reads as active
 /// (`p.is_active !== false`).
 @JsonKey(name: 'is_active') bool? get isActive;
 /// Create a copy of Product
@@ -41,20 +43,20 @@ $ProductCopyWith<Product> get copyWith => _$ProductCopyWithImpl<Product>(this as
 @override
 bool operator ==(Object other) {
   final _this = this as Product;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Product&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.sku, _this.sku) || other.sku == _this.sku)&&(identical(other.barcode, _this.barcode) || other.barcode == _this.barcode)&&(identical(other.unitId, _this.unitId) || other.unitId == _this.unitId)&&(identical(other.sellPrice, _this.sellPrice) || other.sellPrice == _this.sellPrice)&&(identical(other.type, _this.type) || other.type == _this.type)&&(identical(other.category, _this.category) || other.category == _this.category)&&(identical(other.isActive, _this.isActive) || other.isActive == _this.isActive));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Product&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.sku, _this.sku) || other.sku == _this.sku)&&(identical(other.barcode, _this.barcode) || other.barcode == _this.barcode)&&(identical(other.unitId, _this.unitId) || other.unitId == _this.unitId)&&(identical(other.sellPrice, _this.sellPrice) || other.sellPrice == _this.sellPrice)&&(identical(other.type, _this.type) || other.type == _this.type)&&(identical(other.category, _this.category) || other.category == _this.category)&&(identical(other.image, _this.image) || other.image == _this.image)&&(identical(other.isActive, _this.isActive) || other.isActive == _this.isActive));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as Product;
-  return Object.hash(runtimeType,_this.id,_this.name,_this.sku,_this.barcode,_this.unitId,_this.sellPrice,_this.type,_this.category,_this.isActive);
+  return Object.hash(runtimeType,_this.id,_this.name,_this.sku,_this.barcode,_this.unitId,_this.sellPrice,_this.type,_this.category,_this.image,_this.isActive);
 }
 
 @override
 String toString() {
   final _this = this as Product;
-  return 'Product(id: ${_this.id}, name: ${_this.name}, sku: ${_this.sku}, barcode: ${_this.barcode}, unitId: ${_this.unitId}, sellPrice: ${_this.sellPrice}, type: ${_this.type}, category: ${_this.category}, isActive: ${_this.isActive})';
+  return 'Product(id: ${_this.id}, name: ${_this.name}, sku: ${_this.sku}, barcode: ${_this.barcode}, unitId: ${_this.unitId}, sellPrice: ${_this.sellPrice}, type: ${_this.type}, category: ${_this.category}, image: ${_this.image}, isActive: ${_this.isActive})';
 }
 
 
@@ -65,11 +67,11 @@ abstract mixin class $ProductCopyWith<$Res>  {
   factory $ProductCopyWith(Product value, $Res Function(Product) _then) = _$ProductCopyWithImpl;
 @useResult
 $Res call({
- String id, String name, String? sku, String? barcode,@JsonKey(name: 'unit_id') String unitId,@JsonKey(name: 'sell_price') num? sellPrice,@JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue) ProductType? type, Category? category,@JsonKey(name: 'is_active') bool? isActive
+ String id, String name, String? sku, String? barcode,@JsonKey(name: 'unit_id') String unitId,@JsonKey(name: 'sell_price') num? sellPrice,@JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue) ProductType? type, Category? category,@JsonKey(name: 'image') FileRef? image,@JsonKey(name: 'is_active') bool? isActive
 });
 
 
-$CategoryCopyWith<$Res>? get category;
+$CategoryCopyWith<$Res>? get category;$FileRefCopyWith<$Res>? get image;
 
 }
 /// @nodoc
@@ -82,7 +84,7 @@ class _$ProductCopyWithImpl<$Res>
 
 /// Create a copy of Product
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? sku = freezed,Object? barcode = freezed,Object? unitId = null,Object? sellPrice = freezed,Object? type = freezed,Object? category = freezed,Object? isActive = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? sku = freezed,Object? barcode = freezed,Object? unitId = null,Object? sellPrice = freezed,Object? type = freezed,Object? category = freezed,Object? image = freezed,Object? isActive = freezed,}) {
   return _then(Product(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -92,7 +94,8 @@ as String?,unitId: null == unitId ? _self.unitId : unitId // ignore: cast_nullab
 as String,sellPrice: freezed == sellPrice ? _self.sellPrice : sellPrice // ignore: cast_nullable_to_non_nullable
 as num?,type: freezed == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
 as ProductType?,category: freezed == category ? _self.category : category // ignore: cast_nullable_to_non_nullable
-as Category?,isActive: freezed == isActive ? _self.isActive : isActive // ignore: cast_nullable_to_non_nullable
+as Category?,image: freezed == image ? _self.image : image // ignore: cast_nullable_to_non_nullable
+as FileRef?,isActive: freezed == isActive ? _self.isActive : isActive // ignore: cast_nullable_to_non_nullable
 as bool?,
   ));
 }
@@ -107,6 +110,18 @@ $CategoryCopyWith<$Res>? get category {
 
   return $CategoryCopyWith<$Res>(_self.category!, (value) {
     return _then(_self.copyWith(category: value));
+  });
+}/// Create a copy of Product
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$FileRefCopyWith<$Res>? get image {
+    if (_self.image == null) {
+    return null;
+  }
+
+  return $FileRefCopyWith<$Res>(_self.image!, (value) {
+    return _then(_self.copyWith(image: value));
   });
 }
 }
@@ -190,10 +205,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  String? sku,  String? barcode, @JsonKey(name: 'unit_id')  String unitId, @JsonKey(name: 'sell_price')  num? sellPrice, @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue)  ProductType? type,  Category? category, @JsonKey(name: 'is_active')  bool? isActive)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  String? sku,  String? barcode, @JsonKey(name: 'unit_id')  String unitId, @JsonKey(name: 'sell_price')  num? sellPrice, @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue)  ProductType? type,  Category? category, @JsonKey(name: 'image')  FileRef? image, @JsonKey(name: 'is_active')  bool? isActive)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Product() when $default != null:
-return $default(_that.id,_that.name,_that.sku,_that.barcode,_that.unitId,_that.sellPrice,_that.type,_that.category,_that.isActive);case _:
+return $default(_that.id,_that.name,_that.sku,_that.barcode,_that.unitId,_that.sellPrice,_that.type,_that.category,_that.image,_that.isActive);case _:
   return orElse();
 
 }
@@ -211,10 +226,10 @@ return $default(_that.id,_that.name,_that.sku,_that.barcode,_that.unitId,_that.s
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  String? sku,  String? barcode, @JsonKey(name: 'unit_id')  String unitId, @JsonKey(name: 'sell_price')  num? sellPrice, @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue)  ProductType? type,  Category? category, @JsonKey(name: 'is_active')  bool? isActive)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  String? sku,  String? barcode, @JsonKey(name: 'unit_id')  String unitId, @JsonKey(name: 'sell_price')  num? sellPrice, @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue)  ProductType? type,  Category? category, @JsonKey(name: 'image')  FileRef? image, @JsonKey(name: 'is_active')  bool? isActive)  $default,) {final _that = this;
 switch (_that) {
 case _Product():
-return $default(_that.id,_that.name,_that.sku,_that.barcode,_that.unitId,_that.sellPrice,_that.type,_that.category,_that.isActive);case _:
+return $default(_that.id,_that.name,_that.sku,_that.barcode,_that.unitId,_that.sellPrice,_that.type,_that.category,_that.image,_that.isActive);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -231,10 +246,10 @@ return $default(_that.id,_that.name,_that.sku,_that.barcode,_that.unitId,_that.s
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  String? sku,  String? barcode, @JsonKey(name: 'unit_id')  String unitId, @JsonKey(name: 'sell_price')  num? sellPrice, @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue)  ProductType? type,  Category? category, @JsonKey(name: 'is_active')  bool? isActive)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  String? sku,  String? barcode, @JsonKey(name: 'unit_id')  String unitId, @JsonKey(name: 'sell_price')  num? sellPrice, @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue)  ProductType? type,  Category? category, @JsonKey(name: 'image')  FileRef? image, @JsonKey(name: 'is_active')  bool? isActive)?  $default,) {final _that = this;
 switch (_that) {
 case _Product() when $default != null:
-return $default(_that.id,_that.name,_that.sku,_that.barcode,_that.unitId,_that.sellPrice,_that.type,_that.category,_that.isActive);case _:
+return $default(_that.id,_that.name,_that.sku,_that.barcode,_that.unitId,_that.sellPrice,_that.type,_that.category,_that.image,_that.isActive);case _:
   return null;
 
 }
@@ -246,7 +261,7 @@ return $default(_that.id,_that.name,_that.sku,_that.barcode,_that.unitId,_that.s
 @JsonSerializable()
 
 class _Product implements Product {
-  const _Product({required this.id, required this.name, this.sku, this.barcode, @JsonKey(name: 'unit_id') required this.unitId, @JsonKey(name: 'sell_price') this.sellPrice, @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue) this.type, this.category, @JsonKey(name: 'is_active') this.isActive});
+  const _Product({required this.id, required this.name, this.sku, this.barcode, @JsonKey(name: 'unit_id') required this.unitId, @JsonKey(name: 'sell_price') this.sellPrice, @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue) this.type, this.category, @JsonKey(name: 'image') this.image, @JsonKey(name: 'is_active') this.isActive});
   factory _Product.fromJson(Map<String, dynamic> json) => _$ProductFromJson(json);
 
 @override final  String id;
@@ -266,6 +281,9 @@ class _Product implements Product {
 /// The product's own category, which may be nested one level. `topLevelCategory`
 /// rolls a sub-category up to its parent for kitchen/bar tickets.
 @override final  Category? category;
+/// The catalogue photo, as a file reference: the tile renders it only when
+/// [FileRef.renderableUrl] is non-null, and falls back to an icon otherwise.
+@override@JsonKey(name: 'image') final  FileRef? image;
 /// Null on rows that predate the field, which the till reads as active
 /// (`p.is_active !== false`).
 @override@JsonKey(name: 'is_active') final  bool? isActive;
@@ -283,18 +301,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _Product&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.sku, sku) || other.sku == sku)&&(identical(other.barcode, barcode) || other.barcode == barcode)&&(identical(other.unitId, unitId) || other.unitId == unitId)&&(identical(other.sellPrice, sellPrice) || other.sellPrice == sellPrice)&&(identical(other.type, type) || other.type == type)&&(identical(other.category, category) || other.category == category)&&(identical(other.isActive, isActive) || other.isActive == isActive));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _Product&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.sku, sku) || other.sku == sku)&&(identical(other.barcode, barcode) || other.barcode == barcode)&&(identical(other.unitId, unitId) || other.unitId == unitId)&&(identical(other.sellPrice, sellPrice) || other.sellPrice == sellPrice)&&(identical(other.type, type) || other.type == type)&&(identical(other.category, category) || other.category == category)&&(identical(other.image, image) || other.image == image)&&(identical(other.isActive, isActive) || other.isActive == isActive));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,id,name,sku,barcode,unitId,sellPrice,type,category,isActive);
+    return Object.hash(runtimeType,id,name,sku,barcode,unitId,sellPrice,type,category,image,isActive);
 }
 
 @override
 String toString() {
-    return 'Product(id: $id, name: $name, sku: $sku, barcode: $barcode, unitId: $unitId, sellPrice: $sellPrice, type: $type, category: $category, isActive: $isActive)';
+    return 'Product(id: $id, name: $name, sku: $sku, barcode: $barcode, unitId: $unitId, sellPrice: $sellPrice, type: $type, category: $category, image: $image, isActive: $isActive)';
 }
 
 
@@ -305,11 +323,11 @@ abstract mixin class _$ProductCopyWith<$Res> implements $ProductCopyWith<$Res> {
   factory _$ProductCopyWith(_Product value, $Res Function(_Product) _then) = __$ProductCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String name, String? sku, String? barcode,@JsonKey(name: 'unit_id') String unitId,@JsonKey(name: 'sell_price') num? sellPrice,@JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue) ProductType? type, Category? category,@JsonKey(name: 'is_active') bool? isActive
+ String id, String name, String? sku, String? barcode,@JsonKey(name: 'unit_id') String unitId,@JsonKey(name: 'sell_price') num? sellPrice,@JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue) ProductType? type, Category? category,@JsonKey(name: 'image') FileRef? image,@JsonKey(name: 'is_active') bool? isActive
 });
 
 
-@override $CategoryCopyWith<$Res>? get category;
+@override $CategoryCopyWith<$Res>? get category;@override $FileRefCopyWith<$Res>? get image;
 
 }
 /// @nodoc
@@ -322,7 +340,7 @@ class __$ProductCopyWithImpl<$Res>
 
 /// Create a copy of Product
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? sku = freezed,Object? barcode = freezed,Object? unitId = null,Object? sellPrice = freezed,Object? type = freezed,Object? category = freezed,Object? isActive = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? sku = freezed,Object? barcode = freezed,Object? unitId = null,Object? sellPrice = freezed,Object? type = freezed,Object? category = freezed,Object? image = freezed,Object? isActive = freezed,}) {
   return _then(_Product(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -332,7 +350,8 @@ as String?,unitId: null == unitId ? _self.unitId : unitId // ignore: cast_nullab
 as String,sellPrice: freezed == sellPrice ? _self.sellPrice : sellPrice // ignore: cast_nullable_to_non_nullable
 as num?,type: freezed == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
 as ProductType?,category: freezed == category ? _self.category : category // ignore: cast_nullable_to_non_nullable
-as Category?,isActive: freezed == isActive ? _self.isActive : isActive // ignore: cast_nullable_to_non_nullable
+as Category?,image: freezed == image ? _self.image : image // ignore: cast_nullable_to_non_nullable
+as FileRef?,isActive: freezed == isActive ? _self.isActive : isActive // ignore: cast_nullable_to_non_nullable
 as bool?,
   ));
 }
@@ -348,6 +367,18 @@ $CategoryCopyWith<$Res>? get category {
 
   return $CategoryCopyWith<$Res>(_self.category!, (value) {
     return _then(_self.copyWith(category: value));
+  });
+}/// Create a copy of Product
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$FileRefCopyWith<$Res>? get image {
+    if (_self.image == null) {
+    return null;
+  }
+
+  return $FileRefCopyWith<$Res>(_self.image!, (value) {
+    return _then(_self.copyWith(image: value));
   });
 }
 }

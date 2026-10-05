@@ -177,6 +177,7 @@
       }
     }
   },
+  "tenantLogoLabel": "Logo tenant",
   "loginTitle": "Masuk",
   "loginSubtitle": "Masuk dengan akun Anda untuk mulai berjualan di outlet ini.",
   "loginDeviceLabel": "Perangkat",

@@ -18,6 +18,7 @@ import 'package:pn_ui/src/widgets/ledger_row.dart';
 import 'package:pn_ui/src/widgets/top_notice.dart';
 import 'package:pos/app/app_scope.dart';
 import 'package:pos/bootstrap.dart';
+import 'package:pos/branding/company_avatar.dart';
 import 'package:pos/l10n/app_localizations.dart';
 import 'package:pos/menu/menu_controller.dart';
 import 'package:pos/native/http/active.dart';
@@ -111,7 +112,10 @@ class _MenuScreenState extends State<MenuScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            ScreenHeader(title: l10n.menuTitle),
+            ScreenHeader(
+              title: l10n.menuTitle,
+              trailing: const CompanyAvatar(),
+            ),
             Expanded(
               child: ListenableBuilder(
                 listenable: controller,

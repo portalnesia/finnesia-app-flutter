@@ -16,6 +16,8 @@
 /// tool underneath, as typed, and runs the same on Windows, macOS and Linux.
 library;
 
+import 'dispatch.dart';
+
 /// One command to run: [executable] with [args], from [directory] (relative to the repo root).
 class Step {
   const Step(this.executable, this.args, this.directory) : builtin = null;
@@ -61,7 +63,9 @@ const taskNames = [
   'icons',
   'gen-check',
   'guard',
+  'dispatch',
   'test',
+  'format',
   'check',
 ];
 
@@ -105,16 +109,30 @@ Usage: ./dev <task> [args...]        (Windows: .\dev <task> [args...])
                         of pos)? Regenerates, compares, and puts the files back: it changes
                         nothing. pn_types, pn_pos, pos.
   guard                 Fail if pn_types or pn_pos imports flutter (they must stay pure).
+  dispatch --env E --device D --draft Y [--version V]
+                        Check one release-dispatch combination, and run nothing. E is
+                        staging | production | patch, D is android | windows | all, Y is
+                        no | yes. `--version` is required when --draft yes. A refused
+                        combination prints `::error::` with the reason and exits non-zero,
+                        so the dispatcher job can gate the build on it; an accepted one
+                        exits 0 silently. The rules live in lib/dispatch.dart and are tested
+                        in test/dispatch_test.dart (plan/release-dispatch/SPEC.md §2a, §3.1).
   test [package]        Run the tests: pn_types, pn_pos, pn_ui, pos. No name runs all of them.
+  format                Just the format check, which is what CI runs as its own step. The source
+                        roots come from the tool, not from the caller: `dart format` has no
+                        exclusion flag and does not read `.gitignore`, so `dart format .` walks
+                        into `build/` and dies. See `formatTargets`.
   check                 Everything CI runs, in CI's order: pub get, format, analyze, generated
                         code up to date, no flutter in pn_types/pn_pos, tests, rule_lint.
 
 Anything after the task name goes to the tool underneath, untouched.
 ''';
 
-typedef _Package = ({String name, String directory, bool flutter});
+/// One pub package in the workspace. Public because [packages] is public, and a test reads it.
+typedef Package = ({String name, String directory, bool flutter});
 
-const _packages = <_Package>[
+/// Every pub package in the workspace, with what `plan()` needs to know about each.
+const packages = <Package>[
   (name: 'pn_types', directory: 'packages/pn_types', flutter: false),
   (name: 'pn_pos', directory: 'packages/pn_pos', flutter: false),
   (name: 'pn_ui', directory: 'packages/pn_ui', flutter: true),
@@ -127,12 +145,54 @@ const _generating = ['packages/pn_types', 'packages/pn_pos', 'apps/pos'];
 /// Packages that must stay free of Flutter (`architecture.md` §3).
 const _pure = ['packages/pn_types/lib', 'packages/pn_pos/lib'];
 
+/// The tools under `tools/`, each a Dart package of its own with `bin`, `lib` and `test`.
+const toolDirectories = ['tools/dev', 'tools/rule_lint', 'tools/string_lint'];
+
+/// The packages that keep one-off Dart scripts in `tool/` (a build icon, an ESC/POS case
+/// generator). A package with no such script simply is not in here; `pn_types` and `pn_ui` are
+/// not because they have none.
+const _packageToolDirectories = ['apps/pos', 'packages/pn_pos'];
+
+/// What `dart format` is pointed at, derived from [packages] and [toolDirectories].
+///
+/// **Not `.`, and that is not a style choice.** `dart format` has no exclusion flag and does not
+/// read `.gitignore`, so a `.` walk descends into every `build/`, `.dart_tool/` and
+/// `.widget_preview/` in the tree. Under `apps/pos/build/` it reaches a firebase crashlytics
+/// transform directory that no longer exists, and dies with a `PathNotFoundException` — a
+/// traversal failure, not a format complaint, so it formats nothing at all and `check` can never
+/// finish. Naming the source roots is the only way to keep those directories out.
+///
+/// Derived, never written out: a package or a tool added to the lists above joins this list by
+/// itself, and the `check formats the source roots by name` test fails when one is forgotten.
+final formatTargets = <String>[
+  for (final package in packages) ...[
+    '${package.directory}/lib',
+    '${package.directory}/test',
+  ],
+  for (final directory in _packageToolDirectories) '$directory/tool',
+  for (final tool in toolDirectories) ...[
+    '$tool/bin',
+    '$tool/lib',
+    '$tool/test',
+  ],
+];
+
 /// Where the backend a `lokal` app talks to listens (`environment.dart`: `http://localhost:4000`).
 const _localBackendPort = 'tcp:4000';
 
 const _app = 'apps/pos';
 
 const _pubGet = Step('dart', ['pub', 'get'], '.');
+
+/// The format check, shared by `format` and `check`.
+///
+/// One `Step`, one list of targets: a second literal here would be [formatTargets] written down a
+/// second time, and that copy is what stops growing when a package joins the workspace.
+final _format = Step(
+  'dart',
+  ['format', '--output=none', '--set-exit-if-changed', ...formatTargets],
+  '.',
+);
 
 /// The commands for [argv], or a [UsageException].
 ///
@@ -173,18 +233,12 @@ List<Step> plan(
       ],
     'guard' => [const Step.builtin('no-flutter-imports', _pure)],
     'gen-check' => [Step.builtin('gen-fresh', _generatingOf(rest))],
+    'dispatch' => _dispatch(rest),
     'test' => _tests(rest, hasTests),
+    'format' => [_format],
     'check' => [
         _pubGet,
-        const Step(
-            'dart',
-            [
-              'format',
-              '--output=none',
-              '--set-exit-if-changed',
-              '.',
-            ],
-            '.'),
+        _format,
         const Step('dart', ['analyze'], '.'),
         const Step.builtin('gen-fresh', _generating),
         const Step.builtin('no-flutter-imports', _pure),
@@ -261,9 +315,9 @@ List<String> _generatingOf(List<String> rest) {
   if (rest.isEmpty) return _generating;
 
   final name = rest.first;
-  final matching = _packages.where((package) => package.name == name);
+  final matching = packages.where((package) => package.name == name);
   if (matching.isEmpty || !_generating.contains(matching.single.directory)) {
-    final known = _packages
+    final known = packages
         .where((package) => _generating.contains(package.directory))
         .map((package) => package.name)
         .join(', ');
@@ -274,18 +328,40 @@ List<String> _generatingOf(List<String> rest) {
   return [matching.single.directory];
 }
 
+/// Checks one `release-dispatch.yml` combination and plans nothing to run.
+///
+/// Two outputs, because the dispatcher job needs both: exit 0 and no output for an accepted
+/// combination, a `::error::` line and a non-zero exit for a refused one. `bin/dev.dart` already
+/// turns [UsageException] into that second shape (stderr plus exit 64), so the gate needs no
+/// process of its own.
+///
+/// The `::error::` prefix is what GitHub Actions turns into an annotation on the run page. Plain
+/// stderr in a workflow step shows in the raw log, which nobody reads when the run went red.
+List<Step> _dispatch(List<String> rest) {
+  final DispatchAction action;
+  try {
+    action = planDispatch(parseDispatchRequest(rest));
+  } on DispatchRejection catch (refusal) {
+    throw UsageException('::error::${refusal.message}');
+  }
+  // Silence is the success signal here: the job's exit code is what the YAML gates on, and a
+  // "looks fine" line would only invite someone to parse it instead.
+  assert(action.workflows.length > 0);
+  return const [];
+}
+
 List<Step> _tests(List<String> rest, bool Function(String) hasTests) {
   if (rest.isEmpty) {
     return [
-      for (final package in _packages)
+      for (final package in packages)
         if (hasTests(package.directory)) _testStep(package),
     ];
   }
 
   final name = rest.first;
-  final matching = _packages.where((package) => package.name == name);
+  final matching = packages.where((package) => package.name == name);
   if (matching.isEmpty) {
-    final known = _packages.map((package) => package.name).join(', ');
+    final known = packages.map((package) => package.name).join(', ');
     throw UsageException('unknown package "$name" (one of: $known)');
   }
   final package = matching.single;
@@ -296,5 +372,5 @@ List<Step> _tests(List<String> rest, bool Function(String) hasTests) {
   return [_testStep(package)];
 }
 
-Step _testStep(_Package package) => Step(
+Step _testStep(Package package) => Step(
     package.flutter ? 'flutter' : 'dart', const ['test'], package.directory);

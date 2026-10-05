@@ -177,6 +177,7 @@
       }
     }
   },
+  "tenantLogoLabel": "Tenant logo",
   "loginTitle": "Sign in",
   "loginSubtitle": "Sign in with your account to start selling at this outlet.",
   "loginDeviceLabel": "Device",

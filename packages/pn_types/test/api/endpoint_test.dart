@@ -8,6 +8,7 @@
 import 'package:pn_types/src/api/api_error.dart';
 import 'package:pn_types/src/api/client.dart';
 import 'package:pn_types/src/api/endpoint.dart';
+import 'package:pn_types/src/api/endpoints/pos.dart';
 import 'package:pn_types/src/api/http_method.dart';
 import 'package:pn_types/src/api/transport.dart';
 import 'package:pn_types/src/api/transport_fake.dart';
@@ -137,6 +138,59 @@ void main() {
         '/api/v1/things/abc?shift_id=s1',
       );
     });
+
+    // A drawer with no movements is a real state, but Go marshals a nil slice to `null`
+    // (`pos_cash_movement_repository.go` builds no slice), and this is the only POS list endpoint
+    // that is not paginated, so nothing upstream ever replaces it with `[]`. Null has to read as
+    // "none" or the shift screen shows an error with a retry that can never succeed.
+    test('reads a null cash-movement list as no movements at all', () async {
+      final t = makeClient('{"data":null}');
+
+      final movements = await PosApi.shiftsCashMovements(t.client, (id: 's1'));
+
+      expect(movements, isEmpty);
+      expect(
+        t.transport.requests.single.path,
+        '/api/v1/pos/shifts/s1/cash-movements',
+      );
+    });
+
+    test('reads the movements of a drawer that has some', () async {
+      final t = makeClient(
+        '{"data":[{"id":"m1","shift_id":"s1","type":"CASH_OUT",'
+        '"amount":5000,"reason":"Beli galon",'
+        '"created_at":"2026-09-20T04:00:00Z"}]}',
+      );
+
+      final movements = await PosApi.shiftsCashMovements(t.client, (id: 's1'));
+
+      expect(movements, hasLength(1));
+      expect(movements.single.id, 'm1');
+      expect(movements.single.amount, 5000);
+    });
+
+    // Null reads as "none"; anything that is neither null nor a list is still a malformed
+    // payload. Without this the closure could be widened to `?? []` or a bare cast and quietly
+    // turn a broken response into an empty drawer, and the error would only surface in production.
+    test(
+      'refuses a cash-movement payload that is neither null nor a list',
+      () async {
+        final t = makeClient('{"data":{"id":"x"}}');
+
+        await expectLater(
+          PosApi.shiftsCashMovements(t.client, (id: 's1')),
+          throwsA(
+            isA<ApiError>()
+                .having(
+                  (e) => e.message,
+                  'message',
+                  'Unexpected response from server',
+                )
+                .having((e) => e.status, 'status', 200),
+          ),
+        );
+      },
+    );
   });
 
   group('WriteEndpoint', () {

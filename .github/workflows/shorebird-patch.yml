@@ -26,6 +26,33 @@ on:
     tags:
       - "pos-v[0-9]+.[0-9]+.[0-9]+-[0-9]+*"
       - "!pos-v[0-9]+.[0-9]+.[0-9]+-staging.*"
+  # Pintu kedua: `release-dispatch.yml` memanggil workflow ini, bukan mengulang logikanya.
+  workflow_call:
+    inputs:
+      version:
+        description: "X.Y.Z-N (patch). Kosong = tag dibaca dari GITHUB_REF_NAME"
+        required: false
+        default: ""
+        type: string
+      # Tidak ada draft release di sini sama sekali — patch tidak punya berkas untuk dilampirkan,
+      # dan ketertelurusannya adalah tag `pos-vX.Y.Z-N` itu sendiri. Input ini tetap ada supaya
+      # keempat workflow punya bentuk yang sama; hanya `yes` yang lolos validasi dispatcher, karena
+      # patch tidak punya bentuk uji-coba yang aman (tanpa target tidak punya base, dengan target ia
+      # mendorong OTA ke tablet production).
+      draft_release:
+        description: "yes = jalankan patch (hanya nilai ini yang lolos validasi)"
+        required: false
+        default: "yes"
+        type: string
+    secrets:
+      ANDROID_KEY_BASE64:
+        required: true
+      ANDROID_KEY_ALIAS:
+        required: true
+      ANDROID_KEY_PASSWORD:
+        required: true
+      SHOREBIRD_TOKEN:
+        required: true
 
 concurrency:
   group: shorebird-patch-${{ github.ref }}
@@ -53,10 +80,21 @@ jobs:
       # `pos-v1.2.0-5` → base `1.2.0` (dikirim ke Shorebird) + nomor patch `5` (cuma log).
       # `BUILD_NUMBER` pakai rumus IDENTIK dengan `release-pos.yml`, supaya menunjuk build
       # number yang sama persis dengan rilis native aslinya.
+      #
+      # Dua pintu masuk hidup berdampingan: dipicu tag, atau dipicu dispatcher lewat
+      # `workflow_call`. `GITHUB_REF_NAME` hanya dibaca di pintu tag — saat dispatch ia berisi nama
+      # BRANCH (`main`), dan `main` bukan versi. Patch tidak punya uji-coba, jadi `version` selalu
+      # wajib di kedua pintu.
       - name: Derive base version
         id: version
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
         run: |
-          TAG="${GITHUB_REF_NAME#pos-v}"     # 1.2.0-5
+          if [ -n "$INPUT_VERSION" ]; then
+            TAG="$INPUT_VERSION"
+          else
+            TAG="${GITHUB_REF_NAME#pos-v}"     # 1.2.0-5
+          fi
           BASE="${TAG%-*}"                   # 1.2.0
           PATCH_NUMBER="${TAG##*-}"          # 5
 

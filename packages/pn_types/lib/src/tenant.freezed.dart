@@ -20,7 +20,11 @@ mixin _$UserCompany {
 /// pairing locked (`session.companyId`) to pick the membership that counts.
 @JsonKey(name: 'company_id') String get companyId;@JsonKey(name: 'role_id') String? get roleId;@JsonKey(name: 'branch_id') String? get branchId;@JsonKey(name: 'warehouse_id') String? get warehouseId;@JsonKey(name: 'outlet_id') String? get outletId;/// A plain string, not an enum: the source's union ends in `| string` because tenants
 /// can define their own roles, and an enum would throw on the first one.
- String get role;@JsonKey(name: 'is_active') bool get isActive;
+ String get role;@JsonKey(name: 'is_active') bool get isActive;/// The company this membership belongs to, reduced to what the header shows.
+///
+/// Not `required` because the source declares it `json:"company,omitempty"` and a login
+/// can legitimately return a membership without the company attached.
+ CompanyRef? get company;
 /// Create a copy of UserCompany
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -34,20 +38,20 @@ $UserCompanyCopyWith<UserCompany> get copyWith => _$UserCompanyCopyWithImpl<User
 @override
 bool operator ==(Object other) {
   final _this = this as UserCompany;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is UserCompany&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.userId, _this.userId) || other.userId == _this.userId)&&(identical(other.companyId, _this.companyId) || other.companyId == _this.companyId)&&(identical(other.roleId, _this.roleId) || other.roleId == _this.roleId)&&(identical(other.branchId, _this.branchId) || other.branchId == _this.branchId)&&(identical(other.warehouseId, _this.warehouseId) || other.warehouseId == _this.warehouseId)&&(identical(other.outletId, _this.outletId) || other.outletId == _this.outletId)&&(identical(other.role, _this.role) || other.role == _this.role)&&(identical(other.isActive, _this.isActive) || other.isActive == _this.isActive));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is UserCompany&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.userId, _this.userId) || other.userId == _this.userId)&&(identical(other.companyId, _this.companyId) || other.companyId == _this.companyId)&&(identical(other.roleId, _this.roleId) || other.roleId == _this.roleId)&&(identical(other.branchId, _this.branchId) || other.branchId == _this.branchId)&&(identical(other.warehouseId, _this.warehouseId) || other.warehouseId == _this.warehouseId)&&(identical(other.outletId, _this.outletId) || other.outletId == _this.outletId)&&(identical(other.role, _this.role) || other.role == _this.role)&&(identical(other.isActive, _this.isActive) || other.isActive == _this.isActive)&&(identical(other.company, _this.company) || other.company == _this.company));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as UserCompany;
-  return Object.hash(runtimeType,_this.id,_this.userId,_this.companyId,_this.roleId,_this.branchId,_this.warehouseId,_this.outletId,_this.role,_this.isActive);
+  return Object.hash(runtimeType,_this.id,_this.userId,_this.companyId,_this.roleId,_this.branchId,_this.warehouseId,_this.outletId,_this.role,_this.isActive,_this.company);
 }
 
 @override
 String toString() {
   final _this = this as UserCompany;
-  return 'UserCompany(id: ${_this.id}, userId: ${_this.userId}, companyId: ${_this.companyId}, roleId: ${_this.roleId}, branchId: ${_this.branchId}, warehouseId: ${_this.warehouseId}, outletId: ${_this.outletId}, role: ${_this.role}, isActive: ${_this.isActive})';
+  return 'UserCompany(id: ${_this.id}, userId: ${_this.userId}, companyId: ${_this.companyId}, roleId: ${_this.roleId}, branchId: ${_this.branchId}, warehouseId: ${_this.warehouseId}, outletId: ${_this.outletId}, role: ${_this.role}, isActive: ${_this.isActive}, company: ${_this.company})';
 }
 
 
@@ -58,11 +62,11 @@ abstract mixin class $UserCompanyCopyWith<$Res>  {
   factory $UserCompanyCopyWith(UserCompany value, $Res Function(UserCompany) _then) = _$UserCompanyCopyWithImpl;
 @useResult
 $Res call({
- String id,@JsonKey(name: 'user_id') String userId,@JsonKey(name: 'company_id') String companyId,@JsonKey(name: 'role_id') String? roleId,@JsonKey(name: 'branch_id') String? branchId,@JsonKey(name: 'warehouse_id') String? warehouseId,@JsonKey(name: 'outlet_id') String? outletId, String role,@JsonKey(name: 'is_active') bool isActive
+ String id,@JsonKey(name: 'user_id') String userId,@JsonKey(name: 'company_id') String companyId,@JsonKey(name: 'role_id') String? roleId,@JsonKey(name: 'branch_id') String? branchId,@JsonKey(name: 'warehouse_id') String? warehouseId,@JsonKey(name: 'outlet_id') String? outletId, String role,@JsonKey(name: 'is_active') bool isActive, CompanyRef? company
 });
 
 
-
+$CompanyRefCopyWith<$Res>? get company;
 
 }
 /// @nodoc
@@ -75,7 +79,7 @@ class _$UserCompanyCopyWithImpl<$Res>
 
 /// Create a copy of UserCompany
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? userId = null,Object? companyId = null,Object? roleId = freezed,Object? branchId = freezed,Object? warehouseId = freezed,Object? outletId = freezed,Object? role = null,Object? isActive = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? userId = null,Object? companyId = null,Object? roleId = freezed,Object? branchId = freezed,Object? warehouseId = freezed,Object? outletId = freezed,Object? role = null,Object? isActive = null,Object? company = freezed,}) {
   return _then(UserCompany(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,userId: null == userId ? _self.userId : userId // ignore: cast_nullable_to_non_nullable
@@ -86,10 +90,23 @@ as String?,warehouseId: freezed == warehouseId ? _self.warehouseId : warehouseId
 as String?,outletId: freezed == outletId ? _self.outletId : outletId // ignore: cast_nullable_to_non_nullable
 as String?,role: null == role ? _self.role : role // ignore: cast_nullable_to_non_nullable
 as String,isActive: null == isActive ? _self.isActive : isActive // ignore: cast_nullable_to_non_nullable
-as bool,
+as bool,company: freezed == company ? _self.company : company // ignore: cast_nullable_to_non_nullable
+as CompanyRef?,
   ));
 }
+/// Create a copy of UserCompany
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$CompanyRefCopyWith<$Res>? get company {
+    if (_self.company == null) {
+    return null;
+  }
 
+  return $CompanyRefCopyWith<$Res>(_self.company!, (value) {
+    return _then(_self.copyWith(company: value));
+  });
+}
 }
 
 
@@ -171,10 +188,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id, @JsonKey(name: 'user_id')  String userId, @JsonKey(name: 'company_id')  String companyId, @JsonKey(name: 'role_id')  String? roleId, @JsonKey(name: 'branch_id')  String? branchId, @JsonKey(name: 'warehouse_id')  String? warehouseId, @JsonKey(name: 'outlet_id')  String? outletId,  String role, @JsonKey(name: 'is_active')  bool isActive)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id, @JsonKey(name: 'user_id')  String userId, @JsonKey(name: 'company_id')  String companyId, @JsonKey(name: 'role_id')  String? roleId, @JsonKey(name: 'branch_id')  String? branchId, @JsonKey(name: 'warehouse_id')  String? warehouseId, @JsonKey(name: 'outlet_id')  String? outletId,  String role, @JsonKey(name: 'is_active')  bool isActive,  CompanyRef? company)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _UserCompany() when $default != null:
-return $default(_that.id,_that.userId,_that.companyId,_that.roleId,_that.branchId,_that.warehouseId,_that.outletId,_that.role,_that.isActive);case _:
+return $default(_that.id,_that.userId,_that.companyId,_that.roleId,_that.branchId,_that.warehouseId,_that.outletId,_that.role,_that.isActive,_that.company);case _:
   return orElse();
 
 }
@@ -192,10 +209,10 @@ return $default(_that.id,_that.userId,_that.companyId,_that.roleId,_that.branchI
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id, @JsonKey(name: 'user_id')  String userId, @JsonKey(name: 'company_id')  String companyId, @JsonKey(name: 'role_id')  String? roleId, @JsonKey(name: 'branch_id')  String? branchId, @JsonKey(name: 'warehouse_id')  String? warehouseId, @JsonKey(name: 'outlet_id')  String? outletId,  String role, @JsonKey(name: 'is_active')  bool isActive)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id, @JsonKey(name: 'user_id')  String userId, @JsonKey(name: 'company_id')  String companyId, @JsonKey(name: 'role_id')  String? roleId, @JsonKey(name: 'branch_id')  String? branchId, @JsonKey(name: 'warehouse_id')  String? warehouseId, @JsonKey(name: 'outlet_id')  String? outletId,  String role, @JsonKey(name: 'is_active')  bool isActive,  CompanyRef? company)  $default,) {final _that = this;
 switch (_that) {
 case _UserCompany():
-return $default(_that.id,_that.userId,_that.companyId,_that.roleId,_that.branchId,_that.warehouseId,_that.outletId,_that.role,_that.isActive);case _:
+return $default(_that.id,_that.userId,_that.companyId,_that.roleId,_that.branchId,_that.warehouseId,_that.outletId,_that.role,_that.isActive,_that.company);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -212,10 +229,10 @@ return $default(_that.id,_that.userId,_that.companyId,_that.roleId,_that.branchI
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id, @JsonKey(name: 'user_id')  String userId, @JsonKey(name: 'company_id')  String companyId, @JsonKey(name: 'role_id')  String? roleId, @JsonKey(name: 'branch_id')  String? branchId, @JsonKey(name: 'warehouse_id')  String? warehouseId, @JsonKey(name: 'outlet_id')  String? outletId,  String role, @JsonKey(name: 'is_active')  bool isActive)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id, @JsonKey(name: 'user_id')  String userId, @JsonKey(name: 'company_id')  String companyId, @JsonKey(name: 'role_id')  String? roleId, @JsonKey(name: 'branch_id')  String? branchId, @JsonKey(name: 'warehouse_id')  String? warehouseId, @JsonKey(name: 'outlet_id')  String? outletId,  String role, @JsonKey(name: 'is_active')  bool isActive,  CompanyRef? company)?  $default,) {final _that = this;
 switch (_that) {
 case _UserCompany() when $default != null:
-return $default(_that.id,_that.userId,_that.companyId,_that.roleId,_that.branchId,_that.warehouseId,_that.outletId,_that.role,_that.isActive);case _:
+return $default(_that.id,_that.userId,_that.companyId,_that.roleId,_that.branchId,_that.warehouseId,_that.outletId,_that.role,_that.isActive,_that.company);case _:
   return null;
 
 }
@@ -227,7 +244,7 @@ return $default(_that.id,_that.userId,_that.companyId,_that.roleId,_that.branchI
 @JsonSerializable()
 
 class _UserCompany implements UserCompany {
-  const _UserCompany({required this.id, @JsonKey(name: 'user_id') required this.userId, @JsonKey(name: 'company_id') required this.companyId, @JsonKey(name: 'role_id') this.roleId, @JsonKey(name: 'branch_id') this.branchId, @JsonKey(name: 'warehouse_id') this.warehouseId, @JsonKey(name: 'outlet_id') this.outletId, required this.role, @JsonKey(name: 'is_active') required this.isActive});
+  const _UserCompany({required this.id, @JsonKey(name: 'user_id') required this.userId, @JsonKey(name: 'company_id') required this.companyId, @JsonKey(name: 'role_id') this.roleId, @JsonKey(name: 'branch_id') this.branchId, @JsonKey(name: 'warehouse_id') this.warehouseId, @JsonKey(name: 'outlet_id') this.outletId, required this.role, @JsonKey(name: 'is_active') required this.isActive, this.company});
   factory _UserCompany.fromJson(Map<String, dynamic> json) => _$UserCompanyFromJson(json);
 
 @override final  String id;
@@ -243,6 +260,11 @@ class _UserCompany implements UserCompany {
 /// can define their own roles, and an enum would throw on the first one.
 @override final  String role;
 @override@JsonKey(name: 'is_active') final  bool isActive;
+/// The company this membership belongs to, reduced to what the header shows.
+///
+/// Not `required` because the source declares it `json:"company,omitempty"` and a login
+/// can legitimately return a membership without the company attached.
+@override final  CompanyRef? company;
 
 /// Create a copy of UserCompany
 /// with the given fields replaced by the non-null parameter values.
@@ -257,18 +279,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _UserCompany&&(identical(other.id, id) || other.id == id)&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.companyId, companyId) || other.companyId == companyId)&&(identical(other.roleId, roleId) || other.roleId == roleId)&&(identical(other.branchId, branchId) || other.branchId == branchId)&&(identical(other.warehouseId, warehouseId) || other.warehouseId == warehouseId)&&(identical(other.outletId, outletId) || other.outletId == outletId)&&(identical(other.role, role) || other.role == role)&&(identical(other.isActive, isActive) || other.isActive == isActive));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _UserCompany&&(identical(other.id, id) || other.id == id)&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.companyId, companyId) || other.companyId == companyId)&&(identical(other.roleId, roleId) || other.roleId == roleId)&&(identical(other.branchId, branchId) || other.branchId == branchId)&&(identical(other.warehouseId, warehouseId) || other.warehouseId == warehouseId)&&(identical(other.outletId, outletId) || other.outletId == outletId)&&(identical(other.role, role) || other.role == role)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.company, company) || other.company == company));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,id,userId,companyId,roleId,branchId,warehouseId,outletId,role,isActive);
+    return Object.hash(runtimeType,id,userId,companyId,roleId,branchId,warehouseId,outletId,role,isActive,company);
 }
 
 @override
 String toString() {
-    return 'UserCompany(id: $id, userId: $userId, companyId: $companyId, roleId: $roleId, branchId: $branchId, warehouseId: $warehouseId, outletId: $outletId, role: $role, isActive: $isActive)';
+    return 'UserCompany(id: $id, userId: $userId, companyId: $companyId, roleId: $roleId, branchId: $branchId, warehouseId: $warehouseId, outletId: $outletId, role: $role, isActive: $isActive, company: $company)';
 }
 
 
@@ -279,11 +301,11 @@ abstract mixin class _$UserCompanyCopyWith<$Res> implements $UserCompanyCopyWith
   factory _$UserCompanyCopyWith(_UserCompany value, $Res Function(_UserCompany) _then) = __$UserCompanyCopyWithImpl;
 @override @useResult
 $Res call({
- String id,@JsonKey(name: 'user_id') String userId,@JsonKey(name: 'company_id') String companyId,@JsonKey(name: 'role_id') String? roleId,@JsonKey(name: 'branch_id') String? branchId,@JsonKey(name: 'warehouse_id') String? warehouseId,@JsonKey(name: 'outlet_id') String? outletId, String role,@JsonKey(name: 'is_active') bool isActive
+ String id,@JsonKey(name: 'user_id') String userId,@JsonKey(name: 'company_id') String companyId,@JsonKey(name: 'role_id') String? roleId,@JsonKey(name: 'branch_id') String? branchId,@JsonKey(name: 'warehouse_id') String? warehouseId,@JsonKey(name: 'outlet_id') String? outletId, String role,@JsonKey(name: 'is_active') bool isActive, CompanyRef? company
 });
 
 
-
+@override $CompanyRefCopyWith<$Res>? get company;
 
 }
 /// @nodoc
@@ -296,7 +318,7 @@ class __$UserCompanyCopyWithImpl<$Res>
 
 /// Create a copy of UserCompany
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? userId = null,Object? companyId = null,Object? roleId = freezed,Object? branchId = freezed,Object? warehouseId = freezed,Object? outletId = freezed,Object? role = null,Object? isActive = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? userId = null,Object? companyId = null,Object? roleId = freezed,Object? branchId = freezed,Object? warehouseId = freezed,Object? outletId = freezed,Object? role = null,Object? isActive = null,Object? company = freezed,}) {
   return _then(_UserCompany(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,userId: null == userId ? _self.userId : userId // ignore: cast_nullable_to_non_nullable
@@ -307,11 +329,321 @@ as String?,warehouseId: freezed == warehouseId ? _self.warehouseId : warehouseId
 as String?,outletId: freezed == outletId ? _self.outletId : outletId // ignore: cast_nullable_to_non_nullable
 as String?,role: null == role ? _self.role : role // ignore: cast_nullable_to_non_nullable
 as String,isActive: null == isActive ? _self.isActive : isActive // ignore: cast_nullable_to_non_nullable
-as bool,
+as bool,company: freezed == company ? _self.company : company // ignore: cast_nullable_to_non_nullable
+as CompanyRef?,
   ));
 }
 
+/// Create a copy of UserCompany
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$CompanyRefCopyWith<$Res>? get company {
+    if (_self.company == null) {
+    return null;
+  }
 
+  return $CompanyRefCopyWith<$Res>(_self.company!, (value) {
+    return _then(_self.copyWith(company: value));
+  });
+}
+}
+
+
+/// @nodoc
+mixin _$CompanyRef {
+
+ String get name; FileRef? get logo;
+/// Create a copy of CompanyRef
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$CompanyRefCopyWith<CompanyRef> get copyWith => _$CompanyRefCopyWithImpl<CompanyRef>(this as CompanyRef, _$identity);
+
+  /// Serializes this CompanyRef to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  final _this = this as CompanyRef;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is CompanyRef&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.logo, _this.logo) || other.logo == _this.logo));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+  final _this = this as CompanyRef;
+  return Object.hash(runtimeType,_this.name,_this.logo);
+}
+
+@override
+String toString() {
+  final _this = this as CompanyRef;
+  return 'CompanyRef(name: ${_this.name}, logo: ${_this.logo})';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $CompanyRefCopyWith<$Res>  {
+  factory $CompanyRefCopyWith(CompanyRef value, $Res Function(CompanyRef) _then) = _$CompanyRefCopyWithImpl;
+@useResult
+$Res call({
+ String name, FileRef? logo
+});
+
+
+$FileRefCopyWith<$Res>? get logo;
+
+}
+/// @nodoc
+class _$CompanyRefCopyWithImpl<$Res>
+    implements $CompanyRefCopyWith<$Res> {
+  _$CompanyRefCopyWithImpl(this._self, this._then);
+
+  final CompanyRef _self;
+  final $Res Function(CompanyRef) _then;
+
+/// Create a copy of CompanyRef
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? name = null,Object? logo = freezed,}) {
+  return _then(CompanyRef(
+name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,logo: freezed == logo ? _self.logo : logo // ignore: cast_nullable_to_non_nullable
+as FileRef?,
+  ));
+}
+/// Create a copy of CompanyRef
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$FileRefCopyWith<$Res>? get logo {
+    if (_self.logo == null) {
+    return null;
+  }
+
+  return $FileRefCopyWith<$Res>(_self.logo!, (value) {
+    return _then(_self.copyWith(logo: value));
+  });
+}
+}
+
+
+/// Adds pattern-matching-related methods to [CompanyRef].
+extension CompanyRefPatterns on CompanyRef {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _CompanyRef value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _CompanyRef() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _CompanyRef value)  $default,){
+final _that = this;
+switch (_that) {
+case _CompanyRef():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _CompanyRef value)?  $default,){
+final _that = this;
+switch (_that) {
+case _CompanyRef() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String name,  FileRef? logo)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _CompanyRef() when $default != null:
+return $default(_that.name,_that.logo);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String name,  FileRef? logo)  $default,) {final _that = this;
+switch (_that) {
+case _CompanyRef():
+return $default(_that.name,_that.logo);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String name,  FileRef? logo)?  $default,) {final _that = this;
+switch (_that) {
+case _CompanyRef() when $default != null:
+return $default(_that.name,_that.logo);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _CompanyRef implements CompanyRef {
+  const _CompanyRef({this.name = '', this.logo});
+  factory _CompanyRef.fromJson(Map<String, dynamic> json) => _$CompanyRefFromJson(json);
+
+@override@JsonKey() final  String name;
+@override final  FileRef? logo;
+
+/// Create a copy of CompanyRef
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$CompanyRefCopyWith<_CompanyRef> get copyWith => __$CompanyRefCopyWithImpl<_CompanyRef>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$CompanyRefToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _CompanyRef&&(identical(other.name, name) || other.name == name)&&(identical(other.logo, logo) || other.logo == logo));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+    return Object.hash(runtimeType,name,logo);
+}
+
+@override
+String toString() {
+    return 'CompanyRef(name: $name, logo: $logo)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$CompanyRefCopyWith<$Res> implements $CompanyRefCopyWith<$Res> {
+  factory _$CompanyRefCopyWith(_CompanyRef value, $Res Function(_CompanyRef) _then) = __$CompanyRefCopyWithImpl;
+@override @useResult
+$Res call({
+ String name, FileRef? logo
+});
+
+
+@override $FileRefCopyWith<$Res>? get logo;
+
+}
+/// @nodoc
+class __$CompanyRefCopyWithImpl<$Res>
+    implements _$CompanyRefCopyWith<$Res> {
+  __$CompanyRefCopyWithImpl(this._self, this._then);
+
+  final _CompanyRef _self;
+  final $Res Function(_CompanyRef) _then;
+
+/// Create a copy of CompanyRef
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? name = null,Object? logo = freezed,}) {
+  return _then(_CompanyRef(
+name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,logo: freezed == logo ? _self.logo : logo // ignore: cast_nullable_to_non_nullable
+as FileRef?,
+  ));
+}
+
+/// Create a copy of CompanyRef
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$FileRefCopyWith<$Res>? get logo {
+    if (_self.logo == null) {
+    return null;
+  }
+
+  return $FileRefCopyWith<$Res>(_self.logo!, (value) {
+    return _then(_self.copyWith(logo: value));
+  });
+}
 }
 
 

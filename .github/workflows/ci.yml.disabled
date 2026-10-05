@@ -76,8 +76,14 @@ jobs:
       - name: Resolve workspace
         run: dart pub get
 
+      # Memanggil tool, bukan menyalin path-nya. `dart format` tidak punya flag
+      # exclusion dan tidak baca `.gitignore`, jadi `.` ikut masuk ke `build/`,
+      # `.dart_tool/` dan `.widget_preview/`, lalu mati dengan PathNotFoundException
+      # (lihat `formatTargets` di tools/dev/lib/dev.dart). Daftar source root
+      # hanya boleh punya satu sumber: kalau ditulis di sini, paket baru bisa masuk
+      # `formatTargets` tanpa ikut diperiksa.
       - name: Verify formatting
-        run: dart format --output=none --set-exit-if-changed .
+        run: dart run tools/dev/bin/dev.dart format
 
       # ── Analisis ───────────────────────────────────────────────────────────
       - name: Analyze

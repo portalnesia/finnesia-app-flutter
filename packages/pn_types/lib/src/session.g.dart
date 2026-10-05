@@ -8,7 +8,9 @@ part of 'session.dart';
 
 _PosBranding _$PosBrandingFromJson(Map<String, dynamic> json) => _PosBranding(
   appName: json['app_name'] as String?,
-  logoUrl: json['logo_url'] as String?,
+  logo: json['logo'] == null
+      ? null
+      : FileRef.fromJson(json['logo'] as Map<String, dynamic>),
   customDomain: json['custom_domain'] as String?,
   accountMode: json['account_mode'] as String?,
 );
@@ -16,7 +18,7 @@ _PosBranding _$PosBrandingFromJson(Map<String, dynamic> json) => _PosBranding(
 Map<String, dynamic> _$PosBrandingToJson(_PosBranding instance) =>
     <String, dynamic>{
       'app_name': instance.appName,
-      'logo_url': instance.logoUrl,
+      'logo': instance.logo,
       'custom_domain': instance.customDomain,
       'account_mode': instance.accountMode,
     };

@@ -15,6 +15,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pn_types/src/api/http_method.dart';
 import 'package:pn_types/src/api/transport.dart';
+import 'package:pn_types/src/file_ref.dart';
 import 'package:pn_types/src/native/public_http_port.dart';
 import 'package:pn_types/src/native/store_port.dart';
 import 'package:pn_types/src/pos.dart';
@@ -304,6 +305,113 @@ void main() {
       await pumpScreen(tester, Rig(pairedButSignedOut()));
 
       expect(cancel, findsNothing);
+    });
+  });
+
+  // The banner is one frame at a fixed 4:1 whether it shows the tenant's logo or the
+  // Finnesia fallback, so the identity block does not jump between a tall image and a short
+  // one as a tenant configures its branding.
+  group('the identity banner', () {
+    const attached = FileRef(
+      id: 'f1',
+      name: 'logo.png',
+      status: 'attached',
+      url: 'https://cdn.example.com/logo.png',
+    );
+
+    Rig rigWith(FileRef? logo) => Rig(
+      storedSession(
+        signedOut().copyWith(
+          branding: PosBranding(
+            appName: 'Toko Budi',
+            logo: logo,
+            accountMode: 'self_service',
+          ),
+        ),
+      ),
+    );
+
+    /// The width of the one 4:1 frame on the screen.
+    Future<Size> bannerFrame(WidgetTester tester) async {
+      final frame = find.byWidgetPredicate(
+        (widget) => widget is AspectRatio && widget.aspectRatio == 4 / 1,
+        description: 'the 4:1 identity banner',
+      );
+      expect(frame, findsOneWidget);
+      return tester.getSize(frame);
+    }
+
+    // The frame, not the image inside it: the image is letterboxed by `contain`, so its
+    // painted size is the source's ratio, not the frame's.
+    testWidgets('the tenant logo sits in a 4:1 frame', (tester) async {
+      await pumpScreen(tester, rigWith(attached));
+
+      final size = await bannerFrame(tester);
+      expect(size.width / size.height, closeTo(4, 0.01));
+    });
+
+    testWidgets('the Finnesia fallback fills the same 4:1 frame', (
+      tester,
+    ) async {
+      await pumpScreen(tester, rigWith(null));
+
+      final size = await bannerFrame(tester);
+      expect(size.width / size.height, closeTo(4, 0.01));
+      expect(
+        find.descendant(
+          of: find.byType(AspectRatio),
+          matching: find.byType(FinnesiaLogo),
+        ),
+        findsWidgets,
+      );
+    });
+
+    // A detached or half-uploaded file must not reach an Image.network at all: `renderableUrl`
+    // is null, so the banner is the fallback rather than a broken image.
+    testWidgets('a logo that is not attached yet falls back', (tester) async {
+      await pumpScreen(
+        tester,
+        rigWith(
+          const FileRef(
+            id: 'f1',
+            name: 'logo.png',
+            status: 'detached',
+            url: 'https://cdn.example.com/logo.png',
+          ),
+        ),
+      );
+
+      // The Finnesia fallback is an `Image` too, so what must not be there is a network one.
+      expect(
+        find.byWidgetPredicate(
+          (widget) => widget is Image && widget.image is NetworkImage,
+          description: 'a tenant logo fetched over the network',
+        ),
+        findsNothing,
+      );
+      expect(find.byType(FinnesiaLogo), findsOneWidget);
+      expect(await bannerFrame(tester), const Size(440, 110));
+    });
+
+    // A url that 404s at runtime: the widget is built, the fetch fails, and the frame keeps its
+    // shape because the fallback is drawn into it rather than beside it.
+    testWidgets('a logo that fails to load falls back inside the same frame', (
+      tester,
+    ) async {
+      await pumpScreen(
+        tester,
+        rigWith(
+          const FileRef(
+            id: 'f1',
+            name: 'logo.png',
+            status: 'attached',
+            url: 'https://cdn.example.com/not-there.png',
+          ),
+        ),
+      );
+
+      expect(find.byType(FinnesiaLogo), findsOneWidget);
+      expect(await bannerFrame(tester), const Size(440, 110));
     });
   });
 

@@ -13,6 +13,7 @@ import 'package:pn_ui/src/theme/app_theme.dart';
 import 'package:pn_ui/src/theme/tokens.dart';
 import 'package:pn_ui/src/widgets/state_view.dart';
 import 'package:pos/app/app_scope.dart';
+import 'package:pos/branding/company_avatar.dart';
 import 'package:pos/l10n/app_localizations.dart';
 import 'package:pos/queue/pending_sales_controller.dart';
 import 'package:pos/screens/common/screen_header.dart';
@@ -87,12 +88,22 @@ class _PendingSalesScreenState extends State<PendingSalesScreen> {
           children: [
             ScreenHeader(
               title: l10n.queueTitle,
-              trailing: ListenableBuilder(
-                listenable: controller,
-                builder: (context, _) => TextButton(
-                  onPressed: controller.isSending ? null : controller.sendNow,
-                  child: Text(l10n.queueSendNow),
-                ),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Wrapped, not replaced: the button keeps its place and its enabled state, and
+                  // the avatar goes after it.
+                  ListenableBuilder(
+                    listenable: controller,
+                    builder: (context, _) => TextButton(
+                      onPressed: controller.isSending
+                          ? null
+                          : controller.sendNow,
+                      child: Text(l10n.queueSendNow),
+                    ),
+                  ),
+                  const CompanyAvatar(),
+                ],
               ),
             ),
             Expanded(

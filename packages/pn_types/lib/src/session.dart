@@ -7,6 +7,7 @@
 
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import 'file_ref.dart';
 import 'tenant.dart';
 
 part 'session.freezed.dart';
@@ -17,11 +18,16 @@ part 'session.g.dart';
 /// `custom_domain` is the host the tenant actually uses; it is absent for every tenant that
 /// has none, and `PosSession.baseUrl` then stays the canonical host the device paired against.
 /// The names are the wire's, because this is `companies.branding_config` as it arrives.
+///
+/// [logo] is a file reference, not a url string: the response carries the file's `status`,
+/// and a `pending`/`detached`/`deleting` file must not be rendered. A backend that still
+/// sends the old `logo_url` string is read as no logo at all — the key is ignored, so the
+/// login falls back to the Finnesia logo instead of failing the pairing.
 @freezed
 abstract class PosBranding with _$PosBranding {
   const factory PosBranding({
     @JsonKey(name: 'app_name') String? appName,
-    @JsonKey(name: 'logo_url') String? logoUrl,
+    @JsonKey(name: 'logo') FileRef? logo,
     @JsonKey(name: 'custom_domain') String? customDomain,
     @JsonKey(name: 'account_mode') String? accountMode,
   }) = _PosBranding;

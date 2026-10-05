@@ -270,9 +270,27 @@ rilis; CI membuatnya.
 
 ### Rilis lewat CI
 
-Push tag `v*` menjalankan [`release-pos.yml`](./.github/workflows/release-pos.yml): verifikasi, lalu APK rilis
-(`arm64` dan `armv7`), lalu **draft** GitHub Release yang baru bisa diunduh setelah dipublikasikan. Versi dan
-`versionCode` diturunkan dari tag; `pubspec.yaml` tetap `0.1.0+1`.
+Ada dua pintu masuk. Yang pertama tag: push tag `pos-v1.2.0` (polos) menjalankan
+[`release-pos.yml`](./.github/workflows/release-pos.yml): verifikasi, build APK rilis (`arm64` dan `armv7`)
+dan AAB, lalu keduanya dilampirkan sebagai **draft** GitHub Release. Versi dan `versionCode` diturunkan dari tag;
+`pubspec.yaml` tetap `0.1.0+1`.
+
+Draft itu **tidak** otomatis naik ke Play Console. Urutannya:
+
+```
+build (release-pos.yml)  →  draft GitHub Release (APK + AAB)  →  ANDA menekan Publish  →  upload ke Play (publish-to-store.yml, track internal)
+```
+
+Langkah terakhirnya workflow terpisah, [`publish-to-store.yml`](./.github/workflows/publish-to-store.yml),
+yang hanya jalan setelah manusia menekan Publish dan hanya untuk tag polos `pos-v*`. Promosi ke track
+selain `internal` tetap manual di Play Console.
+
+Pintu kedua adalah manual: dispatch
+[`release-dispatch.yml`](./.github/workflows/release-dispatch.yml) (`Actions → Release Dispatch`) dengan
+input `aplikasi`, `env`, `device`, `draft release`, `version`. Kombinasi yang tidak valid ditolak lebih dulu
+sebelum build jalan. `draft release = no` = uji coba, artifact saja: tanpa tag, tanpa draft release, dan
+karena tidak ada yang dipublikasikan, tidak pernah ada upload ke store. `draft release = yes` = build + tag
++ draft release, persis seperti jalur tag.
 
 ---
 
@@ -289,8 +307,11 @@ Push tag `v*` menjalankan [`release-pos.yml`](./.github/workflows/release-pos.ym
 - **TDD:** test dulu dan lihat ia gagal, baru kodenya. Detail dan alasannya: [`testing.md`](./.claude/rules/testing.md).
 - **CI (`ci.yml`) sedang nonaktif** karena batas menit GitHub Actions: berkasnya diganti nama menjadi
   `.github/workflows/ci.yml.disabled` (isinya utuh; ganti nama kembali untuk mengaktifkan). Artinya tidak ada yang
-  menjalankan pemeriksaan untuk Anda, jadi **`./dev check` wajib hijau sebelum membuka PR** (ia mencakup setiap langkah pemeriksaan di `ci.yml.disabled`). `release-pos.yml` tetap
-  aktif untuk tag `v*` dan menjalankan analyze dan test sebelum membangun.
+  menjalankan pemeriksaan untuk Anda, jadi **`./dev check` wajib hijau sebelum membuka PR**. Urutannya hampir sama
+  dengan `ci.yml.disabled`, bukan identik: untuk generated code `ci.yml` memakai `git add -N` lalu `git diff`,
+  sedangkan `./dev check` membandingkan berkas di disk tanpa menyentuh index (`tools/dev/lib/verify.dart` sengaja
+  menolak `git add -N`). `release-pos.yml` tetap
+  aktif untuk tag `pos-v*` dan menjalankan analyze dan test sebelum membangun.
 - Skrip `dev` punya test sendiri (`cd tools/dev && dart test`) yang **tidak** dijalankan CI. Ubah `tools/dev`? Jalankan itu.
 
 ### Kode generated

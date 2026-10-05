@@ -14,6 +14,7 @@ import 'package:pn_types/src/product.dart';
 import 'package:pn_types/src/session.dart';
 import 'package:pos/app/app_scope.dart';
 import 'package:pos/app/pos_app.dart';
+import 'package:pos/branding/company_avatar.dart';
 import 'package:pos/l10n/app_localizations.dart';
 import 'package:pos/screens/shift/close_shift_screen.dart';
 
@@ -168,6 +169,15 @@ void main() {
       expect(find.text(money(15000)), findsOneWidget);
       expect(find.text(l10n.shiftDetailExpectedCash), findsOneWidget);
       expect(find.text(money(275000)), findsOneWidget);
+    });
+
+    // On every screen opened after login, not only the ones whose header was free.
+    testWidgets('the company avatar is in the header', (tester) async {
+      final http = RoutedHttp()..respond(summaryPath, ok(summaryBody()));
+
+      await pumpClose(tester, http);
+
+      expect(find.byType(CompanyAvatar), findsOneWidget);
     });
 
     testWidgets('says it is loading while they are read', (tester) async {

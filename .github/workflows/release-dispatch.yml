@@ -1,0 +1,162 @@
+# Satu layar untuk menjalankan rilis, dengan gerbang sebelum build dan gerbang manusia sebelum
+# store.
+#
+# File ini tidak membangun apa pun. Ia memvalidasi kombinasi empat input, membuat tag kalau diminta,
+# lalu memanggil workflow yang sudah ada sebagai reusable workflow — logika build tidak digabung di
+# sini, karena tiap workflow sudah benar dan satu refactor jalur rilis uang tidak sepadan dengan
+# orang yang harus menanganinya.
+#
+# Matriks kombinasi: plan/release-dispatch/SPEC.md §2a. Validasi tidak ditulis sebagai rantai `if:`
+# YAML karena YAML tidak bisa diuji di repo ini; sumber kebenarannya fungsi murni
+# `tools/dev/lib/dispatch.dart` yang diuji `dart test`, dan file ini memanggilnya.
+#
+# Dua pintu masuk hidup berdampingan. Push tag tetap ada di keempat workflow — keputusan pemilik:
+# satu `git push --tags` tidak boleh pernah memicu dua workflow. File ini MENAMBAH pintu manual, ia
+# tidak mengganti yang lama.
+#
+# Secret ditulis eksplisit per pemanggilan, bukan `secrets: inherit`: eksplisit bisa di-grep dan
+# diuji, dan `inherit` akan meneruskan semua secret ke `windows-pos.yml` yang butuh nol secret.
+
+name: Release Dispatch
+
+on:
+  workflow_dispatch:
+    inputs:
+      aplikasi:
+        description: "Aplikasi (sekarang hanya pos)"
+        required: true
+        default: "pos"
+        type: choice
+        options: [pos]
+      env:
+        description: "staging | production | patch"
+        required: true
+        type: choice
+        options: [staging, production, patch]
+      device:
+        description: "android | windows | all"
+        required: true
+        type: choice
+        options: [android, windows, all]
+      draft_release:
+        description: "no = uji coba (artifact saja, tanpa tag/release/store). yes = build + tag + draft release"
+        required: true
+        type: choice
+        options: [no, yes]
+      version:
+        description: "Wajib bila draft release = yes (jadi nama tag). Diabaikan bila no. staging: X.Y.Z-staging.N, production: X.Y.Z, patch: X.Y.Z-N"
+        required: false
+        default: ""
+        type: string
+
+# Antrean manual terpisah per kombinasi, supaya dua kombinasi berbeda tidak saling menunggu.
+# Antrean di dalam callee tetap per `github.ref`, dan saat dispatch `github.ref` adalah ref branch:
+# itu disengaja (dua run manual di branch yang sama menulis draft yang sama, jadi mereka harus berbaris).
+concurrency:
+  group: release-dispatch-${{ inputs.aplikasi }}-${{ inputs.env }}-${{ inputs.device }}
+  cancel-in-progress: false
+
+jobs:
+  # Satu-satunya gerbang. Kombinasi yang ditolak keluar di sini: exit 64 plus `::error::` di stderr
+  # (annotation GitHub), sebelum ada artifact, sebelum ada tag, sebelum ada runner yang build.
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.47.4"
+          channel: stable
+          cache: true
+
+      - name: Refuse a combination that is not on the matrix
+        run: dart run tools/dev/bin/dev.dart dispatch --env "${{ inputs.env }}" --device "${{ inputs.device }}" --draft "${{ inputs.draft_release }}" --version "${{ inputs.version }}"
+
+  # Tag dibuat DI SINI, eksplisit dari commit run ini, sebelum callee dipanggil.
+  # Alasannya: `softprops/action-gh-release` membuat tag yang belum ada dari DEFAULT BRANCH, yang
+  # belum tentu commit yang di-dispatch — draft lalu menempel pada commit yang salah. `context.sha`
+  # adalah HEAD ref yang dipilih di UI dispatch, jadi release tidak bisa bergeser.
+  #
+  # Job ini selalu sukses pada kombinasi yang valid; hanya langkahnya yang bersyarat. Kalau ia
+  # dilewati, job pemanggil yang bergantung padanya ikut dilewati, padahal job itu sendiri tidak
+  # butuh tag (mis. `production/all` dengan draft release = no).
+  tag:
+    needs: validate
+    if: always() && needs.validate.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Create the release tag from the dispatched commit
+        if: inputs.draft_release == 'yes'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const tag = 'pos-v${{ inputs.version }}';
+            const ref = `refs/tags/${tag}`;
+            try {
+              await github.rest.git.getRef({ ref });
+              core.info(`Tag ${tag} sudah ada; dipakai apa adanya.`);
+            } catch {
+              await github.rest.git.createRef({ ref, sha: context.sha });
+              core.info(`Tag ${tag} dibuat pada ${context.sha}.`);
+            }
+
+  # ── Pemanggilan ──────────────────────────────────────────────────────────
+  # `needs: [validate, tag]` adalah syaratNYA build: validate yang gagal menghentikan semuanya, dan
+  # tag harus ada lebih dulu karena action itu gagal kalau tag belum ada.
+  #
+  # Empat job, bukan sembilan: satu job per (env, device) yang memang punya workflow. Kombinasi yang
+  # tidak ada di matriks sudah ditolak `validate` sebelum job mana pun dievaluasi.
+
+  staging-android:
+    needs: [validate, tag]
+    if: inputs.env == 'staging' && inputs.device == 'android'
+    uses: ./.github/workflows/staging-pos.yml
+    with:
+      version: ${{ inputs.version }}
+      draft_release: ${{ inputs.draft_release }}
+    secrets:
+      ANDROID_KEY_BASE64: ${{ secrets.ANDROID_KEY_BASE64 }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+
+  # `all` ikut lewat sini: kedua platform menulis draft yang sama, jadi keduanya memanggil dua
+  # workflow yang concurrency group-nya sudah sama. Urutan android lebih dulu hanya soal siapa yang
+  # menulis judul — android yang memilikinya.
+  production-android:
+    needs: [validate, tag]
+    if: inputs.env == 'production' && (inputs.device == 'android' || inputs.device == 'all')
+    uses: ./.github/workflows/release-pos.yml
+    with:
+      version: ${{ inputs.version }}
+      draft_release: ${{ inputs.draft_release }}
+    secrets:
+      ANDROID_KEY_BASE64: ${{ secrets.ANDROID_KEY_BASE64 }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
+
+  production-windows:
+    needs: [validate, tag]
+    if: inputs.env == 'production' && (inputs.device == 'windows' || inputs.device == 'all')
+    uses: ./.github/workflows/windows-pos.yml
+    with:
+      version: ${{ inputs.version }}
+      draft_release: ${{ inputs.draft_release }}
+
+  # Patch tidak membuat draft: tidak ada berkas untuk dilampirkan. Ketertelusurannya adalah tag
+  # `pos-vX.Y.Z-N` itu sendiri, dan tag itu dibuat job di atas.
+  patch-android:
+    needs: [validate, tag]
+    if: inputs.env == 'patch' && inputs.device == 'android'
+    uses: ./.github/workflows/shorebird-patch.yml
+    with:
+      version: ${{ inputs.version }}
+      draft_release: ${{ inputs.draft_release }}
+    secrets:
+      ANDROID_KEY_BASE64: ${{ secrets.ANDROID_KEY_BASE64 }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}

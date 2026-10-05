@@ -12,6 +12,7 @@ import 'package:pn_types/src/api/transport.dart';
 import 'package:pn_types/src/pos.dart';
 import 'package:pn_types/src/session.dart';
 import 'package:pos/app/pos_app.dart';
+import 'package:pos/branding/company_avatar.dart';
 import 'package:pos/l10n/app_localizations.dart';
 import 'package:pos/screens/queue/pending_sales_screen.dart';
 
@@ -144,6 +145,20 @@ void main() {
       await pumpQueue(tester);
 
       expect(find.text(l10n.queueEmpty), findsOneWidget);
+    });
+
+    // The avatar went into a trailing slot that already held Kirim sekarang. Wrapping rather
+    // than replacing keeps the button a cashier pushes to flush the queue by hand.
+    testWidgets('keeps Kirim sekarang beside the company avatar', (
+      tester,
+    ) async {
+      await pumpQueue(tester);
+
+      expect(find.byType(CompanyAvatar), findsOneWidget);
+      expect(
+        find.widgetWithText(TextButton, l10n.queueSendNow),
+        findsOneWidget,
+      );
     });
 
     testWidgets('lists a pending sale: when, how much, and Menunggu', (

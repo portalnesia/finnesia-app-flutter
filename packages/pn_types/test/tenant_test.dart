@@ -61,10 +61,43 @@ void main() {
     test('ignores the relations and timestamps it does not model', () {
       final c = parse('''
         {"id":"uc_1","user_id":"u","company_id":"c","role":"admin","is_active":true,
-         "company":{"id":"c","name":"Toko"},"role_model":{"allowed_scope":"all"},
+         "role_model":{"allowed_scope":"all"},
          "created_at":"2026-01-01T00:00:00Z","deleted_at":null}''');
 
       expect(c.role, 'admin');
+    });
+
+    // The company is carried because the header's avatar needs its name and logo together,
+    // without a fetch per render. Only those two are modelled.
+    test('reads the company relation it does model', () {
+      final c = parse(
+        '{"id":"uc_1","user_id":"u","company_id":"c","role":"admin","is_active":true,'
+        '"company":{"id":"c","name":"Toko Budi","logo":{"id":"file_1",'
+        '"status":"attached","url":"https://cdn.example/budi.png"}}}',
+      );
+
+      expect(c.company?.name, 'Toko Budi');
+      expect(c.company?.logo?.renderableUrl, 'https://cdn.example/budi.png');
+    });
+
+    // `model.UserCompany.Company` is a pointer with `json:"company,omitempty"`, so an absent
+    // company is a normal state and must not cost the parse.
+    test('leaves the company null when the login omits it', () {
+      final c = parse(
+        '{"id":"uc_1","user_id":"u","company_id":"c","role":"admin","is_active":true}',
+      );
+
+      expect(c.company, isNull);
+    });
+
+    test('reads a company with a name but no logo', () {
+      final c = parse(
+        '{"id":"uc_1","user_id":"u","company_id":"c","role":"admin","is_active":true,'
+        '"company":{"id":"c","name":"Toko Budi"}}',
+      );
+
+      expect(c.company?.name, 'Toko Budi');
+      expect(c.company?.logo, isNull);
     });
 
     test('rejects a membership with no company_id', () {

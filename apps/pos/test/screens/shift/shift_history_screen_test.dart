@@ -14,6 +14,7 @@ import 'package:pn_types/src/native/printer_fake.dart';
 import 'package:pn_types/src/native/printer_port.dart';
 import 'package:pn_ui/src/theme/tokens.dart';
 import 'package:pos/app/pos_app.dart';
+import 'package:pos/branding/company_avatar.dart';
 import 'package:pos/printer/printer_service.dart';
 import 'package:pos/screens/shift/shift_history_screen.dart';
 import 'package:pos/shift/shift_history_controller.dart';
@@ -153,6 +154,15 @@ void main() {
         expect(find.text('Terbuka'), findsWidgets);
       },
     );
+
+    // On every screen opened after login, not only the ones whose header was free.
+    testWidgets('the company avatar is in the header', (tester) async {
+      final http = RoutedHttp()..respond(shiftsPath, page([row('a')]));
+
+      await pumpHistory(tester, http);
+
+      expect(find.byType(CompanyAvatar), findsOneWidget);
+    });
 
     testWidgets('asks for the shifts of the paired outlet, a page at a time', (
       tester,

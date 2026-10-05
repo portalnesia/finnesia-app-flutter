@@ -7,6 +7,8 @@
 
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import 'file_ref.dart';
+
 part 'tenant.freezed.dart';
 part 'tenant.g.dart';
 
@@ -16,10 +18,12 @@ part 'tenant.g.dart';
 /// also carries the membership's `company`, `role_model`, `branch`, `warehouse` and `outlet`
 /// relations and its timestamps. `.claude/rules/project.md` §2.2 says to port **partially**:
 /// only what the POS reads. That is the identifying ids and the role, which is what
-/// `usePermission` and `resolvePermissionViewer` look at. The relations are dropped when the
-/// login response is parsed, so a session saved by this build does not carry them; a later
-/// change that needs `role_model.allowed_scope` will have to add it here and let the next
-/// login refill it.
+/// `usePermission` and `resolvePermissionViewer` look at, plus [company] — the header's
+/// avatar needs its name and logo together, and the till does not fetch per render.
+/// `role_model`, `branch`, `warehouse` and `outlet` are still dropped when the login
+/// response is parsed, so a session saved by this build does not carry them; a later change
+/// that needs `role_model.allowed_scope` will have to add it here and let the next login
+/// refill it.
 @freezed
 abstract class UserCompany with _$UserCompany {
   const factory UserCompany({
@@ -38,10 +42,26 @@ abstract class UserCompany with _$UserCompany {
     /// can define their own roles, and an enum would throw on the first one.
     required String role,
     @JsonKey(name: 'is_active') required bool isActive,
+
+    /// The company this membership belongs to, reduced to what the header shows.
+    ///
+    /// Not `required` because the source declares it `json:"company,omitempty"` and a login
+    /// can legitimately return a membership without the company attached.
+    CompanyRef? company,
   }) = _UserCompany;
 
   factory UserCompany.fromJson(Map<String, dynamic> json) =>
       _$UserCompanyFromJson(json);
+}
+
+/// The part of a company the till names on screen: its name, and its logo.
+@freezed
+abstract class CompanyRef with _$CompanyRef {
+  const factory CompanyRef({@Default('') String name, FileRef? logo}) =
+      _CompanyRef;
+
+  factory CompanyRef.fromJson(Map<String, dynamic> json) =>
+      _$CompanyRefFromJson(json);
 }
 
 /// The outlet a device was paired to, as the Menu names it.

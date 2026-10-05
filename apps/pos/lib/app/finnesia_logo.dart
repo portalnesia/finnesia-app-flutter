@@ -24,16 +24,31 @@ class FinnesiaLogo extends StatelessWidget {
   const FinnesiaLogo({
     super.key,
     required this.width,
+    this.height,
+    this.fit = BoxFit.contain,
     required this.semanticLabel,
   });
 
   final double width;
+
+  /// Null keeps the height the source's own ratio gives, which is what every caller before this
+  /// parameter wanted. A caller with a frame of its own (the login banner) passes it, so the
+  /// fallback logo fills the same frame the tenant's logo does instead of drawing at a
+  /// different scale beside it.
+  final double? height;
+
+  /// Defaults to [BoxFit.contain] so the logo is never cropped: this is the artwork the app
+  /// falls back to, and a truncated wordmark reads as a bug.
+  final BoxFit fit;
+
   final String semanticLabel;
 
   @override
   Widget build(BuildContext context) => Image.asset(
     finnesiaLogoAsset,
     width: width,
+    height: height,
+    fit: fit,
     semanticLabel: semanticLabel,
   );
 }

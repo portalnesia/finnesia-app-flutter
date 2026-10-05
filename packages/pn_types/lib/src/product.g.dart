@@ -21,6 +21,9 @@ _Product _$ProductFromJson(Map<String, dynamic> json) => _Product(
   category: json['category'] == null
       ? null
       : Category.fromJson(json['category'] as Map<String, dynamic>),
+  image: json['image'] == null
+      ? null
+      : FileRef.fromJson(json['image'] as Map<String, dynamic>),
   isActive: json['is_active'] as bool?,
 );
 
@@ -33,6 +36,7 @@ Map<String, dynamic> _$ProductToJson(_Product instance) => <String, dynamic>{
   'sell_price': instance.sellPrice,
   'type': _$ProductTypeEnumMap[instance.type],
   'category': instance.category,
+  'image': instance.image,
   'is_active': instance.isActive,
 };
 
