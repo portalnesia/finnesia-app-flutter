@@ -180,6 +180,51 @@ List<({String callee, String block})> reusableCalls(String workflow) {
 /// Read as text rather than evaluated, because what matters is that the filter SAYS the two rules:
 /// a tag starting with `pos-v`, and a tag carrying no suffix. Parsing them out also keeps this
 /// test from silently passing if the expression is rewritten into something narrower.
+/// The six workflow files, in one place.
+///
+/// Any check that claims to cover "every workflow" reads this list, so a file added later cannot be
+/// missed by being absent from a scan.
+const _workflowFiles = [
+  'publish-to-store.yml',
+  'release-dispatch.yml',
+  'release-pos.yml',
+  'shorebird-patch.yml',
+  'staging-pos.yml',
+  'windows-pos.yml',
+];
+
+/// The scalars a YAML 1.1 parser resolves to a boolean, so an unquoted one arrives as a boolean and
+/// not as the word that was written.
+///
+/// Lowercased before comparison, because the resolution is case-insensitive: `NO`, `No` and `no` are
+/// all false. `y`/`n` are here too, for the same reason, and not only the `on`/`off` family that
+/// made the bug famous.
+const _yaml11Booleans = {'y', 'n', 'yes', 'no', 'on', 'off', 'true', 'false'};
+
+/// Every `options:` entry of [workflow] that is unquoted and YAML 1.1 would read as a boolean.
+///
+/// A line scan rather than a YAML parse, for the same reason as [tagPatterns]: the repo has no YAML
+/// dependency and the shape is one fixed line. The line IS the bug, so scanning the line is
+/// correct, not a shortcut: nothing downstream of the parser can see what the file said.
+///
+/// A quoted entry is skipped whatever it says, because the quotes are the fix and
+/// `options: ["no", "yes"]` is the string `no`, not the boolean false.
+List<String> unquotedBooleanOptions(String workflow) {
+  final findings = <String>[];
+  for (final line in workflow.split(RegExp(r'\r?\n'))) {
+    final list = RegExp(r'^\s*options:\s*\[(.*)\]\s*$').firstMatch(line);
+    if (list == null) continue;
+
+    for (final raw in list.group(1)!.split(',')) {
+      final value = raw.trim();
+      if (value.isEmpty) continue;
+      if (value.startsWith('"') || value.startsWith("'")) continue;
+      if (_yaml11Booleans.contains(value.toLowerCase())) findings.add(value);
+    }
+  }
+  return findings;
+}
+
 String? publishGate(String workflow) {
   final lines = workflow.split(RegExp(r'\r?\n'));
   final at = lines.indexWhere((l) => l.trimRight() == '  play:');
@@ -831,6 +876,116 @@ void main() {
       expect(workflow, contains('createRef'));
       expect(workflow, contains('context.sha'));
       expect(workflow, contains("if: inputs.draft_release == 'yes'"));
+    });
+  });
+
+  group('the YAML 1.1 boolean options', () {
+    // The whole finding is one line of `release-dispatch.yml`, written as `options: [no, yes]`.
+    // YAML 1.1 resolves `no` to false and `yes` to true, so GitHub's parser never saw the words:
+    // the UI offered `false`/`true`, the dispatch sent `--draft "true"`, and the Dart gate refused it
+    // with exit 64. Every test in this file read the TEXT and saw `no, yes`, so all of them passed.
+    // That is the class of gap this group closes.
+    test('names an unquoted boolean, in any case', () {
+      expect(unquotedBooleanOptions('        options: [no, yes]'), [
+        'no',
+        'yes',
+      ]);
+      // Case-insensitive, like the parser.
+      expect(unquotedBooleanOptions('options: [NO, Yes]'), ['NO', 'Yes']);
+      // The rest of the YAML 1.1 boolean set, not just the pair that bit us.
+      for (final word in const [
+        'y',
+        'n',
+        'on',
+        'off',
+        'true',
+        'false',
+        'Off',
+      ]) {
+        expect(unquotedBooleanOptions('options: [$word]'), [
+          word,
+        ], reason: '$word is a YAML 1.1 boolean and must be reported unquoted');
+      }
+    });
+
+    test('accepts a quoted option, whatever the word is', () {
+      // The quotes are the fix, so a quoted boolean is exactly what must NOT be reported.
+      expect(unquotedBooleanOptions('        options: ["no", "yes"]'), isEmpty);
+      expect(unquotedBooleanOptions("options: ['no', 'yes']"), isEmpty);
+      // And a plain word never needed quoting in the first place.
+      expect(unquotedBooleanOptions('        options: [pos]'), isEmpty);
+      expect(
+        unquotedBooleanOptions('        options: [staging, production, patch]'),
+        isEmpty,
+      );
+    });
+
+    test('ignores an options list that is not on one line', () {
+      // Block form, so nothing is read. Reported only if a workflow ever switches to it, and then
+      // by a human, not by a silent pass.
+      expect(unquotedBooleanOptions('options:\n  - no\n  - yes'), isEmpty);
+      expect(unquotedBooleanOptions('description: "no = uji coba"'), isEmpty);
+      expect(unquotedBooleanOptions('env: [no]'), isEmpty);
+    });
+
+    test('no workflow offers an unquoted YAML 1.1 boolean', () {
+      for (final name in _workflowFiles) {
+        final offenders = unquotedBooleanOptions(readWorkflow(name));
+        expect(
+          offenders,
+          isEmpty,
+          reason:
+              '$name offers $offenders unquoted. YAML 1.1 reads those as booleans, so the UI and '
+              'every condition receive false/true instead of the words written. Quote them.',
+        );
+      }
+    });
+
+    test('the scan reaches every workflow file', () {
+      // A scan that quietly skipped files would pass the test above for the wrong reason, so the
+      // list itself is asserted: all six workflow files, all of them present.
+      expect(_workflowFiles, hasLength(6));
+      for (final name in _workflowFiles) {
+        expect(
+          File('${repoRoot().path}/.github/workflows/$name').existsSync(),
+          isTrue,
+          reason: '$name is scanned, so it must exist',
+        );
+      }
+
+      // And the scan really reads the only file that declares a choice. A regex that stopped
+      // matching would report nothing and pass.
+      expect(
+        RegExp(
+          r'^\s*options:',
+          multiLine: true,
+        ).allMatches(readWorkflow('release-dispatch.yml')).length,
+        4,
+        reason: 'aplikasi, env, device, draft_release',
+      );
+    });
+
+    test('the draft choice reaches the validator and the callees as words', () {
+      // The chain that produced exit 64: YAML turned the two words into false/true, and the Dart
+      // validator, which only knows `no` and `yes`, refused them.
+      final workflow = readWorkflow('release-dispatch.yml');
+      expect(workflow, contains(r'--draft "${{ inputs.draft_release }}"'));
+      // The tag is made only when the input IS the word `yes`.
+      expect(workflow, contains("if: inputs.draft_release == 'yes'"));
+      // The three building callees skip their draft work only when the input is the word `no`.
+      // Read as text: what matters is that the comparison names `no`, because `"false" != "no"`
+      // is true and would tag and draft a rehearsal run.
+      expect(
+        RegExp(r"!= 'no'").allMatches(readWorkflow('release-pos.yml')).length,
+        greaterThan(0),
+      );
+      for (final name in const ['staging-pos.yml', 'windows-pos.yml']) {
+        expect(
+          readWorkflow(name),
+          contains("!= 'no'"),
+          reason: '$name skips the draft work when the input is the word no',
+        );
+      }
     });
   });
 

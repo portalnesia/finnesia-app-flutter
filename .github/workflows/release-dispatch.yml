@@ -42,7 +42,7 @@ on:
         description: "no = uji coba (artifact saja, tanpa tag/release/store). yes = build + tag + draft release"
         required: true
         type: choice
-        options: [no, yes]
+        options: ["no", "yes"]
       version:
         description: "Wajib bila draft release = yes (jadi nama tag). Diabaikan bila no. staging: X.Y.Z-staging.N, production: X.Y.Z, patch: X.Y.Z-N"
         required: false
