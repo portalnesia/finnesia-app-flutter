@@ -1203,6 +1203,111 @@ void main() {
       expect(shell, isNot(contains('exit 2')));
     });
   });
+
+  group('the tool resolution before every Analyze step', () {
+    // The Windows CI job died with exit code 3: 386 issues, `package:dev` not found. `.dart_tool/`
+    // is gitignored, `tools/dev`, `tools/rule_lint` and `tools/string_lint` are deliberately not
+    // workspace members (each pubspec excludes them), so root `dart pub get` never writes THEIR
+    // `package_config.json`, and `dart analyze` walked into `tools/` and found none. Five files
+    // gained a `Resolve tools` step and NOTHING here held that in place: the same class of gap the
+    // `options: [no, yes]` group below exists for, a checker that reads text while the product
+    // breaks on the runner.
+    const bad = '''
+      - name: Analyze
+        run: dart analyze
+''';
+    const good = '''
+      - name: Resolve tools
+        run: |
+          for tool in tools/dev; do (cd "\$tool" && dart pub get); done
+      - name: Analyze
+        run: dart analyze
+''';
+
+    test('names a step that analyzes with nothing resolved', () {
+      expect(unresolvedAnalyzeSteps(bad), ['Analyze']);
+    });
+
+    test('accepts a resolve step immediately before the analyze step', () {
+      expect(unresolvedAnalyzeSteps(good), isEmpty);
+    });
+
+    test('a comment or blank line between the two steps is not a bug', () {
+      // Interposing a line is legal YAML and legal practice; pinning the distance between the two
+      // steps instead of the ORDER would fail this and teach the next author to fear editing.
+      expect(
+        unresolvedAnalyzeSteps('''
+      - name: Resolve tools
+        run: dart pub get --directory tools/dev
+      # Menambah satu tool lagi berarti menambah satu baris di sini.
+      - name: Analyze
+        run: dart analyze
+'''),
+        isEmpty,
+      );
+    });
+
+    test('a resolve step AFTER the analyze step does not count', () {
+      // Same red build, and the reason "somewhere earlier in the file" was rejected: this ordering
+      // resolves the tools too late.
+      expect(
+        unresolvedAnalyzeSteps('''
+      - name: Analyze
+        run: dart analyze
+      - name: Resolve tools
+        run: dart pub get --directory tools/dev
+'''),
+        ['Analyze'],
+      );
+    });
+
+    test('names every offending step, so one fix does not hide another', () {
+      expect(
+        unresolvedAnalyzeSteps('''
+      - name: Analyze
+        run: dart analyze
+      - name: Resolve tools
+        run: dart pub get --directory tools/dev
+      - name: Analyze again
+        run: dart analyze
+'''),
+        ['Analyze'],
+      );
+      expect(
+        unresolvedAnalyzeSteps('$bad$bad'),
+        ['Analyze', 'Analyze'],
+        reason: 'both jobs are broken, and only the first is reported if the scan stops early',
+      );
+    });
+
+    test('every Analyze step follows a resolve step', () {
+      final files = _allWorkflowFiles();
+      expect(files, hasLength(greaterThanOrEqualTo(6)));
+
+      final offenders = <String, List<String>>{};
+      var analyzers = 0;
+      for (final name in files) {
+        final findings = unresolvedAnalyzeSteps(readWorkflow(name));
+        if (findings.isNotEmpty) offenders[name] = findings;
+        analyzers += RegExp(
+          r'^\s*run:\s*dart analyze\s*$',
+          multiLine: true,
+        ).allMatches(readWorkflow(name)).length;
+      }
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'these workflows run `dart analyze` with no `Resolve tools` step before it, so on a '
+            'fresh runner the tools have no package_config.json and analyze exits 3 with hundreds '
+            'of "Target of URI doesn\'t exist" issues',
+      );
+      // The pass above would be vacuous on a scan that matched nothing, so the steps it looked for
+      // are counted.
+      expect(analyzers, greaterThanOrEqualTo(5));
+    });
+  });
 }
 
 /// Whether [expression] closes every bracket and quote it opens.
@@ -1230,6 +1335,58 @@ bool _balanced(String expression) {
   }
   return round == 0 && square == 0 && !singleQuote;
 }
+
+/// The names of the steps that run `dart analyze` while no `Resolve tools` step precedes them.
+///
+/// On a fresh runner `.dart_tool/` does not exist, `tools/*` is not a workspace member, so root
+/// `dart pub get` never writes those tools' `package_config.json`. `dart analyze` then walks into
+/// `tools/`, finds no config, falls back to the root one, and `package:dev` is unknown: 386 issues
+/// and exit code 3. The `Resolve tools` step is the fix; this finds the places the fix is missing.
+///
+/// "Precedes" means the step IMMEDIATELY before, not "anywhere earlier in the file": a workflow
+/// whose `Resolve tools` runs after its Analyze is just as broken as one with no such step, and a
+/// distance rule would wave that through. Only step boundaries (`- name:`/`- uses:`) count as
+/// boundaries, so a comment or a blank line between the two steps stays legal: interposing a line
+/// is not a bug and this must not punish it.
+///
+/// A line scan rather than a YAML parse, for the same reason as [tagPatterns]: the repo has no YAML
+/// dependency, and the shape read here is one step list two keys deep and fixed.
+List<String> unresolvedAnalyzeSteps(String workflow) {
+  final findings = <String>[];
+  // Whether the step whose lines are being read is the one right after a `Resolve tools` step, and
+  // whether the step just closed was that resolve step. The resolve serves the NEXT step, so the
+  // flag is handed over at each boundary and never survives one.
+  var resolved = false;
+  var lastStepWasResolve = false;
+  var stepName = '<unnamed step>';
+  for (final line in workflow.split(RegExp(r'\r?\n'))) {
+    final step = RegExp(r'^\s*-\s+(name|uses):\s*(.+?)\s*$').firstMatch(line);
+    if (step != null) {
+      stepName = step.group(2)!;
+      resolved = lastStepWasResolve;
+      lastStepWasResolve = stepName == 'Resolve tools';
+      continue;
+    }
+    if (!RegExp(r'^\s*run:\s*dart analyze\s*$').hasMatch(line)) continue;
+    if (!resolved) findings.add(stepName);
+  }
+  return findings;
+}
+
+/// Every workflow file in the repository, the parked `ci.yml.disabled` among them.
+///
+/// Read from the directory rather than from a hand-kept list, because the failure this guards is
+/// exactly a workflow nobody remembered: a sixth file running `dart analyze` without the resolve
+/// step would be invisible to a list that did not yet exist. The disabled file is scanned too
+/// because it is parked, not abandoned, and re-enabling it must not be the step that reddens CI.
+List<String> _allWorkflowFiles() => [
+  for (final entity in Directory(
+    '${repoRoot().path}/.github/workflows',
+  ).listSync())
+    if (entity is File &&
+        (entity.path.endsWith('.yml') || entity.path.endsWith('.yml.disabled')))
+      entity.uri.pathSegments.last,
+]..sort();
 
 /// The `run:` body of the step whose `- name:` contains [fragment].
 String? _shellRun(String workflow, String fragment) {

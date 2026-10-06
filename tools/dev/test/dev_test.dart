@@ -578,6 +578,9 @@ void main() {
               : '${s.executable} ${s.args.join(' ')} @${s.directory}'),
           [
             'dart pub get @.',
+            'dart pub get @tools/dev',
+            'dart pub get @tools/rule_lint',
+            'dart pub get @tools/string_lint',
             'dart format --output=none --set-exit-if-changed '
                 '${formatTargets.join(' ')} @.',
             'dart analyze @.',

@@ -146,6 +146,19 @@ jobs:
       - name: Resolve workspace
         run: dart pub get
 
+      # `tools/dev`, `tools/rule_lint` dan `tools/string_lint` sengaja bukan member workspace
+      # (lihat pubspec masing-masing), jadi `dart pub get` di root tidak menulis
+      # `.dart_tool/package_config.json` mereka, dan `.dart_tool/` juga gitignored. Tanpa langkah
+      # ini, `dart analyze` di bawah masuk ke `tools/`, tidak menemukan config, jatuh ke config
+      # root, lalu `package:dev` tidak dikenal: ratusan issue `Target of URI doesn't exist` dan
+      # exit code 3.
+      - name: Resolve tools
+        run: |
+          for tool in tools/dev tools/rule_lint tools/string_lint; do
+            echo "── dart pub get: $tool"
+            (cd "$tool" && dart pub get)
+          done
+
       # Sama seperti release-pos.yml; paket tidak dibangun kalau ini gagal.
       - name: Analyze
         run: dart analyze

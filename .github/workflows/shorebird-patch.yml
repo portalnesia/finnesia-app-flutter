@@ -156,8 +156,14 @@ jobs:
           distribution: temurin
           java-version: "17"
 
+      # Default action adalah `tools platform-tools`, dan paket `tools` sudah tidak ada di
+      # repository Android SDK modern, jadi `sdkmanager tools` gagal exit 1 sebelum memasang
+      # apa pun. Cukup `platform-tools`; `sdkmanager` sendiri dipasang oleh input
+      # `cmdline-tools-version` dan tetap ada di PATH untuk langkah NDK di bawah.
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
 
       - name: Install Android NDK
         run: sdkmanager "ndk;${NDK_VERSION}"
@@ -173,6 +179,19 @@ jobs:
 
       - name: Resolve workspace
         run: dart pub get
+
+      # `tools/dev`, `tools/rule_lint` dan `tools/string_lint` sengaja bukan member workspace
+      # (lihat pubspec masing-masing), jadi `dart pub get` di root tidak menulis
+      # `.dart_tool/package_config.json` mereka, dan `.dart_tool/` juga gitignored. Tanpa langkah
+      # ini, `dart analyze` di bawah masuk ke `tools/`, tidak ditemukan config, jatuh ke config
+      # root, lalu `package:dev` tidak dikenal: ratusan issue `Target of URI doesn't exist` dan
+      # exit code 3.
+      - name: Resolve tools
+        run: |
+          for tool in tools/dev tools/rule_lint tools/string_lint; do
+            echo "── dart pub get: $tool"
+            (cd "$tool" && dart pub get)
+          done
 
       # ── Verifikasi ────────────────────────────────────────────────────────
       # Patch tetap kode yang beredar ke tablet produksi — lolos gerbang yang sama dengan

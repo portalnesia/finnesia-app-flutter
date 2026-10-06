@@ -122,8 +122,9 @@ Usage: ./dev <task> [args...]        (Windows: .\dev <task> [args...])
                         roots come from the tool, not from the caller: `dart format` has no
                         exclusion flag and does not read `.gitignore`, so `dart format .` walks
                         into `build/` and dies. See `formatTargets`.
-  check                 Everything CI runs, in CI's order: pub get, format, analyze, generated
-                        code up to date, no flutter in pn_types/pn_pos, tests, rule_lint.
+  check                 Everything CI runs, in CI's order: pub get (root, then each tool under
+                        tools/ separately), format, analyze, generated code up to date, no
+                        flutter in pn_types/pn_pos, tests, rule_lint.
 
 Anything after the task name goes to the tool underneath, untouched.
 ''';
@@ -184,6 +185,23 @@ const _app = 'apps/pos';
 
 const _pubGet = Step('dart', ['pub', 'get'], '.');
 
+/// Resolve each tool under `tools/` as its own package, one `dart pub get` per directory.
+///
+/// They are deliberately not members of the root workspace (their `pubspec.yaml` say so, for two
+/// reasons: a tool must run before the workspace resolves, and it must not add a dependency to
+/// the app's graph). The consequence is that the root `dart pub get` never writes a
+/// `.dart_tool/package_config.json` for them, and a fresh checkout does not have one either
+/// because `.dart_tool/` is gitignored. `dart analyze` from the root walks into `tools/` anyway,
+/// finds no config there, falls back to the root one, and then `package:dev` and friends do not
+/// exist: hundreds of `Target of URI doesn't exist` issues and exit code 3.
+///
+/// Resolving them here is what makes the analysis path exist without touching the workspace
+/// list, which the two design reasons forbid. Derived from [toolDirectories], so a tool added
+/// there is resolved by this list by itself, and the `check` test fails when one is forgotten.
+final _toolPubGet = [
+  for (final tool in toolDirectories) Step('dart', ['pub', 'get'], tool),
+];
+
 /// The format check, shared by `format` and `check`.
 ///
 /// One `Step`, one list of targets: a second literal here would be [formatTargets] written down a
@@ -238,6 +256,7 @@ List<Step> plan(
     'format' => [_format],
     'check' => [
         _pubGet,
+        ..._toolPubGet,
         _format,
         const Step('dart', ['analyze'], '.'),
         const Step.builtin('gen-fresh', _generating),
