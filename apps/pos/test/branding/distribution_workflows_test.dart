@@ -1573,6 +1573,110 @@ void main() {
       expect(consumers, greaterThanOrEqualTo(4));
     });
   });
+
+  group('the release tag API calls', () {
+    // `release-dispatch.yml` creates the tag through `github.rest.git`: the
+    // endpoint is `POST /repos/{owner}/{repo}/git/refs`, and Octokit does not
+    // fill `owner`/`repo` in, so a call without them 404s on `/repos///git/refs`.
+    test('ignores a commented mention and names a call without owner', () {
+      expect(
+        githubRestCalls('# github.rest.git.getRef({ owner, repo })'),
+        isEmpty,
+      );
+      expect(
+        githubRestCalls('// github.rest.git.getRef({ owner: 1 })'),
+        isEmpty,
+      );
+      final calls = githubRestCalls(
+        'await github.rest.git.createRef({ ref, sha: context.sha });',
+      );
+      expect(calls, hasLength(1));
+      expect(calls.single, isNot(contains('owner')));
+    });
+
+    test('every github.rest call carries its owner from context', () {
+      var scanned = 0;
+      for (final name in _allWorkflowFiles()) {
+        if (!name.endsWith('.yml')) continue;
+        final workflow = readWorkflow(name);
+        for (final call in githubRestCalls(workflow)) {
+          scanned++;
+          expect(
+            call,
+            contains('owner'),
+            reason:
+                '$name calls github.rest without owner, so the API resolves /repos///git/refs and 404s',
+          );
+          expect(
+            workflow,
+            contains('context.repo.owner'),
+            reason:
+                '$name must source owner from context.repo.owner, not a hardcoded slug',
+          );
+        }
+      }
+      expect(
+        scanned,
+        greaterThanOrEqualTo(2),
+        reason: 'release-dispatch.yml must still hold the two github.rest calls this scan guards',
+      );
+    });
+
+    test('every github.rest call carries its repo from context', () {
+      var scanned = 0;
+      for (final name in _allWorkflowFiles()) {
+        if (!name.endsWith('.yml')) continue;
+        final workflow = readWorkflow(name);
+        for (final call in githubRestCalls(workflow)) {
+          scanned++;
+          expect(
+            call,
+            contains('repo'),
+            reason:
+                '$name calls github.rest without repo, so the API resolves /repos///git/refs and 404s',
+          );
+          expect(
+            workflow,
+            contains('context.repo.repo'),
+            reason:
+                '$name must source repo from context.repo.repo, not a hardcoded slug',
+          );
+        }
+      }
+      expect(
+        scanned,
+        greaterThanOrEqualTo(2),
+        reason: 'release-dispatch.yml must still hold the two github.rest calls this scan guards',
+      );
+    });
+
+    test('getRef drops refs/ while createRef keeps it', () {
+      // `GET /git/ref/{ref}` wants `tags/<tag>`; `POST /git/refs` wants the
+      // fully qualified `refs/tags/<tag>`. One format for both is wrong for one
+      // endpoint, so both shapes are pinned, not one.
+      final workflow = readWorkflow('release-dispatch.yml');
+      expect(
+        workflow,
+        contains(r'ref: `tags/${tag}`'),
+        reason: 'release-dispatch.yml getRef must use tags/<tag> without refs/, or the exists-check always 404s',
+      );
+      expect(
+        workflow,
+        contains('refs/tags/'),
+        reason: 'release-dispatch.yml createRef must use the fully qualified refs/tags/<tag>',
+      );
+    });
+
+    test('only a missing tag falls through to createRef', () {
+      // Without the rethrow, a permission or auth failure reads as "tag belum
+      // ada" and createRef fails next with a misleading message.
+      expect(
+        readWorkflow('release-dispatch.yml'),
+        contains('e.status !== 404'),
+        reason: 'release-dispatch.yml must rethrow non-404 errors instead of treating them as a missing tag',
+      );
+    });
+  });
 }
 
 /// Whether [expression] closes every bracket and quote it opens.
@@ -1766,6 +1870,46 @@ List<String> checkoutSteps(String workflow) {
   }
   closeStep();
   return findings;
+}
+
+/// Every `github.rest.` call in [workflow], one text block per call.
+///
+/// One block starts at a line containing `github.rest.` and runs until its
+/// parentheses balance, so a call split over several lines still reads as one.
+/// Comment lines never start a block: `#` (YAML) and `//` (JS inside
+/// `github-script`) are both skipped, so a note mentioning the call is not
+/// mistaken for the call itself.
+///
+/// A line scan rather than a YAML parse, for the same reason as [tagPatterns]:
+/// the repo has no YAML dependency and the call is one fixed shape.
+List<String> githubRestCalls(String workflow) {
+  final lines = workflow.split(RegExp(r'\r?\n'));
+  final calls = <String>[];
+  var i = 0;
+  while (i < lines.length) {
+    final trimmed = lines[i].trimLeft();
+    if (trimmed.startsWith('#') || trimmed.startsWith('//')) {
+      i++;
+      continue;
+    }
+    if (!lines[i].contains('github.rest.')) {
+      i++;
+      continue;
+    }
+    final block = <String>[lines[i]];
+    var depth =
+        '('.allMatches(lines[i]).length - ')'.allMatches(lines[i]).length;
+    var j = i;
+    while (depth > 0 && j + 1 < lines.length) {
+      j++;
+      block.add(lines[j]);
+      depth +=
+          '('.allMatches(lines[j]).length - ')'.allMatches(lines[j]).length;
+    }
+    calls.add(block.join('\n'));
+    i = j + 1;
+  }
+  return calls;
 }
 
 /// Every workflow file in the repository, the parked `ci.yml.disabled` among them.

@@ -95,11 +95,15 @@ jobs:
           script: |
             const tag = 'pos-v${{ inputs.version }}';
             const ref = `refs/tags/${tag}`;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
             try {
-              await github.rest.git.getRef({ ref });
+              // Format endpoint GET /git/ref/{ref}: `tags/<tag>`, tanpa prefix `refs/`.
+              await github.rest.git.getRef({ owner, repo, ref: `tags/${tag}` });
               core.info(`Tag ${tag} sudah ada; dipakai apa adanya.`);
-            } catch {
-              await github.rest.git.createRef({ ref, sha: context.sha });
+            } catch (e) {
+              if (e.status !== 404) throw e;
+              await github.rest.git.createRef({ owner, repo, ref, sha: context.sha });
               core.info(`Tag ${tag} dibuat pada ${context.sha}.`);
             }
 
