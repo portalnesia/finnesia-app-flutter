@@ -140,16 +140,31 @@ publish-to-store.yml  (on: release types: [published])
 | | Nilai yang berlaku |
 | --- | --- |
 | Trigger | `release: types: [published]` — **bukan** pembuatan draft. Draft yang belum dipublikasikan memicu apa pun |
-| Filter tag | Di level **job**, bukan di `on:` (event `release` tidak mendukung filter tag di sana): tag harus diawali `pos-v`, dan bagian versi setelah `pos-v` dibuang tidak boleh memuat `-` |
+| Filter tag | Dua lapis. **Job-level** (`if:`), hanya prefix: tag harus diawali `pos-v`, karena event `release` tidak mendukung filter tag di `on:`. **Langkah shell `tag`**, bentuk persisnya: hanya `pos-vX.Y.Z` polos yang boleh lanjut. Setiap langkah yang menyentuh Play atau asset release memakai `if: steps.tag.outputs.plain == 'true'` |
 | Yang diunduh | AAB dari **asset release**, bukan artifact Actions (artifact hidup 30 hari dan butuh `run-id` + token lintas run) |
 | Track | `internal`, `status: completed`. Tidak ada pilihan track di CI — lihat §3 |
 | Secret | `PLAY_SERVICE_ACCOUNT_JSON` saja. `SHOREBIRD_TOKEN` tidak dibutuhkan: Shorebird sudah selesai di run build, dan tidak ada OTA yang boleh ikut terkirim tanpa dilihat |
 | Yang tidak pernah naik | Release staging (`pos-vX.Y.Z-staging.N`); tag patch (`-N`) tidak membuat GitHub release sama sekali |
 
 > [!NOTE]
-> Filter tag memakai `replace(tag, 'pos-v', '')` sebelum mengecek `-`, karena prefix `pos-v`
-> sendiri mengandung hyphen — tanpa `replace` itu, filter akan menolak **segala** tag POS
-> termasuk tag polos yang justru harus naik.
+> Bentuk tag **tidak bisa** ditulis di `if:`. Bahasa ekspresi GitHub Actions hanya punya
+> `contains`, `startsWith`, `endsWith`, `format`, `join`, `toJSON`, `fromJSON`, `hashFiles` —
+> tidak ada `replace`, tidak ada split, tidak ada regex. Dulu `if:` memakai
+> `!contains(replace(tag, 'pos-v', ''), '-')`, dan GitHub menolak mengurai filenya: **push pertama
+> ke `main` gagal sebelum workflow apa pun jalan** (2026-10-06).
+>
+> Satu-satunya jalan keluar yang bisa dibaca, yaitu memeriksa seluruh tag dengan
+> `!contains(tag, '-')`, **tidak benar**: prefix `pos-v` sendiri mengandung hyphen, jadi filter itu
+> menolak segala tag POS, termasuk tag polos yang justru harus naik. Karena itu pemeriksaan pindah
+> ke shell (`[[ "$TAG" =~ ^pos-v[0-9]+\.[0-9]+\.[0-9]+$ ]]`), tempat operator `=~` memang ada.
+>
+> Tag yang tidak lolos menghasilkan `::notice::`, **bukan** `exit 1`: staging dan patch juga
+> menghasilkan rilis, jadi run merah untuk keadaan normal itu noise yang melatih mengabaikan merah.
+>
+> Test penjaganya ada di
+> [`distribution_workflows_test.dart`](../apps/pos/test/branding/distribution_workflows_test.dart):
+> setiap fungsi yang dipanggil di keenam file workflow di-assert ada di daftar fungsi resmi GitHub,
+> dan regex gerbangnya diuji pada semua empat bentuk tag.
 
 ### 1.2 Dispatcher manual (`release-dispatch.yml`) — pintu kedua
 

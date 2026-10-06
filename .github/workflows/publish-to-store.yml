@@ -8,9 +8,14 @@
 # manual di Console (docs/distribution.md §Promote).
 #
 # Filter tag ada di level JOB, bukan di `on:` — event `release` tidak mendukung filter tag di
-# `on:`. Dua aturan: tag harus diawali `pos-v` (repo ini monorepo, aplikasi lain punya prefixnya)
-# dan tidak boleh memuat `-` (tag `pos-vX.Y.Z-staging.N` milik staging, yang tidak pernah menyentuh
-# Play; tag `pos-vX.Y.Z-N` milik patch dan tidak pernah membuat release sama sekali).
+# `on:`. Yang ditulis di `if:` cuma aturan prefix `pos-v` (repo ini monorepo, aplikasi lain punya
+# prefixnya). Aturan kedua, yaitu tag polos `pos-vX.Y.Z`, TIDAK bisa ditulis di situ: bahasa
+# ekspresi GitHub tidak punya penghapusan substring, split, atau regex, jadi satu-satunya cara
+# terbaca untuk memeriksa sisa tag adalah `contains(tag_name, '-')` — dan itu tidak pernah benar,
+# karena prefix `pos-v` sendiri mengandung hyphen, sehingga akan menolak SEGALA tag POS termasuk
+# tag polos yang justru harus naik. Karena itu bentuk tag diperiksa di step shell pertama, di mana
+# operator `=~` memang ada. Tag staging (`pos-vX.Y.Z-staging.N`) dan tag patch (`pos-vX.Y.Z-N`)
+# tetap melewati `if:` ini, lalu berhenti di gate itu.
 #
 # AAB diambil dari asset release dengan `gh release download`, bukan dari artifact Actions: artifact
 # hidup 30 hari dan butuh `run-id` + token lintas run, sedangkan asset release adalah berkas yang
@@ -27,12 +32,8 @@ on:
 
 jobs:
   play:
-    # Hanya tag polos `pos-vX.Y.Z`.
-    #
-    # Perhatikan `replace` di aturan kedua. `!contains(tag_name, '-')` versi draft spesifikasi akan
-    # menolak SEGALA tag POS, karena prefix `pos-v` sendiri mengandung hyphen — termasuk tag polos
-    # yang justru harus naik. Yang diperiksa adalah bagian versi setelah prefix dibuang.
-    if: startsWith(github.event.release.tag_name, 'pos-v') && !contains(replace(github.event.release.tag_name, 'pos-v', ''), '-')
+    # Hanya tag dengan prefix `pos-v`. Bentuk polos tag diputuskan di langkah `tag` di bawah.
+    if: startsWith(github.event.release.tag_name, 'pos-v')
     runs-on: ubuntu-latest
     # `gh release download` hanya membaca, jadi `read` sudah cukup. Tidak menulis apa pun ke repo.
     permissions:
@@ -45,7 +46,23 @@ jobs:
       cancel-in-progress: false
 
     steps:
+      # Satu-satunya tempat bentuk tag bisa dipastikan. `plain=false` sengaja hanya memberi
+      # `::notice::` dan tidak `exit 1`: staging dan patch juga menghasilkan rilis, jadi run merah
+      # untuk keadaan normal itu noise yang melatih pemilik mengabaikan merah.
+      - name: Accept only a plain pos-vX.Y.Z tag
+        id: tag
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          if [[ "$TAG" =~ ^pos-v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "plain=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "plain=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Tag '$TAG' bukan tag rilis polos; upload Play dilewati."
+          fi
+
       - name: Download AAB from the published release
+        if: steps.tag.outputs.plain == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -54,6 +71,7 @@ jobs:
           ls -lh /tmp/store
 
       - name: Publish to Play Console (internal track)
+        if: steps.tag.outputs.plain == 'true'
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}

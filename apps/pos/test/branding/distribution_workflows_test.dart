@@ -191,30 +191,67 @@ String? publishGate(String workflow) {
   return null;
 }
 
-/// Whether [tag] passes the publish filter written as [gate], or null when the gate does not state
-/// one of the two rules at all.
+/// Whether the job-level `if:` admits a tag carrying [prefix], or null when it states none.
 ///
-/// The rules are lifted out of the expression text, so loosening it in YAML changes this verdict.
-/// The suffix rule is matched in its `replace(...)` form on purpose: the literal
-/// `!contains(tag_name, '-')` is unsatisfiable, because the `pos-v` prefix itself contains a hyphen,
-/// and it refuses every POS tag including the plain one that must upload. Reading the prefix the
-/// expression strips keeps the test honest about which part is being filtered.
-///
-/// `null` is kept distinct from `false` on purpose: a rewritten expression that dropped the suffix
-/// rule must read as "unknown", never as "allowed" — otherwise a gate that stopped filtering
-/// anything would look like a gate that filters correctly.
+/// Job-level filtering can only answer "is this OUR tag". `null` stays distinct from `false` so a
+/// gate that vanished reads as unknown rather than as a gate that admits nothing.
 bool? publishGateAllows(String gate, String tag) {
-  final starts = RegExp(
+  final prefix = RegExp(
     r"startsWith\(github\.event\.release\.tag_name,\s*'([^']*)'\)",
-  ).firstMatch(gate);
-  final rejects = RegExp(
-    r"!contains\(replace\(github\.event\.release\.tag_name,\s*'([^']*)',\s*''\),\s*'-'\)",
-  ).firstMatch(gate);
-  if (starts == null || rejects == null) return null;
-  if (!tag.startsWith(starts.group(1)!)) return false;
-  final version = tag.substring(starts.group(1)!.length);
-  return !version.replaceAll(rejects.group(1)!, '').contains('-');
+  ).firstMatch(gate)?.group(1);
+  if (prefix == null) return null;
+  return tag.startsWith(prefix);
 }
+
+/// Whether [tag] is a plain production tag under the shell gate written in [workflow].
+///
+/// `null` when the workflow states no gate at all, kept distinct from `false` on purpose: a gate
+/// that went missing must read as "unknown", never as "allowed".
+bool? plainTagAccepted(String workflow, String tag) {
+  final pattern = plainTagRegex(workflow);
+  if (pattern == null) return null;
+  final regex = RegExp(pattern);
+  return regex.hasMatch(tag);
+}
+
+/// The tag-shape regex the shell gate tests against, or null when there is no such gate.
+///
+/// The prefix rule IS expressible in a job-level `if:`, but "this tag carries no suffix" is not:
+/// GitHub's expression language has no substring removal, no split and no regex, so the shape has
+/// to be decided in a shell step where `=~` exists.
+String? plainTagRegex(String workflow) {
+  final match = RegExp(r'''if \[\[\s*"\$TAG"\s*=~\s*(\S+)\s*\]\]''')
+      .firstMatch(workflow);
+  return match?.group(1);
+}
+
+/// Every expression in [workflow]: each `${{ ... }}` plus every bare `if:` value.
+///
+/// `if:` accepts a bare expression as well as an interpolated one, and that is how `publish-to-store`
+/// spelled its filter, so a scanner that only read `${{ }}` would have missed the very bug it was
+/// written for.
+List<String> expressions(String workflow) {
+  final found = <String>[
+    for (final m in RegExp(r'\$\{\{(.*?)\}\}').allMatches(workflow))
+      m.group(1)!,
+  ];
+  for (final line in workflow.split(RegExp(r'\r?\n'))) {
+    final bare = RegExp(r'^\s*(?:-\s*)?if:\s*(.+?)\s*$').firstMatch(line);
+    if (bare != null) found.add(bare.group(1)!);
+  }
+  return found;
+}
+
+/// The function names called inside [expression], in order.
+///
+/// Only `name(` counts, so a context property (`steps.version.outputs.base`) and a string literal are
+/// not mistaken for a call.
+List<String> calledFunctions(String expression) => [
+  for (final m in RegExp(
+    r'([A-Za-z_][A-Za-z0-9_]*)\s*\(',
+  ).allMatches(expression))
+    m.group(1)!,
+];
 
 /// GitHub's branch/tag filter glob, as a Dart regex.
 ///
@@ -841,35 +878,20 @@ void main() {
         gate,
         contains("startsWith(github.event.release.tag_name, 'pos-v')"),
       );
-      expect(
-        gate,
-        contains(
-          "!contains(replace(github.event.release.tag_name, 'pos-v', ''), '-')",
-        ),
-      );
-
-      // The prefix itself carries a hyphen, so filtering the WHOLE tag would refuse every POS tag,
-      // the plain one included. This asserts that the plain tag really does pass, which is what
-      // makes the refusals below refusals rather than a filter that refuses everything.
-      expect('pos-v1.2.0'.substring('pos-v'.length).contains('-'), isFalse);
+      // The job-level filter may only carry the prefix rule. "No suffix anywhere in the tag" cannot
+      // be written here: GitHub's expression language has no substring removal, no split and no
+      // regex, and the only readable workaround, testing the whole tag for a hyphen, is unsatisfiable
+      // because the `pos-v` prefix itself contains one, so it would refuse every POS tag including
+      // the plain one that must upload. Anything beyond `startsWith` here is an attempt to re-express
+      // what only the shell step below can say.
+      expect(gate, isNot(contains('replace(')));
+      expect(gate, isNot(contains('contains(')));
 
       expect(publishGateAllows(gate!, 'pos-v1.2.0'), isTrue);
-      expect(publishGateAllows(gate, 'pos-v1.2.0-staging.3'), isFalse);
-      expect(publishGateAllows(gate, 'pos-v1.2.0-5'), isFalse);
       expect(publishGateAllows(gate, 'web-v1.2.0'), isFalse);
-
-      // The reader is proved against a gate that says only HALF the rule (`testing.md` §0.3). Dropping
-      // the suffix rule is exactly the mutation that would let a staging release reach Play, so such a
-      // gate must read as "unknown" rather than as "allowed" — and as "unknown" rather than "refused",
-      // because a filter that stopped filtering would otherwise pass for one that filters well.
-      expect(
-        publishGateAllows(
-          "startsWith(github.event.release.tag_name, 'pos-v')",
-          'pos-v1.2.0-staging.3',
-        ),
-        isNull,
-      );
-      expect(publishGateAllows('', 'pos-v1.2.0'), isNull);
+      // A staging release still enters the job (it carries the prefix); what the shell gate decides
+      // is whether it goes on to Play.
+      expect(publishGateAllows(gate, 'pos-v1.2.0-staging.3'), isTrue);
     });
 
     test('queues per tag, and stays out of the shared release group', () {
@@ -885,4 +907,187 @@ void main() {
       expect(workflow, isNot(contains(r'release-pos-${{ github.ref }}')));
     });
   });
+
+  group('the GitHub Actions expression vocabulary', () {
+    // The complete list, and it is short. A name outside it is not "deprecated": GitHub refuses to
+    // parse the file at all, so the workflow never runs and the failure names only the offending
+    // line. That is what a push to `main` did on 2026-10-06 with `replace(...)`.
+    //   https://docs.github.com/actions/reference/workflows-and-actions/expressions
+    //     §Functions (contains, startsWith, endsWith, format, join, toJSON, fromJSON, hashFiles)
+    //   https://docs.github.com/actions/reference/workflows-and-actions/expressions
+    //     §Status check functions (success, always, cancelled, failure)
+    const supported = {
+      'contains',
+      'startsWith',
+      'endsWith',
+      'format',
+      'join',
+      'toJSON',
+      'fromJSON',
+      'hashFiles',
+      'success',
+      'always',
+      'cancelled',
+      'failure',
+    };
+
+    test('every function called in every workflow is one GitHub documents', () {
+      // `testing.md` §0.3: the checker is proved on a name that is certainly not supported, or its
+      // silence over 108 real expressions would prove nothing.
+      expect(calledFunctions(r"replace(x, 'a', '')"), ['replace']);
+      expect(calledFunctions(r"startsWith(x, 'pos-v')"), ['startsWith']);
+      expect(
+        calledFunctions(r'steps.version.outputs.tag'),
+        isEmpty,
+        reason: 'a context property is not a call',
+      );
+
+      var scanned = 0;
+      for (final name in const [
+        'publish-to-store.yml',
+        'release-dispatch.yml',
+        'release-pos.yml',
+        'shorebird-patch.yml',
+        'staging-pos.yml',
+        'windows-pos.yml',
+      ]) {
+        for (final expression in expressions(readWorkflow(name))) {
+          scanned++;
+          for (final function in calledFunctions(expression)) {
+            expect(
+              supported,
+              contains(function),
+              reason:
+                  '$name calls $function(), which GitHub Actions does not have, so the file '
+                  'fails to parse',
+            );
+          }
+        }
+      }
+
+      // A scan that quietly found one expression would pass the loop above for the wrong reason.
+      expect(scanned, greaterThan(100));
+    });
+
+    test('the job-level if expressions keep their brackets balanced', () {
+      // Not a YAML parser and not an expression evaluator: just enough to catch a half-rewritten
+      // chain, which is the shape a hand edit to `if:` actually breaks.
+      for (final name in const [
+        'publish-to-store.yml',
+        'release-dispatch.yml',
+        'release-pos.yml',
+        'shorebird-patch.yml',
+        'staging-pos.yml',
+        'windows-pos.yml',
+      ]) {
+        for (final expression in expressions(readWorkflow(name))) {
+          final balanced = _balanced(expression);
+          expect(balanced, isTrue, reason: '$name: $expression');
+        }
+      }
+    });
+
+    test('the detector fires on an unbalanced chain', () {
+      expect(_balanced("a && (b || c"), isFalse);
+      expect(_balanced('always() && x == 1'), isTrue);
+      // Quotes must be closed too, or `startsWith(x, 'pos-v)` would pass as balanced.
+      expect(_balanced("startsWith(x, 'pos-v)"), isFalse);
+    });
+  });
+
+  group('the publish gate', () {
+    final workflow = readWorkflow('publish-to-store.yml');
+
+    test('checks the exact tag shape in a shell step, not a guess', () {
+      final pattern = plainTagRegex(workflow);
+      expect(pattern, isNotNull, reason: 'the shell gate must state a regex');
+
+      expect(RegExp(pattern!).hasMatch('pos-v1.2.0'), isTrue);
+      // The three shapes of docs/distribution.md §4.1.
+      expect(RegExp(pattern).hasMatch('pos-v1.2.0-staging.3'), isFalse);
+      expect(RegExp(pattern).hasMatch('pos-v1.2.0-5'), isFalse);
+      expect(RegExp(pattern).hasMatch('web-v1.2.0'), isFalse);
+      // Shapes a `startsWith('pos-v')` prefix check alone would wave through.
+      expect(RegExp(pattern).hasMatch('pos-v1.2.0-rc.1'), isFalse);
+      expect(RegExp(pattern).hasMatch('pos-v1.2'), isFalse);
+
+      // The detector is proved against a too-loose gate, which is exactly mutation M2.
+      expect(RegExp(r'^pos-v.*$').hasMatch('pos-v1.2.0-staging.3'), isTrue);
+    });
+
+    test('a missing gate reads as unknown, never as allowed', () {
+      expect(plainTagAccepted('', 'pos-v1.2.0'), isNull);
+      expect(plainTagAccepted(workflow, 'pos-v1.2.0'), isTrue);
+    });
+
+    test('gates every uploading step on the plain tag', () {
+      // The shell gate produces the decision, so each step that touches Play or the release asset
+      // has to wait for it. Without the guard, a staging release would still upload.
+      expect(workflow, contains('id: tag'));
+      expect(workflow, contains(r'echo "plain=true" >> "$GITHUB_OUTPUT"'));
+      expect(workflow, contains(r'echo "plain=false" >> "$GITHUB_OUTPUT"'));
+      expect(
+        RegExp(r'if: steps\.tag\.outputs\.plain == .true.')
+            .allMatches(workflow)
+            .length,
+        greaterThanOrEqualTo(2),
+        reason:
+            'the download step and the upload step must both wait for the gate',
+      );
+    });
+
+    test('a non-plain tag is a notice, not a failed run', () {
+      // Staging and patch releases are ordinary states of this repository, and both produce a
+      // release, so this workflow runs for them. A red run on a normal release teaches the owner to
+      // ignore red, which is how a real failure goes unnoticed.
+      expect(workflow, contains('::notice::'));
+      expect(workflow, isNot(contains('::error::')));
+      final shell = _shellRun(workflow, 'Accept only a plain');
+      expect(shell, isNotNull);
+      expect(shell, isNot(contains('exit 1')));
+      expect(shell, isNot(contains('exit 2')));
+    });
+  });
+}
+
+/// Whether [expression] closes every bracket and quote it opens.
+///
+/// A hand edit to an `if:` chain breaks on brackets long before it breaks on semantics, so this
+/// counts the three kinds of closer instead of parsing anything.
+bool _balanced(String expression) {
+  final pairs = {')': '(', ']': '['};
+  var round = 0;
+  var square = 0;
+  var singleQuote = false;
+  for (var i = 0; i < expression.length; i++) {
+    final c = expression[i];
+    if (c == "'" && (i == 0 || expression[i - 1] != r'\')) {
+      singleQuote = !singleQuote;
+      continue;
+    }
+    // A bracket inside a string literal is not a bracket.
+    if (singleQuote) continue;
+    if (c == '(') round++;
+    if (c == ')') round--;
+    if (c == '[') square++;
+    if (c == ']') square--;
+    if (pairs.containsKey(c) && (round < 0 || square < 0)) return false;
+  }
+  return round == 0 && square == 0 && !singleQuote;
+}
+
+/// The `run:` body of the step whose `- name:` contains [fragment].
+String? _shellRun(String workflow, String fragment) {
+  final lines = workflow.split(RegExp(r'\r?\n'));
+  final at = lines.indexWhere((l) => l.contains('- name: $fragment'));
+  if (at == -1) return null;
+  final body = <String>[];
+  for (var i = at + 1; i < lines.length; i++) {
+    // The next `- name:`/`- uses:` closes the block; body lines are indented at least as far.
+    if (RegExp(r'^\s*-\s').hasMatch(lines[i])) break;
+    if (lines[i].trim().isNotEmpty && lines[i].startsWith('        ')) {
+      body.add(lines[i]);
+    }
+  }
+  return body.join('\n');
 }
