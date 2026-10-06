@@ -249,6 +249,17 @@ jobs:
             || { echo "::error::versi paket bukan versi tag (${{ steps.version.outputs.msix_version }})"; exit 1; }
           echo "✅ manifest: Version = ${{ steps.version.outputs.msix_version }}"
 
+      # Artifact Actions selalu ada, baik trial maupun rilis: `Create draft
+      # release` di bawah dilewati saat `draft_release = no`, sedangkan langkah
+      # ini tanpa `if:`. Tanpa `working-directory`: `path:` root-relative dari
+      # workspace root, sama seperti `release-pos.yml`.
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: finnesia-pos-windows-${{ steps.version.outputs.version }}
+          path: ${{ steps.msix.outputs.path }}
+          retention-days: 30
+
       # Draft GitHub Release, BUKAN unggahan Store. Paketnya diunduh dari sini oleh pemilik
       # lalu diunggah manual ke Partner Center.
       #

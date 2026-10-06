@@ -718,6 +718,84 @@ void main() {
     );
   });
 
+  group('the Windows trial artifact', () {
+    // `windows-pos.yml:53` promises `draft_release = no` means "artifact Actions
+    // saja (uji coba)", but the Windows job had no `upload-artifact` step at
+    // all: a trial run went green with nothing to download. These checks pin
+    // the step in place so the gap cannot silently return.
+    test('windows-pos.yml uploads the MSIX as an Actions artifact', () {
+      final blocks = uploadArtifactBlocks(readWorkflow('windows-pos.yml'));
+      expect(
+        blocks,
+        hasLength(1),
+        reason:
+            'windows-pos.yml must have exactly one Upload artifact step, or a '
+            'trial run (draft_release = no) produces nothing to download',
+      );
+      final block = blocks.single;
+      expect(
+        block,
+        contains(r'${{ steps.msix.outputs.path }}'),
+        reason: 'the upload must carry the located MSIX, not a rebuilt path',
+      );
+      expect(
+        block,
+        contains('actions/upload-artifact@v4'),
+        reason: 'the upload must use the pinned action version',
+      );
+      expect(
+        block,
+        isNot(contains('if:')),
+        reason: 'the upload runs on every run, trial and release alike, like release-pos.yml',
+      );
+      expect(block, contains('retention-days: 30'));
+    });
+
+    test('the Windows upload step declares no working-directory', () {
+      // The D13 invariant, pinned for this step: the emitter runs at the
+      // workspace root, so the path is root-relative and only the workspace
+      // root can resolve it.
+      final blocks = uploadArtifactBlocks(readWorkflow('windows-pos.yml'));
+      expect(blocks, hasLength(1));
+      expect(
+        RegExp(
+          r'^\s*working-directory:\s*\S',
+          multiLine: true,
+        ).hasMatch(blocks.single),
+        isFalse,
+        reason:
+            'windows-pos.yml Upload artifact must not declare working-directory: '
+            'it consumes steps.msix.outputs.path',
+      );
+    });
+
+    test(
+      'the Windows artifact name carries windows, unlike the Android one',
+      () {
+        // Both jobs run in the SAME run on `production / all`, and
+        // `upload-artifact@v4` fails on a duplicate artifact name. Android owns
+        // `finnesia-pos-<version>` (release-pos.yml), so Windows must differ.
+        final blocks = uploadArtifactBlocks(readWorkflow('windows-pos.yml'));
+        expect(blocks, hasLength(1));
+        expect(
+          blocks.single,
+          contains('windows'),
+          reason:
+              'windows-pos.yml artifact name must contain windows, or it collides '
+              'with the Android artifact in the same run',
+        );
+      },
+    );
+
+    test('release-pos.yml still uploads its APK artifact', () {
+      // The new Windows step must not come at the cost of the Android one it
+      // mirrors: a refactor that deletes either upload silences a download.
+      final blocks = uploadArtifactBlocks(readWorkflow('release-pos.yml'));
+      expect(blocks, isNotEmpty);
+      expect(blocks.join('\n'), contains(r'${{ steps.apk.outputs.path }}'));
+    });
+  });
+
   group('the production Android workflow', () {
     final workflow = readWorkflow('release-pos.yml');
 
@@ -1368,16 +1446,19 @@ void main() {
       },
     );
 
-    test('a comment inside the guard step is not a second base directory', () => expect(
-          pathConsumersWithWorkingDirectory('''
+    test(
+      'a comment inside the guard step is not a second base directory',
+      () => expect(
+        pathConsumersWithWorkingDirectory('''
       - name: Guard
         # working-directory: apps/pos -- jangan, path-nya root-relative
         env:
           APK: \${{ steps.apk.outputs.path }}
         run: unzip -o -q "\$APK"
 '''),
-          isEmpty,
-        ));
+        isEmpty,
+      ),
+    );
 
     test('names every offending step, so one fix does not hide another', () {
       expect(pathConsumersWithWorkingDirectory('$bad$bad'), ['Guard', 'Guard']);
@@ -1393,7 +1474,8 @@ void main() {
           files: \${{ steps.apk.outputs.path }}
 '''),
         ['Upload artifact', 'Create draft release'],
-        reason: 'the with: consumers are rebased too, not only the shell guards',
+        reason:
+            'the with: consumers are rebased too, not only the shell guards',
       );
     });
 
@@ -1407,9 +1489,9 @@ void main() {
         final workflow = readWorkflow(name);
         final findings = pathConsumersWithWorkingDirectory(workflow);
         if (findings.isNotEmpty) offenders[name] = findings;
-        consumers += RegExp(
-          r'steps\.[\w-]+\.outputs\.path',
-        ).allMatches(workflow).length;
+        consumers += RegExp(r'steps\.[\w-]+\.outputs\.path')
+            .allMatches(workflow)
+            .length;
       }
 
       expect(
@@ -1531,6 +1613,41 @@ List<String> pathConsumersWithWorkingDirectory(String workflow) {
   }
   closeStep();
   return findings;
+}
+
+/// The `- name:` step blocks in [workflow] that call `actions/upload-artifact`.
+///
+/// Step boundaries are `- name:`/`- uses:`, the same convention as
+/// [pathConsumersWithWorkingDirectory], so a comment or a blank line inside a
+/// step changes nothing.
+///
+/// A line scan rather than a YAML parse, for the same reason as [tagPatterns]:
+/// the repo has no YAML dependency and the shape is one step list two keys
+/// deep and fixed.
+List<String> uploadArtifactBlocks(String workflow) {
+  final lines = workflow.split(RegExp(r'\r?\n'));
+  final blocks = <String>[];
+  var current = <String>[];
+  var inStep = false;
+
+  void closeStep() {
+    if (inStep && current.join('\n').contains('actions/upload-artifact')) {
+      blocks.add(current.join('\n'));
+    }
+    current = <String>[];
+  }
+
+  for (final line in lines) {
+    if (RegExp(r'^\s*-\s+(name|uses):\s*(.+?)\s*$').hasMatch(line)) {
+      closeStep();
+      inStep = true;
+      current = [line];
+      continue;
+    }
+    if (inStep) current.add(line);
+  }
+  closeStep();
+  return blocks;
 }
 
 /// Every workflow file in the repository, the parked `ci.yml.disabled` among them.
