@@ -1087,6 +1087,71 @@ void main() {
       expect(workflow, isNot(contains('upload-artifact')));
     });
 
+    test('names the repo on the download, so gh needs no checkout', () {
+      // The `play` job has no `actions/checkout`, so there is no local `.git` for `gh` to
+      // resolve the repo from. `--repo` carries it explicitly instead.
+      expect(
+        ghDownloadLine('# gh release download is how the bundle arrives'),
+        isNull,
+        reason: 'a comment mentioning the command is not the command',
+      );
+      final line = ghDownloadLine(workflow);
+      expect(
+        line,
+        isNotNull,
+        reason: 'publish-to-store.yml must run `gh release download`',
+      );
+      expect(
+        line!,
+        contains('--repo'),
+        reason:
+            'publish-to-store.yml runs `gh release download` without `--repo`, so `gh` '
+            'resolves the repo from a local `.git` that does not exist',
+      );
+    });
+
+    test('names the repo from context, not a hardcoded slug', () {
+      // A hardcoded slug rots on a rename or a fork; the context value follows the repo.
+      final line = ghDownloadLine(workflow);
+      expect(
+        line,
+        isNotNull,
+        reason: 'publish-to-store.yml must run `gh release download`',
+      );
+      expect(
+        line!,
+        contains(r'${{ github.repository }}'),
+        reason: r'publish-to-store.yml runs `gh release download` without `${{ github.repository }}`',
+      );
+    });
+
+    test('has no checkout step: the download names the repo instead', () {
+      // A `uses:` key is a step; a comment mentioning checkout is not one.
+      expect(
+        checkoutSteps('''
+      - name: Download AAB from the published release
+        run: gh release download v1 --repo foo
+      - uses: actions/checkout@v4
+'''),
+        isNotEmpty,
+      );
+      expect(
+        checkoutSteps('''
+      - name: Download AAB from the published release
+        # checkout would fetch the whole repo just so gh finds a remote
+        run: gh release download v1 --repo foo
+'''),
+        isEmpty,
+      );
+      expect(
+        checkoutSteps(workflow),
+        isEmpty,
+        reason:
+            'publish-to-store.yml must not add an `actions/checkout` step: the download names '
+            'the repo with `--repo` instead of fetching the whole tree for a `.git` context',
+      );
+    });
+
     test('uploads the internal track, the only track CI may choose', () {
       // Promotion stays a manual action in the Console, so the artifact that gets validated must
       // be the exact file that gets promoted.
@@ -1648,6 +1713,59 @@ List<String> uploadArtifactBlocks(String workflow) {
   }
   closeStep();
   return blocks;
+}
+
+/// The line in [workflow] that runs `gh release download`, or null when absent.
+///
+/// Comment lines do not count: the file header mentions the command while explaining why the asset
+/// is used, and that mention must not satisfy a check on the command itself. A line scan rather
+/// than a YAML parse, for the same reason as [tagPatterns]: the repo has no YAML dependency and
+/// the command is one fixed line.
+String? ghDownloadLine(String workflow) {
+  for (final line in workflow.split(RegExp(r'\r?\n'))) {
+    if (line.trimLeft().startsWith('#')) continue;
+    if (line.contains('gh release download')) return line;
+  }
+  return null;
+}
+
+/// The names of the steps in [workflow] that call `actions/checkout`.
+///
+/// Only a real `uses:` key counts: a comment mentioning checkout is not a step, so a commented
+/// line never lands here, and a bare `- uses:` step head counts the same as a `uses:` key inside a
+/// named step. A line scan rather than a YAML parse, for the same reason as [tagPatterns]: the repo
+/// has no YAML dependency and the shape is one step list two keys deep.
+List<String> checkoutSteps(String workflow) {
+  final lines = workflow.split(RegExp(r'\r?\n'));
+  final findings = <String>[];
+  var current = <String>[];
+  var currentName = '<unnamed step>';
+  var inStep = false;
+
+  void closeStep() {
+    if (!inStep) return;
+    for (final line in current) {
+      if (RegExp(r'^\s*(?:-\s+)?uses:\s*actions/checkout').hasMatch(line)) {
+        findings.add(currentName);
+        break;
+      }
+    }
+    current = <String>[];
+  }
+
+  for (final line in lines) {
+    final step = RegExp(r'^\s*-\s+(name|uses):\s*(.+?)\s*$').firstMatch(line);
+    if (step != null) {
+      closeStep();
+      inStep = true;
+      current = [line];
+      currentName = step.group(2)!;
+      continue;
+    }
+    if (inStep) current.add(line);
+  }
+  closeStep();
+  return findings;
 }
 
 /// Every workflow file in the repository, the parked `ci.yml.disabled` among them.

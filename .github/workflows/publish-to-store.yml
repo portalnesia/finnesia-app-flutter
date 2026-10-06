@@ -61,13 +61,15 @@ jobs:
             echo "::notice::Tag '$TAG' bukan tag rilis polos; upload Play dilewati."
           fi
 
+      # No checkout here: without a local `.git`, `gh` cannot resolve the repo from its
+      # context, so `--repo` carries it explicitly.
       - name: Download AAB from the published release
         if: steps.tag.outputs.plain == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           mkdir -p /tmp/store
-          gh release download "${{ github.event.release.tag_name }}" --pattern '*.aab' --dir /tmp/store
+          gh release download "${{ github.event.release.tag_name }}" --repo "${{ github.repository }}" --pattern '*.aab' --dir /tmp/store
           ls -lh /tmp/store
 
       - name: Publish to Play Console (internal track)
