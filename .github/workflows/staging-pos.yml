@@ -306,7 +306,6 @@ jobs:
       # step 2 itu terutama penting — kalau `aapt2` ternyata TIDAK menemukan package name,
       # step-nya gagal, bukan lulus diam-diam.
       - name: Staging APK must be the profile/staging build
-        working-directory: apps/pos
         env:
           APK: ${{ steps.apk.outputs.path }}
         run: |

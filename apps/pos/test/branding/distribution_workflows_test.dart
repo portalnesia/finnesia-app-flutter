@@ -1308,6 +1308,124 @@ void main() {
       expect(analyzers, greaterThanOrEqualTo(5));
     });
   });
+
+  group('the base directory of every path consumer', () {
+    // Production ran green up to `Build release APK` (7m11s, a real 60.7MB APK) and then died on
+    // the very next step that touches the file: `unzip: cannot find or open
+    // apps/pos/build/app/outputs/flutter-apk/app-release.apk`. The APK was there, and it had been
+    // written by a step with no `working-directory`, so the emitter produced a WORKSPACE-ROOT-RELATIVE
+    // path. The guard step that read it declared `working-directory: apps/pos`, so `$APK` resolved
+    // to apps/pos/apps/pos/... and unzip exited 9. `windows-pos.yml` went green in the same run for
+    // exactly this reason: its guard has no `working-directory`.
+    //
+    // Root-relative is the representation that has to survive, because three other consumers cannot
+    // read anything else: `upload-artifact` resolves `path:` from `$GITHUB_WORKSPACE`, and
+    // `softprops/action-gh-release` resolves `files:` the same way. So the invariant is not "no
+    // working-directory anywhere" -- `flutter build` legitimately runs in `apps/pos`. It is narrower:
+    // a step that consumes `steps.<id>.outputs.path` must not declare `working-directory`.
+    const bad = '''
+      - name: Locate APK
+        id: apk
+        run: echo "path=\$APK" >> "\$GITHUB_OUTPUT"
+      - name: Guard
+        working-directory: apps/pos
+        env:
+          APK: \${{ steps.apk.outputs.path }}
+        run: unzip -o -q "\$APK"
+''';
+    const good = '''
+      - name: Locate APK
+        id: apk
+        run: echo "path=\$APK" >> "\$GITHUB_OUTPUT"
+      - name: Guard
+        env:
+          APK: \${{ steps.apk.outputs.path }}
+        run: unzip -o -q "\$APK"
+''';
+
+    test('names a consumer that rebases the emitter path', () {
+      expect(pathConsumersWithWorkingDirectory(bad), ['Guard']);
+    });
+
+    test('accepts a consumer at the workspace root, like the emitters', () {
+      expect(pathConsumersWithWorkingDirectory(good), isEmpty);
+    });
+
+    test(
+      'accepts a working-directory on a step that reads no emitter path',
+      // The narrower half, and the one that decides whether the rule above is a rule or a ban: the
+      // build steps genuinely need `apps/pos`, and pinning them too would forbid the one fix that
+      // works.
+      () {
+        expect(
+          pathConsumersWithWorkingDirectory('''
+      - name: Build release APK
+        working-directory: apps/pos
+        run: flutter build apk --release
+'''),
+          isEmpty,
+        );
+      },
+    );
+
+    test('a comment inside the guard step is not a second base directory', () => expect(
+          pathConsumersWithWorkingDirectory('''
+      - name: Guard
+        # working-directory: apps/pos -- jangan, path-nya root-relative
+        env:
+          APK: \${{ steps.apk.outputs.path }}
+        run: unzip -o -q "\$APK"
+'''),
+          isEmpty,
+        ));
+
+    test('names every offending step, so one fix does not hide another', () {
+      expect(pathConsumersWithWorkingDirectory('$bad$bad'), ['Guard', 'Guard']);
+      expect(
+        pathConsumersWithWorkingDirectory('''
+      - name: Upload artifact
+        working-directory: apps/pos
+        with:
+          path: \${{ steps.apk.outputs.path }}
+      - name: Create draft release
+        working-directory: apps/pos
+        with:
+          files: \${{ steps.apk.outputs.path }}
+'''),
+        ['Upload artifact', 'Create draft release'],
+        reason: 'the with: consumers are rebased too, not only the shell guards',
+      );
+    });
+
+    test('no workflow rebases a step that reads an emitter path', () {
+      final files = _allWorkflowFiles();
+      expect(files, hasLength(greaterThanOrEqualTo(6)));
+
+      final offenders = <String, List<String>>{};
+      var consumers = 0;
+      for (final name in files) {
+        final workflow = readWorkflow(name);
+        final findings = pathConsumersWithWorkingDirectory(workflow);
+        if (findings.isNotEmpty) offenders[name] = findings;
+        consumers += RegExp(
+          r'steps\.[\w-]+\.outputs\.path',
+        ).allMatches(workflow).length;
+      }
+
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'these workflows read a `steps.<id>.outputs.path` from a step that declares a '
+            '`working-directory`. The emitters run at the workspace root, so the path is '
+            'root-relative; a consumer that changes the base directory looks for it one level too '
+            'deep and fails on a file that exists (unzip exit 9).',
+      );
+      // The pass above is vacuous on a scan that matched nothing, so the expressions it looked for
+      // are counted. Two workflows x (guard + upload + release) is already past this.
+      expect(consumers, greaterThanOrEqualTo(4));
+    });
+  });
 }
 
 /// Whether [expression] closes every bracket and quote it opens.
@@ -1370,6 +1488,48 @@ List<String> unresolvedAnalyzeSteps(String workflow) {
     if (!RegExp(r'^\s*run:\s*dart analyze\s*$').hasMatch(line)) continue;
     if (!resolved) findings.add(stepName);
   }
+  return findings;
+}
+
+/// The names of the steps that read `steps.<id>.outputs.path` while declaring a `working-directory`.
+///
+/// The emitters of that path (`Locate APK`, `Locate AAB`, `Locate MSIX`) declare no
+/// `working-directory`, so they run at the workspace root and what they write is root-relative --
+/// which is also the only form `upload-artifact` and `action-gh-release` can resolve. A consumer
+/// that declares its own `working-directory` resolves the same string against a different base and
+/// fails on a file that demonstrably exists.
+///
+/// A line scan rather than a YAML parse, for the same reason as [tagPatterns]: the repo has no YAML
+/// dependency and the shape is one step list two keys deep. Step boundaries are `- name:`/`- uses:`,
+/// so a comment or a blank line inside a step changes nothing.
+List<String> pathConsumersWithWorkingDirectory(String workflow) {
+  final findings = <String>[];
+  var stepName = '<unnamed step>';
+  var workingDirectory = false;
+  var consumesPath = false;
+
+  void closeStep() {
+    if (consumesPath && workingDirectory) findings.add(stepName);
+  }
+
+  for (final line in workflow.split(RegExp(r'\r?\n'))) {
+    final step = RegExp(r'^\s*-\s+(name|uses):\s*(.+?)\s*$').firstMatch(line);
+    if (step != null) {
+      closeStep();
+      stepName = step.group(2)!;
+      workingDirectory = false;
+      consumesPath = false;
+      continue;
+    }
+    // A commented-out key is not a key; M3 covers that so the scan cannot be fooled by a note.
+    if (RegExp(r'^\s*working-directory:\s*\S').hasMatch(line)) {
+      workingDirectory = true;
+    }
+    if (RegExp(r'steps\.[\w-]+\.outputs\.path').hasMatch(line)) {
+      consumesPath = true;
+    }
+  }
+  closeStep();
   return findings;
 }
 

@@ -379,7 +379,6 @@ jobs:
       # `flutter build apk` dan build AAB. Memeriksa AAB secara terpisah akan memeriksa hal
       # yang sama dua kali.
       - name: Release APK must be the production build
-        working-directory: apps/pos
         env:
           APK: ${{ steps.apk.outputs.path }}
         run: |
