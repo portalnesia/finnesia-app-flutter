@@ -11,7 +11,8 @@
 # per rilis dan hanya tiga klik. Yang pemilik kerjakan: unduh .msix dari halaman run, lalu
 # Partner Center → app → Update → Packages → Submit for certification.
 #
-# Konsekuensinya: workflow ini TIDAK butuh satu secret pun.
+# Workflow ini membutuhkan SHOREBIRD_TOKEN untuk mendaftarkan baseline Windows; tidak ada
+# secret Microsoft Store karena unggah ke Partner Center tetap dilakukan manual.
 #
 # Trigger HANYA tag `pos-vMAJOR.MINOR.PATCH` polos — sama dengan `release-pos.yml`, dan itu
 # disengaja: satu nomor versi untuk satu produk di dua platform. Yang membedakan job,
@@ -20,7 +21,7 @@
 # Prefix `pos-` menandakan aplikasi (repo ini monorepo, akan ada aplikasi lain), bukan bagian
 # dari versinya — versi dibaca sebagai `${GITHUB_REF_NAME#pos-v}`, jadi `pos-v1.2.0` → `1.2.0`.
 # Huruf `v` tetap di nama tag tapi TIDAK ikut ke nilai versi: `pub_semver` menolak `v1.2.0`,
-# sehingga `shorebird release android` gagal.
+# sehingga Shorebird release gagal.
 #
 # `env:` yang dipakai:
 #
@@ -37,8 +38,7 @@ on:
       - "pos-v[0-9]+.[0-9]+.[0-9]+*"
       - "!pos-v[0-9]+.[0-9]+.[0-9]+-*"
   # Pintu kedua: `release-dispatch.yml` memanggil workflow ini, bukan mengulang logikanya.
-  # Tidak ada blok `secrets:` di sini dan itu disengaja — workflow ini butuh nol secret, dan
-  # `secrets: inherit` dari pemanggil akan meneruskan semua secret ke sini tanpa terlihat.
+  # Hanya token Shorebird yang diteruskan; kredensial Store tidak diperlukan.
   workflow_call:
     inputs:
       version:
@@ -54,6 +54,9 @@ on:
         required: false
         default: "yes"
         type: string
+    secrets:
+      SHOREBIRD_TOKEN:
+        required: true
 
 # Satu build per tag. Tag tidak bisa dipush ulang, jadi run yang berjalan tidak dibatalkan.
 #
@@ -77,6 +80,8 @@ jobs:
     # Untuk menulis asset ke draft GitHub Release di step terakhir.
     permissions:
       contents: write
+    env:
+      SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
     defaults:
       run:
         shell: bash
@@ -181,16 +186,43 @@ jobs:
             fi
           done
 
-      # `msix:create` menjalankan `flutter build windows` sendiri, jadi tidak ada step build
-      # terpisah. `--version` + `--windows-build-args` menyalin versi tag ke .exe dan paket;
-      # `--store` mempertahankan `publisher` dari pubspec dan melewati signing.
+      # Rilis nyata dibangun oleh Shorebird agar menjadi baseline untuk patch OTA Windows.
+      # Trial membangun Flutter biasa dan tidak mendaftarkan versi ke Shorebird.
+      - name: Setup Shorebird
+        if: inputs.draft_release != 'no'
+        uses: shorebirdtech/setup-shorebird@v1
+        with:
+          cache: true
+
+      - name: Build Windows release with Shorebird
+        if: inputs.draft_release != 'no'
+        uses: shorebirdtech/shorebird-release@v1
+        with:
+          platform: windows
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          working-directory: apps/pos
+          args: >-
+            --build-name=${{ steps.version.outputs.version }}
+            --build-number=${{ steps.version.outputs.build_number }}
+            --no-confirm
+
+      - name: Build Windows trial without registering Shorebird
+        if: inputs.draft_release == 'no'
+        working-directory: apps/pos
+        run: |
+          flutter build windows --release \
+            --build-name "${{ steps.version.outputs.version }}" \
+            --build-number "${{ steps.version.outputs.build_number }}"
+
+      # pubspec mengatur `build_windows: false`, supaya msix:create mengemas output yang sudah ada
+      # (hasil Shorebird pada rilis nyata) alih-alih menimpanya dengan build Flutter biasa.
+      # `--version` menetapkan versi paket; `--store` mempertahankan identitas Partner Center.
       - name: Build MSIX for the Store
         working-directory: apps/pos
         run: |
           dart run msix:create \
             --store \
-            --version "${{ steps.version.outputs.msix_version }}" \
-            --windows-build-args="--build-name=${{ steps.version.outputs.version }} --build-number=${{ steps.version.outputs.build_number }}"
+            --version "${{ steps.version.outputs.msix_version }}"
 
       - name: Locate MSIX
         id: msix

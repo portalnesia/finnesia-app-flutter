@@ -8,8 +8,8 @@
 import 'package:dev/dispatch.dart';
 import 'package:test/test.dart';
 
-/// The 18 rows of SPEC §2a, in its order. [valid] is `true` for the nine rows the
-/// dispatcher runs and `false` for the nine it rejects.
+/// The 18 rows of SPEC §2a, in its order. [valid] is `true` for each accepted row
+/// and `false` for each rejected row.
 const _rows = <({
   int number,
   DispatchEnv env,
@@ -136,15 +136,15 @@ const _rows = <({
     device: DispatchDevice.windows,
     draft: DispatchDraft.no,
     valid: false,
-    says: ['patch', 'windows'],
+    says: ['patch', 'versi'],
   ),
   (
     number: 16,
     env: DispatchEnv.patch,
     device: DispatchDevice.windows,
     draft: DispatchDraft.yes,
-    valid: false,
-    says: ['patch', 'windows'],
+    valid: true,
+    says: [],
   ),
   (
     number: 17,
@@ -152,15 +152,15 @@ const _rows = <({
     device: DispatchDevice.all,
     draft: DispatchDraft.no,
     valid: false,
-    says: ['patch', 'windows'],
+    says: ['patch', 'versi'],
   ),
   (
     number: 18,
     env: DispatchEnv.patch,
     device: DispatchDevice.all,
     draft: DispatchDraft.yes,
-    valid: false,
-    says: ['patch', 'windows'],
+    valid: true,
+    says: [],
   ),
 ];
 
@@ -199,10 +199,10 @@ Matcher rejected(List<String> says) => throwsA(
 
 void main() {
   group('the 18 combinations of SPEC §2a', () {
-    test('there are 18 of them, nine valid and nine rejected', () {
+    test('there are 18 of them, eleven valid and seven rejected', () {
       expect(_rows, hasLength(18));
-      expect(_rows.where((r) => r.valid), hasLength(9));
-      expect(_rows.where((r) => !r.valid), hasLength(9));
+      expect(_rows.where((r) => r.valid), hasLength(11));
+      expect(_rows.where((r) => !r.valid), hasLength(7));
     });
 
     for (final row in _rows) {
@@ -283,6 +283,22 @@ void main() {
       );
     });
 
+    test('patch runs shorebird-patch-windows.yml for Windows', () {
+      expect(
+        actionFor(DispatchEnv.patch, DispatchDevice.windows, DispatchDraft.yes)
+            .workflows,
+        ['shorebird-patch-windows.yml'],
+      );
+    });
+
+    test('patch all runs both platform workflows independently', () {
+      expect(
+        actionFor(DispatchEnv.patch, DispatchDevice.all, DispatchDraft.yes)
+            .workflows,
+        ['shorebird-patch.yml', 'shorebird-patch-windows.yml'],
+      );
+    });
+
     // `draft release = no` is the trial run: artifacts and nothing else. A tag or a draft made by
     // a trial run is not a trial run.
     test('draft release = no creates neither a tag nor a draft', () {
@@ -333,8 +349,7 @@ void main() {
 
   group('the draft release gate of SPEC §3.1', () {
     test('draft release = yes without a version is refused for every env', () {
-      // Android only, because that is the one device patch has: patch on windows is refused by
-      // the matrix instead (rows 15, 16, 18), and that refusal is the right one to show.
+      // Android is representative here; every device form of a release requires a version.
       for (final env in DispatchEnv.values) {
         expect(
           () => planDispatch(request(
@@ -475,8 +490,19 @@ void main() {
   // release for the same version fails. A trial run that called it would spend the production
   // version slot before production used it. So a trial run never calls it.
   group('the Shorebird matrix', () {
-    test('only a full production android release registers a Shorebird release',
-        () {
+    test('a full production Windows release registers a Shorebird release', () {
+      expect(
+        usesShorebirdRelease(request(
+          env: DispatchEnv.production,
+          device: DispatchDevice.windows,
+          draft: DispatchDraft.yes,
+          version: '1.2.0',
+        )),
+        isTrue,
+      );
+    });
+
+    test('a full production android release registers a Shorebird release', () {
       expect(
         usesShorebirdRelease(request(
           env: DispatchEnv.production,
@@ -488,11 +514,8 @@ void main() {
       );
     });
 
-    // `all` is the android half plus the windows half, and the AAB in that one shared draft is
-    // what `shorebird release android` builds (SPEC §2a row 12, §1.4). Dropping this would be a
-    // second version trap: no baseline for a production version that is about to be published.
-    test('production all with yes registers one too: it builds the same AAB',
-        () {
+    // Both platform workflows register the same production version with Shorebird.
+    test('production all with yes registers Shorebird releases', () {
       expect(
         usesShorebirdRelease(request(
           env: DispatchEnv.production,
