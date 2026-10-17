@@ -298,8 +298,10 @@ class _TillScreenState extends State<TillScreen> {
       final found = await _catalog!.findByCode(code);
       if (!mounted) return null;
       if (logScan) {
-        await AppScope.of(context).analytics
-            .logEvent('barcode_scanned', parameters: {'found': found != null});
+        await AppScope.of(context).analytics.logEvent(
+          'tenant_barcode_scanned',
+          parameters: {'found': found != null},
+        );
         if (!mounted) return null;
       }
       if (found == null) {

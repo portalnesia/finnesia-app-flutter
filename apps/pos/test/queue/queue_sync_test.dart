@@ -40,7 +40,7 @@ const draft = POSCheckoutDTO(
 );
 
 const saleJson =
-    '{"id":"x1","number":"POS-0001","shift_id":"s1","outlet_id":"out_1",'
+    '{"id":"x1","invoice_id":"inv_1","number":"POS-0001","shift_id":"s1","outlet_id":"out_1",'
     '"cashier_id":"u1","transaction_date":"2026-09-22","subtotal":15000,'
     '"discount_amount":0,"tax_amount":0,"grand_total":15000,'
     '"tendered_amount":15000,"change_amount":0,"status":"POSTED",'
@@ -743,10 +743,76 @@ void main() {
       await r.sync.sync();
 
       expect(r.analytics.logged.map((e) => e.$1), [
-        'queue_sale_synced',
-        'queue_sale_synced',
+        'tenant_sale_completed',
+        'tenant_sale_completed',
       ]);
     });
+
+    test('reports server totals with the same sale schema and offline marker', () async {
+      final r = rig(session: await signedIn());
+      addTearDown(r.sync.dispose);
+      await r.queue.enqueue(entry());
+      r.transport
+        ..respond(shiftAnswer())
+        ..respond(
+          json(
+            200,
+            '{"data":${saleJson.replaceFirst('"grand_total":15000', '"grand_total":14750')}}',
+          ),
+        );
+      await r.sync.sync();
+      expect(r.analytics.logged.single.$2, {
+        'transaction_id': 'inv_1',
+        'value': 14750,
+        'currency': 'IDR',
+        'item_count': 1,
+        'payment_methods': 'CASH',
+        'offline': 1,
+      });
+      await r.sync.sync();
+      expect(r.analytics.logged, hasLength(1));
+    });
+
+    test('does not report a completion until queue removal succeeds', () async {
+      final r = rig(session: await signedIn());
+      addTearDown(r.sync.dispose);
+      await r.queue.enqueue(entry());
+      r.queue.failRemove = true;
+      r.transport
+        ..respond(shiftAnswer())
+        ..respond(saleAnswer());
+      await expectLater(
+        r.sync.sync(),
+        throwsA(isA<PendingSaleStoreException>()),
+      );
+      expect(r.analytics.logged, isEmpty);
+      r.queue.failRemove = false;
+      r.transport
+        ..respond(shiftAnswer())
+        ..respond(saleAnswer());
+      await r.sync.sync();
+      expect(r.analytics.logged.map((e) => e.$1), ['tenant_sale_completed']);
+    });
+
+    test(
+      'unconfirmed sends emit nothing, then a reconnect reports once',
+      () async {
+        final r = rig(session: await signedIn());
+        addTearDown(r.sync.dispose);
+        await r.queue.enqueue(entry());
+        r.transport
+          ..respond(shiftAnswer())
+          ..fail(TransportException('offline'));
+        await r.sync.sync();
+        expect(r.analytics.logged, isEmpty);
+        r.transport
+          ..respond(shiftAnswer())
+          ..respond(saleAnswer());
+        await r.sync.sync();
+        await r.sync.sync();
+        expect(r.analytics.logged.map((e) => e.$1), ['tenant_sale_completed']);
+      },
+    );
 
     test('logs nothing for a refusal or an unreachable server', () async {
       final r = rig(session: await signedIn());

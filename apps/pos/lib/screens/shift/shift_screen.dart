@@ -243,7 +243,7 @@ class _ShiftScreenState extends State<ShiftScreen> {
     return runPrint(
       context,
       successMessage: l10n.printerPrintSuccess,
-      analyticsEvent: 'shift_report_printed',
+      analyticsEvent: 'tenant_shift_report_printed',
       print: () => printShiftReport(
         summary,
         client: services.client,

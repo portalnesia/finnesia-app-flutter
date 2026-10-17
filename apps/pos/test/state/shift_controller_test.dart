@@ -381,17 +381,21 @@ void main() {
   });
 
   group('analytics', () {
-    test('logs shift_opened once a shift is actually opened', () async {
-      final (:controller, :transport, :analytics) = rig();
-      answer(transport);
-      await controller.load();
-      transport.respond(ok(shiftJson()));
-      answer(transport, shift: shiftJson());
+    test(
+      'logs tenant_shift_open with opening_cash once a shift is opened',
+      () async {
+        final (:controller, :transport, :analytics) = rig();
+        answer(transport);
+        await controller.load();
+        transport.respond(ok(shiftJson()));
+        answer(transport, shift: shiftJson());
 
-      await controller.open(150000);
+        await controller.open(150000);
 
-      expect(analytics.logged.map((e) => e.$1), ['shift_opened']);
-    });
+        expect(analytics.logged.map((e) => e.$1), ['tenant_shift_open']);
+        expect(analytics.logged.single.$2, {'opening_cash': 150000});
+      },
+    );
 
     test('logs nothing when the server refuses to open one', () async {
       final (:controller, :transport, :analytics) = rig();
@@ -414,7 +418,9 @@ void main() {
 
         // Record equality is field-wise `==`, and `Map` is identity-only — so the parameters are
         // asserted separately (`analytics_test.dart` in `pn_types`).
-        expect(analytics.logged.map((e) => e.$1), ['shift_open_blocked']);
+        expect(analytics.logged.map((e) => e.$1), [
+          'tenant_shift_open_blocked',
+        ]);
         expect(analytics.logged.single.$2, {'reason': 'already_open'});
       },
     );
@@ -431,7 +437,9 @@ void main() {
 
         controller.resume();
 
-        expect(analytics.logged.map((e) => e.$1), ['shift_open_blocked']);
+        expect(analytics.logged.map((e) => e.$1), [
+          'tenant_shift_open_blocked',
+        ]);
         expect(analytics.logged.single.$2, {'reason': 'held_by_other'});
       },
     );
@@ -446,7 +454,7 @@ void main() {
       await controller.load();
 
       expect(
-        analytics.logged.where((e) => e.$1 == 'shift_open_blocked'),
+        analytics.logged.where((e) => e.$1 == 'tenant_shift_open_blocked'),
         hasLength(1),
       );
     });

@@ -70,14 +70,14 @@ class PendingSalesController extends ChangeNotifier with RequestGuard {
   /// Puts a failed entry back in the pending queue, and shows the result.
   Future<void> retry(String clientRef) async {
     await _store.retry(clientRef);
-    await _analytics.logEvent('queue_sale_retried');
+    await _analytics.logEvent('tenant_queue_sale_retried');
     await load();
   }
 
   /// Throws an entry away for good, and shows the result.
   Future<void> discard(String clientRef) async {
     await _store.remove(clientRef);
-    await _analytics.logEvent('queue_sale_discarded');
+    await _analytics.logEvent('tenant_queue_sale_discarded');
     await load();
   }
 
@@ -87,7 +87,7 @@ class PendingSalesController extends ChangeNotifier with RequestGuard {
   Future<void> sendNow() async {
     _isSending = true;
     notifyListeners();
-    await _analytics.logEvent('queue_send_now_triggered');
+    await _analytics.logEvent('tenant_queue_send_now_triggered');
     try {
       await _sync.sync();
     } finally {

@@ -589,7 +589,7 @@ void main() {
       await tester.tap(printButton());
       await tester.pumpAndSettle();
 
-      expect(rig.analytics.logged.map((e) => e.$1), ['receipt_printed']);
+      expect(rig.analytics.logged.map((e) => e.$1), ['tenant_receipt_printed']);
     });
 
     // A slip for a cancelled sale still has to say so — the same banner the printed receipt

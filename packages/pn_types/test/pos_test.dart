@@ -144,6 +144,12 @@ void main() {
       expect(s.cashier?.name, 'Sari');
     });
 
+    test('preserves invoice_id for the analytics transaction identity', () {
+      final parsed = POSSale.fromJson(sale()..['invoice_id'] = 'inv_1');
+      expect(parsed.toJson()['invoice_id'], 'inv_1');
+      expect(POSSale.fromJson(sale()).toJson()['invoice_id'], isNull);
+    });
+
     test('leaves the optional fields null when the API omits them', () {
       final s = POSSale.fromJson(sale());
 

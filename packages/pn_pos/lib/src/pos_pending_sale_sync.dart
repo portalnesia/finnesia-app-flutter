@@ -28,7 +28,10 @@ sealed class SendOutcome {
 
 /// The server recorded the sale.
 final class SendSucceeded extends SendOutcome {
-  const SendSucceeded();
+  const SendSucceeded([this.sale]);
+
+  /// The confirmed server figures, when the sender has them.
+  final POSSale? sale;
 }
 
 /// The server understood the request and refused it.
@@ -126,6 +129,10 @@ Future<void> syncQueue(
   required SendPendingSale send,
   String? openShiftId,
   String? cashierId,
+
+  /// A non-throwing side channel, called only after the consumed row is removed.
+  /// Reporting before removal would count a replay again when storage fails.
+  Future<void> Function(PendingSale entry, POSSale? sale)? onSynced,
 }) async {
   // One read for the whole pass, whatever the queue holds. A read per sale would be O(n) storage
   // work for a loop that is already O(n) requests.
@@ -140,9 +147,10 @@ Future<void> syncQueue(
       toCheckoutPayload(entry, openShiftId: openShiftId),
     );
     switch (outcome) {
-      case SendSucceeded():
+      case SendSucceeded(:final sale):
         // Removing it is what stops a reconnect from posting the same sale a second time.
         await store.remove(entry.clientRef);
+        await onSynced?.call(entry, sale);
       case SendRefused(:final status, :final message):
         if (!isFinalError(status)) {
           // A 5xx may have committed before it failed, so the sale stays pending and the pass

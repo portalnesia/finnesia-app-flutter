@@ -13,11 +13,30 @@ import 'package:pn_types/src/native/analytics_port.dart';
 /// [AnalyticsPort] over Firebase Analytics.
 class FirebaseAnalyticsPort implements AnalyticsPort {
   @override
+  Future<void> setUserProperty(String name, String? value) async {
+    try {
+      await FirebaseAnalytics.instance.setUserProperty(
+        name: name,
+        value: value,
+      );
+    } on FirebaseException {
+      // Analytics must not make app behavior fail when Firebase is unavailable.
+    } on PlatformException {
+      // The asynchronous Pigeon failure can surface as a raw platform exception.
+    } on MissingPluginException {
+      // Windows has no Firebase Analytics plugin.
+    }
+  }
+
+  @override
   Future<void> logEvent(String name, {Map<String, Object>? parameters}) async {
     try {
+      final firebaseParameters = parameters?.map(
+        (key, value) => MapEntry(key, value is bool ? (value ? 1 : 0) : value),
+      );
       await FirebaseAnalytics.instance.logEvent(
         name: name,
-        parameters: parameters,
+        parameters: firebaseParameters,
       );
     } on FirebaseException {
       // The port's contract (`analytics_port.dart`): losing an event must never take a sale

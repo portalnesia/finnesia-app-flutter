@@ -802,7 +802,7 @@ void main() {
       // A found scan also rings the product up, which logs its own event
       // (`cart_controller_test.dart`) — this only checks the scan's own.
       final scanned = rig.analytics.logged.where(
-        (e) => e.$1 == 'barcode_scanned',
+        (e) => e.$1 == 'tenant_barcode_scanned',
       );
       expect(scanned.single.$2, {'found': true});
     });
@@ -836,7 +836,7 @@ void main() {
 
       // Rings the product up (`item_added_to_cart`) but is not a scan.
       expect(
-        rig.analytics.logged.where((e) => e.$1 == 'barcode_scanned'),
+        rig.analytics.logged.where((e) => e.$1 == 'tenant_barcode_scanned'),
         isEmpty,
       );
     });

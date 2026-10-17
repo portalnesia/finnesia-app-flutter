@@ -649,6 +649,34 @@ void main() {
       expect(await store.readAll(), isEmpty);
     });
 
+    test('reports a successful send only after its row is removed', () async {
+      await store.enqueue(sale());
+      final reported = <String>[];
+      await syncQueue(
+        store,
+        send: send,
+        onSynced: (entry, result) async {
+          expect(await store.count(), 0);
+          reported.add(entry.clientRef);
+        },
+      );
+      await syncQueue(store, send: send);
+      expect(reported, ['01J0000000000000000000000A']);
+    });
+
+    test('does not report a row that could not be removed', () async {
+      await store.enqueue(sale());
+      store.failRemove = true;
+      var reported = 0;
+      await expectLater(
+        syncQueue(store, send: send, onSynced: (entry, result) async {
+          reported++;
+        }),
+        throwsA(isA<PendingSaleStoreException>()),
+      );
+      expect(reported, 0);
+    });
+
     test('sends client_ref and paid_at so the server can dedupe', () async {
       await store.enqueue(sale());
 

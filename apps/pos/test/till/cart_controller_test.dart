@@ -356,8 +356,8 @@ void main() {
           ..add(product('a'));
 
         expect(analytics.logged.map((e) => e.$1), [
-          'item_added_to_cart',
-          'item_added_to_cart',
+          'tenant_item_added_to_cart',
+          'tenant_item_added_to_cart',
         ]);
       },
     );
@@ -369,8 +369,8 @@ void main() {
       cart.remove(cart.lines.single.id);
 
       expect(analytics.logged.map((e) => e.$1), [
-        'item_added_to_cart',
-        'item_removed_from_cart',
+        'tenant_item_added_to_cart',
+        'tenant_item_removed_from_cart',
       ]);
     });
 
@@ -391,7 +391,7 @@ void main() {
       cart.clear();
 
       expect(
-        analytics.logged.where((e) => e.$1 == 'cart_cleared'),
+        analytics.logged.where((e) => e.$1 == 'tenant_cart_cleared'),
         hasLength(1),
       );
     });

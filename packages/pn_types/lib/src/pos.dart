@@ -177,7 +177,7 @@ abstract class SalesInvoice with _$SalesInvoice {
 ///
 /// Ported from `POSSale` in `pos.ts`, partially: what the change screen, the shift's
 /// transaction list, the sale detail and a receipt read. Not carried yet: `outlet`, and the
-/// company/branch/warehouse/invoice ids.
+/// company/branch/warehouse ids.
 ///
 /// [payments] is `null` when the endpoint did not preload them, which is not the same
 /// answer as "no payments". So is [invoice]: only the single-sale endpoint loads it, and a
@@ -203,6 +203,9 @@ abstract class POSSale with _$POSSale {
     @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue)
     POSSaleStatus? status,
     @JsonKey(name: 'created_at') required String createdAt,
+
+    /// Shared transaction identity with web analytics; absent in older cached rows.
+    @JsonKey(name: 'invoice_id') String? invoiceId,
     @JsonKey(name: 'client_ref') String? clientRef,
     @JsonKey(name: 'paid_at') String? paidAt,
     String? notes,

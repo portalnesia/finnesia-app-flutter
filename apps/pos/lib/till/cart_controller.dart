@@ -65,7 +65,7 @@ class CartController extends ChangeNotifier {
   void add(Product product) {
     _lines = addToCart(_lines, product);
     notifyListeners();
-    unawaited(_analytics.logEvent('item_added_to_cart'));
+    unawaited(_analytics.logEvent('tenant_item_added_to_cart'));
   }
 
   void setQty(String lineId, num qty) {
@@ -80,7 +80,7 @@ class CartController extends ChangeNotifier {
     _removed = (line: _lines[index], index: index);
     _lines = removeLine(_lines, lineId);
     notifyListeners();
-    unawaited(_analytics.logEvent('item_removed_from_cart'));
+    unawaited(_analytics.logEvent('tenant_item_removed_from_cart'));
   }
 
   /// Puts back the line that was removed last, where it was (or at the end, if the cart is
@@ -110,6 +110,6 @@ class CartController extends ChangeNotifier {
     _lines = const [];
     _removed = null;
     notifyListeners();
-    unawaited(_analytics.logEvent('cart_cleared'));
+    unawaited(_analytics.logEvent('tenant_cart_cleared'));
   }
 }
