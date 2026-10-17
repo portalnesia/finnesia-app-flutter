@@ -1,0 +1,145 @@
+# OTA Dart-only: kirim patch Shorebird Windows ke rilis native Windows yang SUDAH ada.
+# Tag-nya sama dengan Android (`pos-vMAJOR.MINOR.PATCH-N`); workflow terpisah menjaga kegagalan
+# satu platform tidak menghentikan patch di platform lain.
+#
+# Prasyarat: versi dasar harus pernah dirilis oleh `windows-pos.yml`, yang mendaftarkan
+# `shorebird release windows`. Windows Shorebird masih beta dan hanya mendukung x64.
+
+name: Shorebird Patch Windows
+
+on:
+  push:
+    tags:
+      - "pos-v[0-9]+.[0-9]+.[0-9]+-[0-9]+*"
+      - "!pos-v[0-9]+.[0-9]+.[0-9]+-staging.*"
+  workflow_call:
+    inputs:
+      version:
+        description: "X.Y.Z-N (patch). Kosong = tag dibaca dari GITHUB_REF_NAME"
+        required: false
+        default: ""
+        type: string
+      draft_release:
+        description: "yes = jalankan patch (hanya nilai ini yang lolos validasi)"
+        required: false
+        default: "yes"
+        type: string
+    secrets:
+      SHOREBIRD_TOKEN:
+        required: true
+
+concurrency:
+  group: shorebird-patch-windows-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  FLUTTER_VERSION: "3.47.4"
+
+jobs:
+  patch:
+    runs-on: windows-latest
+    env:
+      SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Derive base version
+        id: version
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          if [ -n "$INPUT_VERSION" ]; then
+            TAG="$INPUT_VERSION"
+          else
+            TAG="${GITHUB_REF_NAME#pos-v}"
+          fi
+          BASE="${TAG%-*}"
+          PATCH_NUMBER="${TAG##*-}"
+
+          MAJOR="${BASE%%.*}"
+          REST="${BASE#*.}"
+          MINOR="${REST%%.*}"
+          PATCH="${REST#*.}"
+          BUILD_NUMBER=$(( MAJOR * 1000000 + MINOR * 1000 + PATCH ))
+
+          echo "base=$BASE" >> "$GITHUB_OUTPUT"
+          echo "release_version=$BASE+$BUILD_NUMBER" >> "$GITHUB_OUTPUT"
+          echo "Patch #$PATCH_NUMBER di atas rilis Windows $BASE (release-version $BASE+$BUILD_NUMBER)"
+
+      - name: Guard — reject native Windows changes
+        run: |
+          BASE_TAG="pos-v${{ steps.version.outputs.base }}"
+          if ! git rev-parse "$BASE_TAG" >/dev/null 2>&1; then
+            echo "::error::Tag rilis native dasar '$BASE_TAG' belum ada. Rilis Windows harus dibuat terlebih dahulu."
+            exit 1
+          fi
+
+          CHANGED=$(git diff --name-only "$BASE_TAG" HEAD)
+          echo "Berkas yang berubah sejak $BASE_TAG:"
+          echo "$CHANGED"
+
+          SUSPECT=$(printf '%s\n' "$CHANGED" | grep -E '^apps/pos/windows/|^pubspec\.lock$' || true)
+          if [ -n "$SUSPECT" ]; then
+            echo "::error::Perubahan menyentuh native Windows atau dependency; kirim rilis native, bukan patch."
+            echo "$SUSPECT"
+            exit 1
+          fi
+          echo "Tidak ada perubahan native Windows terdeteksi."
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Resolve workspace
+        run: dart pub get
+
+      - name: Resolve tools
+        run: |
+          for tool in tools/dev tools/rule_lint tools/string_lint; do
+            echo "── dart pub get: $tool"
+            (cd "$tool" && dart pub get)
+          done
+
+      - name: Analyze
+        run: dart analyze
+
+      - name: Test pure Dart packages
+        run: |
+          for pkg in packages/pn_types packages/pn_pos; do
+            if [ -d "$pkg/test" ]; then
+              echo "── dart test: $pkg"
+              (cd "$pkg" && dart test)
+            fi
+          done
+
+      - name: Test Flutter packages
+        run: |
+          for pkg in packages/pn_ui apps/pos; do
+            if [ -d "$pkg/test" ]; then
+              echo "── flutter test: $pkg"
+              (cd "$pkg" && flutter test)
+            fi
+          done
+
+      - name: Setup Shorebird
+        uses: shorebirdtech/setup-shorebird@v1
+        with:
+          cache: true
+
+      - name: Send Windows patch
+        uses: shorebirdtech/shorebird-patch@v1
+        with:
+          platform: windows
+          working-directory: apps/pos
+          release-version: ${{ steps.version.outputs.release_version }}
+          args: --no-confirm

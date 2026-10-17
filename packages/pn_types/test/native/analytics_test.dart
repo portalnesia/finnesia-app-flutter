@@ -10,6 +10,21 @@ import 'package:test/test.dart';
 
 void main() {
   group('FakeAnalytics', () {
+    test(
+      'records user-property changes including clearing a property',
+      () async {
+        final analytics = FakeAnalytics();
+
+        await analytics.setUserProperty('account_mode', 'managed');
+        await analytics.setUserProperty('account_mode', null);
+
+        expect(analytics.userProperties, [
+          ('account_mode', 'managed'),
+          ('account_mode', null),
+        ]);
+      },
+    );
+
     test('records every event it is asked to log, in order', () async {
       final analytics = FakeAnalytics();
 

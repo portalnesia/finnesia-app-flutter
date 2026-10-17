@@ -50,6 +50,7 @@ POSCheckoutDTO buildCheckoutPayload({
 
   /// Built and validated by `buildPOSTenders`, which owns the tender rules.
   required List<POSTenderDTO> payments,
+  POSPreferences? preferences,
 }) {
   return POSCheckoutDTO(
     shiftId: orAbsent(shiftId),
@@ -61,16 +62,23 @@ POSCheckoutDTO buildCheckoutPayload({
     tableNumber: orAbsent(tableNumber.trim()),
     queueNumber: orAbsent(queueNumber.trim()),
     notes: orAbsent(notes.trim()),
-    items: lines.map(_toCheckoutItem).toList(),
+    items: [
+      for (final line in lines) _toCheckoutItem(line, preferences: preferences),
+    ],
     payments: payments,
   );
 }
 
-POSCheckoutItemDTO _toCheckoutItem(CartLine line) => POSCheckoutItemDTO(
+POSCheckoutItemDTO _toCheckoutItem(
+  CartLine line, {
+  POSPreferences? preferences,
+}) =>
+    POSCheckoutItemDTO(
       productId: line.product.id,
       unitId: line.product.unitId,
       quantity: line.qty,
       price: line.product.sellPrice ?? 0,
+      taxId: preferences?.taxEnabled == true ? line.product.taxId : null,
       discountPercent: line.discountPercent,
       discountAmount: line.discountAmount,
     );

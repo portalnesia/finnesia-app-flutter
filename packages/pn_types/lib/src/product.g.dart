@@ -6,6 +6,12 @@ part of 'product.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
+_ProductTax _$ProductTaxFromJson(Map<String, dynamic> json) =>
+    _ProductTax(id: json['id'] as String, rate: json['rate'] as num);
+
+Map<String, dynamic> _$ProductTaxToJson(_ProductTax instance) =>
+    <String, dynamic>{'id': instance.id, 'rate': instance.rate};
+
 _Product _$ProductFromJson(Map<String, dynamic> json) => _Product(
   id: json['id'] as String,
   name: json['name'] as String,
@@ -24,6 +30,10 @@ _Product _$ProductFromJson(Map<String, dynamic> json) => _Product(
   image: json['image'] == null
       ? null
       : FileRef.fromJson(json['image'] as Map<String, dynamic>),
+  taxId: json['tax_id'] as String?,
+  tax: json['tax'] == null
+      ? null
+      : ProductTax.fromJson(json['tax'] as Map<String, dynamic>),
   isActive: json['is_active'] as bool?,
 );
 
@@ -37,6 +47,8 @@ Map<String, dynamic> _$ProductToJson(_Product instance) => <String, dynamic>{
   'type': _$ProductTypeEnumMap[instance.type],
   'category': instance.category,
   'image': instance.image,
+  'tax_id': instance.taxId,
+  'tax': instance.tax,
   'is_active': instance.isActive,
 };
 

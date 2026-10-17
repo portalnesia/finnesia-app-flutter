@@ -163,8 +163,8 @@ publish-to-store.yml  (on: release types: [published])
 >
 > Test penjaganya ada di
 > [`distribution_workflows_test.dart`](../apps/pos/test/branding/distribution_workflows_test.dart):
-> setiap fungsi yang dipanggil di keenam file workflow di-assert ada di daftar fungsi resmi GitHub,
-> dan regex gerbangnya diuji pada semua empat bentuk tag.
+> setiap fungsi yang dipanggil di tujuh file workflow di-assert ada di daftar fungsi resmi GitHub,
+> dan regex gerbangnya diuji pada bentuk tag rilis, patch, staging, serta bentuk yang harus ditolak.
 
 ### 1.2 Dispatcher manual (`release-dispatch.yml`) — pintu kedua
 
@@ -187,9 +187,9 @@ Dart murni `tools/dev/lib/dispatch.dart` yang diuji `dart test`, bukan rantai `i
 tidak bisa diuji di repo ini, jadi aturan akan lapuk diam-diam saat input bertambah.
 
 Kombinasi yang ditolak: `staging` + `windows`/`all` (tidak ada varian windows untuk staging),
-`patch` + `windows`/`all`, dan `patch` + `draft release = no` (patch adalah aksi terhadap rilis
-yang sudah ada; uji-coba tanpa target tidak punya base, dengan target mendorong OTA ke tablet
-production). `draft release = yes` tanpa `version` ditolak untuk semua env.
+dan `patch` + `draft release = no` (patch adalah aksi terhadap rilis yang sudah ada; uji-coba tanpa
+target tidak punya base, dengan target mendorong OTA ke production). `draft release = yes` tanpa
+`version` ditolak untuk semua env.
 
 | env | `device` | draft `no` | draft `yes` |
 | --- | --- | --- | --- |
@@ -198,6 +198,8 @@ production). `draft release = yes` tanpa `version` ditolak untuk semua env.
 | production | windows | MSIX artifact saja | tag `pos-vX.Y.Z` + draft berisi MSIX |
 | production | all | APK + MSIX artifact saja | satu draft berisi APK + AAB + MSIX |
 | patch | android | **ditolak** | tag `pos-vX.Y.Z-N`, kirim patch ke base `X.Y.Z`, tanpa draft release |
+| patch | windows | **ditolak** | tag `pos-vX.Y.Z-N`, kirim patch Windows ke base `X.Y.Z`, tanpa draft release |
+| patch | all | **ditolak** | satu tag `pos-vX.Y.Z-N`, dua workflow patch berjalan terpisah |
 
 > [!IMPORTANT]
 > Uji-coba production android sengaja **APK saja, tanpa AAB, tanpa `shorebird release`**, dan
@@ -209,9 +211,12 @@ production). `draft release = yes` tanpa `version` ditolak untuk semua env.
 > struktural (uji-coba tidak pernah memanggil `shorebird release`) plus fail-fast dari Shorebird
 > sendiri, yang pesannya menyebut versi yang bentrok.
 
-Dispatcher **menambah** pintu masuk, tidak mengganti: `on.push.tags` tetap ada di keempat workflow
-lama, dan eksklusivitas pola tag tetap dikunci test — satu `git push --tags` tidak boleh pernah
-memicu dua workflow.
+Uji-coba production Windows juga tidak menjalankan `shorebird release`: ia memakai `flutter build
+windows` biasa, lalu mengemas MSIX. Hanya rilis production nyata yang mendaftarkan baseline Windows.
+
+Dispatcher **menambah** pintu masuk, tidak mengganti: `on.push.tags` tetap aktif pada workflow tag
+yang sesuai. Tag rilis dan patch sengaja memicu workflow terpisah untuk Android dan Windows;
+staging tetap satu workflow. Tes mengunci daftar workflow yang tepat untuk setiap pola tag.
 
 ### 1.3 Alur staging (`staging-pos.yml`) — bukan rilis
 
@@ -446,7 +451,7 @@ Salin **seluruh isi** berkas JSON dari langkah 2 → GitHub Secret
 | `ANDROID_KEY_ALIAS` | alias di dalam keystore | signing |
 | `ANDROID_KEY_PASSWORD` | password keystore | signing |
 | `PLAY_SERVICE_ACCOUNT_JSON` | isi JSON key service account (§2.4) | upload AAB ke Play (track `internal`) — **hanya `publish-to-store.yml`** |
-| `SHOREBIRD_TOKEN` | API key dari Shorebird console (Account → API keys) | `shorebird release android` di CI — **rilis saja** |
+| `SHOREBIRD_TOKEN` | API key dari Shorebird console (Account → API keys) | Shorebird release dan patch untuk Android maupun Windows |
 
 Tiga yang pertama sudah ada (keystore yang sama dengan rilis sebelumnya
 — `.claude/rules/project.md` §7.1). `PLAY_SERVICE_ACCOUNT_JSON` dan `SHOREBIRD_TOKEN` baru.
@@ -454,8 +459,9 @@ Tiga yang pertama sudah ada (keystore yang sama dengan rilis sebelumnya
 `staging-pos.yml` memakai **tiga** yang pertama dan **tidak** memakai
 `PLAY_SERVICE_ACCOUNT_JSON` maupun `SHOREBIRD_TOKEN` — ia tidak menyentuh Store sama sekali.
 
-`windows-pos.yml` **tidak memakai satu secret pun**. Ia tidak butuh signing (Store
-menandatangani ulang) dan tidak butuh kredensial Partner Center sejak unggahnya manual.
+`windows-pos.yml` dan `shorebird-patch-windows.yml` memakai `SHOREBIRD_TOKEN`. Keduanya tidak
+memerlukan secret Microsoft Store atau Partner Center; rilis MSIX tidak ditandatangani di CI
+karena Store menandatangani ulang dan pengunggahan ke Partner Center tetap manual.
 
 `publish-to-store.yml` memakai **hanya** `PLAY_SERVICE_ACCOUNT_JSON`, plus `GITHUB_TOKEN` bawaan
 untuk `gh release download`. Ia tidak memakai `SHOREBIRD_TOKEN`: Shorebird sudah selesai di run
@@ -505,7 +511,7 @@ Sumber: [Set up an open, closed, or internal test](https://support.google.com/go
 
 ## 4. OTA (Shorebird)
 
-### 4.1 Empat pola tag, saling eksklusif, dengan prefix aplikasi
+### 4.1 Tiga bentuk tag dengan workflow terpisah per platform
 
 `shorebird init` sudah dijalankan di `apps/pos` — `apps/pos/shorebird.yaml` (berisi
 `app_id`) sudah ada dan tercatat di git. **Satu** app Shorebird; staging tidak memakainya.
@@ -514,24 +520,23 @@ Repo ini **monorepo** dan akan memuat aplikasi lain, jadi tag diberi prefix apli
 menandakan workflow POS, dan versi yang dibaca adalah `1.2.0` — baik `pos-` maupun `v` tidak ikut
 ke nilai versi. Aplikasi lain memakai prefix sendiri dan tidak menyentuh workflow ini.
 
-Ada **empat** pola tag (Windows ikut tag polos, job terpisah), semuanya
-`pos-vMAJOR.MINOR.PATCH`-berbasis supaya tetap satu skema penomoran versi — bedanya cuma
-akhiran:
+Ada tiga bentuk tag, semuanya berbasis `pos-vMAJOR.MINOR.PATCH` agar tetap satu skema penomoran
+versi: tag polos untuk rilis native, `-N` untuk patch, dan `-staging.N` untuk staging. Tag rilis
+dan patch masing-masing memicu workflow Android dan Windows yang terpisah.
 
 | Tag | Workflow | Apa yang terjadi | `versionCode` naik? |
 | --- | -------- | ----------------- | -------------------- |
 | `pos-v1.2.0` (polos) | `release-pos.yml` | Rilis native: APK **dan** AAB → asset **draft** GitHub Release, **dan** `shorebird release android` mendaftarkan versi ini sebagai target patch. Upload AAB ke Play track `internal` **tidak** terjadi di sini: ia berjalan di `publish-to-store.yml` setelah draft dipublikasikan | Ya |
-| `pos-v1.2.0` (polos, job lain) | `windows-pos.yml` | MSIX → **draft GitHub Release yang sama**; unggah ke Partner Center manual | Ya (nomor sama) |
+| `pos-v1.2.0` (polos, job lain) | `windows-pos.yml` | `shorebird release windows` membangun baseline Windows, lalu MSIX memakai build itu → **draft GitHub Release yang sama**; unggah ke Partner Center manual | Ya (nomor sama) |
 | `pos-v1.2.0-5` (`-N` nomor patch) | `shorebird-patch.yml` | Kirim patch Dart-only ke rilis `pos-v1.2.0` yang **sudah ada** — tidak ada build native baru, tidak ada upload Play | **Tidak sama sekali** |
+| `pos-v1.2.0-5` (workflow platform lain) | `shorebird-patch-windows.yml` | Kirim patch Dart-only ke baseline Windows `pos-v1.2.0` yang **sudah ada**; Windows beta x64, tanpa draft release | **Tidak sama sekali** |
 | `pos-v1.2.0-staging.3` (`-staging.N`) | `staging-pos.yml` | APK staging (`--profile`) → draft GitHub Release. **Tidak pernah membangun AAB**, jadi tidak ada Play dan tidak ada Shorebird | Nilai sama dengan rilis versi itu |
 
-Keempat pattern trigger (`on.push.tags`) sengaja dibuat **saling eksklusif** supaya satu tag
-yang di-push tidak pernah memicu lebih dari satu workflow, dan tidak pernah lolos ke workflow
-yang salah. Dua di antaranya (`release-pos.yml`, `windows-pos.yml`) memang memicu di tag yang
-sama — itu disengaja, karena Windows ikut satu nomor versi dan menulis satu GitHub Release
-yang sama. Eksklusivitas itu **tidak berubah** ketika dispatcher ditambahkan: `release-dispatch.yml`
-menambah pintu `workflow_dispatch` + `workflow_call`, dan tidak menyentuh satu karakter pun
-dari pola `on.push.tags` yang ada.
+Pola antar-kategori tetap terpisah agar tag staging atau suffix tak dikenal tidak lolos sebagai
+rilis. Di dalam kategori production dan patch, Android/Windows sengaja berbagi tag: release Windows
+menambah MSIX ke draft yang sama, sedangkan patch Windows berjalan independen dari patch Android.
+Dispatcher dapat memilih `android`, `windows`, atau `all`; push tag langsung menjalankan kedua
+platform workflow pada kategori terkait.
 
 Pola positifnya ditulis lebar (`...*`) dan eksklusinya ditulis eksplisit sebagai negasi
 (`!...`), bukan diserahkan pada asumsi bahwa GitHub meng-anchor pola ke seluruh nama ref:
@@ -541,12 +546,13 @@ Pola positifnya ditulis lebar (`...*`) dan eksklusinya ditulis eksplisit sebagai
 | `release-pos.yml` | `pos-v[0-9]+.[0-9]+.[0-9]+*` lalu `!pos-v[0-9]+.[0-9]+.[0-9]+-*` |
 | `windows-pos.yml` | sama dengan `release-pos.yml` |
 | `shorebird-patch.yml` | `pos-v[0-9]+.[0-9]+.[0-9]+-[0-9]+*` lalu `!pos-v[0-9]+.[0-9]+.[0-9]+-staging.*` |
+| `shorebird-patch-windows.yml` | sama dengan `shorebird-patch.yml` |
 | `staging-pos.yml` | `pos-v[0-9]+.[0-9]+.[0-9]+-staging.[0-9]+*` |
 
 Urutan penting: negasi harus **setelah** pola positifnya, karena pola positif yang menyusul
-negasi akan memasukkan ref itu kembali. Eksklusivitas keempatnya dikunci test
+negasi akan memasukkan ref itu kembali. Routing semua pola tag dikunci test
 (`apps/pos/test/branding/distribution_workflows_test.dart`), termasuk tag yang harus memicu
-**nol** workflow (mis. `pos-v1.2.0-rc.1`, atau `v1.2.0` tanpa prefix).
+workflow yang tepat atau **nol** workflow (mis. `pos-v1.2.0-rc.1`, atau `v1.2.0` tanpa prefix).
 
 > [!NOTE]
 > **Ini menutup lubang lama.** Pola sebelumnya ditulis tanpa `$` dan tanpa negasi, jadi
@@ -562,15 +568,16 @@ lewat Shorebird saja. Tag `-staging.N` = artefak internal, bukan rilis.**
 
 ### 4.1.1 Guard: menolak tag `-N` yang ternyata menyentuh native
 
-`shorebird-patch.yml` **tidak percaya begitu saja** bahwa sebuah tag `-N` benar-benar
-Dart-only. Sebelum mengirim patch, ia membandingkan (`git diff --name-only`) commit yang
-di-tag terhadap tag rilis native dasarnya (`pos-v1.2.0` untuk tag `pos-v1.2.0-5`), dan **gagal
-dengan pesan jelas** kalau ada perubahan di:
+`shorebird-patch.yml` **tidak percaya begitu saja** bahwa sebuah tag `-N` benar-benar Dart-only;
+`shorebird-patch-windows.yml` menerapkan guard serupa. Sebelum mengirim patch, setiap workflow
+membandingkan (`git diff --name-only`) commit yang di-tag terhadap tag rilis native dasarnya
+(`pos-v1.2.0` untuk tag `pos-v1.2.0-5`), dan **gagal dengan pesan jelas** jika ada perubahan
+native:
 
-- `apps/pos/android/**` — kode/konfigurasi native diedit langsung.
-- `pubspec.lock` (root) — dependency apa pun naik/turun versi atau ditambah, di package
-  mana pun di workspace, yang bisa diam-diam membawa plugin native baru tanpa menyentuh
-  `apps/pos/pubspec.yaml` sama sekali.
+- `apps/pos/android/**` — ditolak oleh workflow patch Android.
+- `apps/pos/windows/**` — ditolak oleh workflow patch Windows.
+- `pubspec.lock` (root) — dependency apa pun naik/turun versi atau ditambah di workspace, yang
+  bisa diam-diam membawa plugin native baru.
 
 Ini **heuristik**, bukan bukti mutlak — tapi menangkap kelas kesalahan paling umum: kasus
 "saya kira ini cuma Dart, ternyata ikut kebawa perubahan lain". Shorebird sendiri juga
@@ -579,8 +586,10 @@ baru ketahuan **setelah** build — guard ini gagal lebih awal dan menyebut pers
 mana yang mencurigakan.
 
 **Prasyarat guard ini:** tag rilis native dasarnya (`pos-v1.2.0`) harus sudah ada di git
-(sudah pernah di-push lewat `release-pos.yml`) — kalau belum, workflow gagal dengan pesan
-"tag rilis native dasar tidak ditemukan", bukan diam-diam lanjut.
+(rilis Android dibuat oleh `release-pos.yml`, Windows oleh `windows-pos.yml`). Windows juga harus
+sudah punya baseline Shorebird dari `shorebird release windows`; keberadaan tag Git saja tidak
+mendaftarkannya ke Shorebird. Kalau tag Git belum ada, workflow gagal dengan pesan "tag rilis
+native dasar tidak ditemukan", bukan diam-diam lanjut.
 
 ### 4.2 Notifikasi update dalam app
 
@@ -615,22 +624,27 @@ git push origin pos-v1.2.0-5
 `shorebird-patch.yml` (§4.1) menjalankan `shorebird patch android
 --release-version=1.2.0+1002000` (base version + build number, dihitung otomatis dari
 tag) — **tanpa** lewat Play Store atau review apa pun, didistribusikan lewat server
-Shorebird sendiri, aktif setelah restart app berikutnya. Hanya kode Dart yang bisa
-di-patch — perubahan plugin native, permission Android, atau upgrade Flutter SDK tetap
-wajib lewat rilis native (`release-pos.yml`), dan guard di §4.1.1 menolaknya lebih awal
-kalau tercampur. Sama seperti `shorebird release`, Shorebird **tidak pernah** aktif di
-build debug/profile — patch OTA murni fitur build release.
+Shorebird sendiri, aktif setelah restart app berikutnya. Hanya kode Dart yang bisa di-patch — perubahan plugin/native Android atau Windows, permission Android, atau upgrade Flutter SDK
+tetap wajib lewat rilis native; guard di §4.1.1 menolaknya lebih awal jika tercampur. Shorebird
+**tidak pernah** aktif di build debug/profile — patch OTA murni fitur build release.
+
+Tag yang sama juga memicu `shorebird-patch-windows.yml`, yang mengirim patch Windows x64 ke
+baseline Windows dengan release version yang sama. Jika baseline Windows untuk versi dasar itu
+belum dirilis, job Windows gagal sendiri dan tidak membatalkan patch Android; buat dahulu rilis
+production Windows untuk versi dasar tersebut.
 
 ### 4.4 Mematikan Shorebird sepenuhnya
 
 Kalau suatu saat diputuskan berhenti pakai Shorebird (kembali ke rilis native 100%):
 
-1. Hapus file **`.github/workflows/shorebird-patch.yml`** sepenuhnya — seluruh isinya
-   khusus Shorebird, tidak ada bagian yang perlu dipertahankan.
-2. Di `release-pos.yml`: hapus step **"Setup Shorebird"** dan **"Build release AAB
-   (shorebird release android)"**, ganti dengan `flutter build appbundle --release`
-   biasa — caranya sudah ditulis persis sebagai komentar tepat di atas kedua step itu,
-   tinggal copy-paste. Tidak ada bagian lain di workflow itu yang perlu diubah.
+1. Hapus `.github/workflows/shorebird-patch.yml` dan
+   `.github/workflows/shorebird-patch-windows.yml` — seluruh isinya khusus Shorebird.
+2. Di `release-pos.yml`, ganti `shorebird release android` dengan `flutter build appbundle
+   --release` biasa.
+3. Di `windows-pos.yml`, ganti `shorebirdtech/shorebird-release@v1` dengan `flutter build
+   windows --release` beserta argumen versi. Karena `build_windows: false`, jalankan build itu
+   eksplisit sebelum `msix:create`. Hapus juga `SHOREBIRD_TOKEN` dari reusable workflow dan
+   pemanggilnya di dispatcher.
 
 Di sisi app, cukup berhenti mengoper `updater:` ke `PosApp` di `main.dart` (atau hapus
 `shorebird_code_push` dari `pubspec.yaml` dan folder `apps/pos/lib/native/updater/`
@@ -642,7 +656,8 @@ build `--profile` sudah dipetakan ke `upToDate` oleh `ShorebirdUpdaterPort` send
 
 Sumber: [GitHub Integration | Shorebird](https://docs.shorebird.dev/code-push/ci/github/),
 [API Keys | Shorebird](https://docs.shorebird.dev/account/api-keys/),
-[Create a Release | Shorebird](https://docs.shorebird.dev/code-push/release/).
+[Create a Release | Shorebird](https://docs.shorebird.dev/code-push/release/),
+[Shorebird for Windows](https://docs.shorebird.dev/flutter-concepts/releasing-flutter-apps/windows/).
 
 ---
 

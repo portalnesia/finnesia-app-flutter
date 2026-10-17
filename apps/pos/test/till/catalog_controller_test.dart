@@ -314,7 +314,7 @@ void main() {
       await catalog.selectCategory('cat_1');
       await catalog.selectCategory('cat_1');
 
-      expect(analytics.logged.map((e) => e.$1), ['category_selected']);
+      expect(analytics.logged.map((e) => e.$1), ['tenant_category_selected']);
       expect(analytics.logged.single.$2, {'category_id': 'cat_1'});
     });
 

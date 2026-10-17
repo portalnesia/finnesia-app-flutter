@@ -96,6 +96,8 @@ void main() {
             description: null,
             quantity: 3,
             price: 10000,
+            discountPercent: null,
+            discountAmount: null,
             lineSubtotal: 30000,
             lineTotal: 30000,
             category: minuman,

@@ -475,7 +475,7 @@ void main() {
 
       await r.hold.hold(label: 'Meja 4');
 
-      expect(r.analytics.logged.map((e) => e.$1), ['basket_held']);
+      expect(r.analytics.logged.map((e) => e.$1), ['tenant_basket_held']);
     });
 
     test('logs nothing for an empty till', () async {
@@ -501,7 +501,7 @@ void main() {
 
       await r.hold.resume(heldOrder('a'));
 
-      expect(r.analytics.logged.map((e) => e.$1), ['basket_resumed']);
+      expect(r.analytics.logged.map((e) => e.$1), ['tenant_basket_resumed']);
     });
 
     test('logs nothing when the basket on the till could not be parked '
@@ -521,7 +521,7 @@ void main() {
 
       await r.hold.drop(heldOrder('a'));
 
-      expect(r.analytics.logged.map((e) => e.$1), ['basket_discarded']);
+      expect(r.analytics.logged.map((e) => e.$1), ['tenant_basket_discarded']);
     });
 
     test('does not log a discard for a basket that was paid for', () async {
@@ -531,7 +531,7 @@ void main() {
       await r.hold.paid();
 
       expect(
-        r.analytics.logged.where((e) => e.$1 == 'basket_discarded'),
+        r.analytics.logged.where((e) => e.$1 == 'tenant_basket_discarded'),
         isEmpty,
       );
     });

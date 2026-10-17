@@ -115,6 +115,8 @@ flutter:
 # `publisher` is required by the tool in two cases, both of which apply (`msix/configuration.dart`
 # §241: required when `store`; §236: required when `sign_msix: false`).
 msix_config:
+  # Shorebird builds Windows first; package:msix must package that output rather than overwrite it.
+  build_windows: false
   display_name: Finnesia POS
   # Partner Center: Package/Properties/PublisherDisplayName. Shown on the Store listing.
   publisher_display_name: Putu Aditya

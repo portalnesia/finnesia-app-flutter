@@ -22,10 +22,10 @@
 # menandakan workflow POS, sementara versi yang dibaca adalah bagian setelahnya (`pos-v1.2.0`
 # → `1.2.0`). Aplikasi lain memakai prefix sendiri dan tidak menyentuh workflow ini.
 #
-# Perubahan Dart-only lewat OTA memakai `shorebird-patch.yml`, trigger tag
-# `pos-vMAJOR.MINOR.PATCH-N` (mis. `pos-v1.2.0-5`). Keempat pattern tag di repo ini sengaja
-# saling eksklusif (tidak ada tag yang cocok keduanya) supaya satu `git push --tags` tidak
-# pernah memicu dua workflow sekaligus — lihat docs/distribution.md §4.3.
+# Perubahan Dart-only lewat OTA memakai `shorebird-patch.yml` untuk Android dan
+# `shorebird-patch-windows.yml` untuk Windows; keduanya berbagi tag `pos-vMAJOR.MINOR.PATCH-N`.
+# Tag rilis polos juga dipakai oleh `windows-pos.yml` supaya APK, AAB, dan MSIX masuk ke draft
+# yang sama. Kategori release, patch, dan staging tetap terpisah — lihat docs/distribution.md §4.3.
 #
 # Pola positifnya sengaja lebar (`*` di ujung, cocok dengan nol atau lebih karakter) dan
 # eksklusinya ditulis eksplisit sebagai negasi, bukan diserahkan pada asumsi bahwa GitHub

@@ -73,7 +73,7 @@ class DoneScreen extends StatelessWidget {
         context,
         successMessage: l10n.receiptSent,
         loadFailedMessage: l10n.receiptLoadFailed,
-        analyticsEvent: 'pending_receipt_printed',
+        analyticsEvent: 'tenant_pending_receipt_printed',
         // The temporary receipt: the same formatter, with the "not sent" marker where the
         // transaction number goes, and the short `client_ref` so the slip can be matched to the
         // sale once it does have a number (README D-Q3).
@@ -89,7 +89,7 @@ class DoneScreen extends StatelessWidget {
       context,
       successMessage: l10n.receiptSent,
       loadFailedMessage: l10n.receiptLoadFailed,
-      analyticsEvent: 'receipt_printed',
+      analyticsEvent: 'tenant_receipt_printed',
       print: () => printReceipt(
         recorded,
         client: services.client,

@@ -8,6 +8,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pn_pos/src/pos_cart.dart';
 import 'package:pn_types/src/native/analytics_fake.dart';
+import 'package:pn_types/src/pos.dart';
 import 'package:pn_types/src/product.dart';
 import 'package:pos/till/cart_controller.dart';
 
@@ -18,6 +19,9 @@ import 'package:pos/till/cart_controller.dart';
 
 Product product(String id, {num price = 10000}) =>
     Product(id: id, name: 'Produk $id', unitId: 'unit_1', sellPrice: price);
+
+CartController cartWithPreferences(POSPreferences preferences) =>
+    CartController(analytics: FakeAnalytics(), preferences: preferences);
 
 void main() {
   group('putting things in', () {
@@ -86,6 +90,44 @@ void main() {
         ..add(const Product(id: 'x', name: 'Tanpa harga', unitId: 'unit_1'));
 
       expect(cart.totals.grandTotal, 0);
+    });
+
+    test('applies exclusive product tax from the company preferences', () {
+      const taxedProduct = Product(
+        id: 'p_tax',
+        name: 'Kopi',
+        unitId: 'unit_1',
+        sellPrice: 10000,
+        taxId: 'tax_1',
+        tax: ProductTax(id: 'tax_1', rate: 11),
+      );
+      final cart = cartWithPreferences(
+        const POSPreferences(requireShift: false, taxEnabled: true),
+      )..add(taxedProduct);
+
+      expect(cart.totals.tax, 1100);
+      expect(cart.totals.grandTotal, 11100);
+    });
+
+    test('keeps the entered inclusive price as the amount due', () {
+      const taxedProduct = Product(
+        id: 'p_tax',
+        name: 'Kopi',
+        unitId: 'unit_1',
+        sellPrice: 10000,
+        taxId: 'tax_1',
+        tax: ProductTax(id: 'tax_1', rate: 11),
+      );
+      final cart = cartWithPreferences(
+        const POSPreferences(
+          requireShift: false,
+          taxEnabled: true,
+          priceIncludesTax: true,
+        ),
+      )..add(taxedProduct);
+
+      expect(cart.totals.tax, 10000 - 10000 / 1.11);
+      expect(cart.totals.grandTotal, 10000);
     });
   });
 
@@ -314,8 +356,8 @@ void main() {
           ..add(product('a'));
 
         expect(analytics.logged.map((e) => e.$1), [
-          'item_added_to_cart',
-          'item_added_to_cart',
+          'tenant_item_added_to_cart',
+          'tenant_item_added_to_cart',
         ]);
       },
     );
@@ -327,8 +369,8 @@ void main() {
       cart.remove(cart.lines.single.id);
 
       expect(analytics.logged.map((e) => e.$1), [
-        'item_added_to_cart',
-        'item_removed_from_cart',
+        'tenant_item_added_to_cart',
+        'tenant_item_removed_from_cart',
       ]);
     });
 
@@ -349,7 +391,7 @@ void main() {
       cart.clear();
 
       expect(
-        analytics.logged.where((e) => e.$1 == 'cart_cleared'),
+        analytics.logged.where((e) => e.$1 == 'tenant_cart_cleared'),
         hasLength(1),
       );
     });

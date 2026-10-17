@@ -46,6 +46,42 @@ PendingSaleReceipt receipt() => const PendingSaleReceipt(
       ],
     );
 
+PendingSale buildTaxSale({
+  required POSPreferences preferences,
+  num? discountPercent,
+}) {
+  const product = Product(
+    id: 'p_tax',
+    name: 'Kopi',
+    unitId: 'u1',
+    sellPrice: 10000,
+    taxId: 'tax_1',
+    tax: ProductTax(id: 'tax_1', rate: 11),
+  );
+  final line = CartLine(
+    id: 'tax_line',
+    product: product,
+    qty: 1,
+    discountPercent: discountPercent,
+  );
+
+  return buildPendingSale(
+    clientRef: 'REF-TAX',
+    companyId: 'comp_1',
+    outletId: 'out_1',
+    cashierId: 'user_1',
+    shiftId: 'shift_1',
+    transactionDate: '2026-10-17',
+    lines: [line],
+    payments: const [
+      POSTenderDTO(method: POSTenderMethod.cash, amount: 20000),
+    ],
+    discountAmount: 0,
+    preferences: preferences,
+    now: DateTime.utc(2026, 10, 17),
+  );
+}
+
 /// A queued sale, with the stored payload carrying no `clientRef`, no `paidAt` and no
 /// `shiftId`: those live in their own columns so the same value is not written twice
 /// (`plan/offline-queue/README.md` §4.2).
@@ -613,6 +649,34 @@ void main() {
       expect(await store.readAll(), isEmpty);
     });
 
+    test('reports a successful send only after its row is removed', () async {
+      await store.enqueue(sale());
+      final reported = <String>[];
+      await syncQueue(
+        store,
+        send: send,
+        onSynced: (entry, result) async {
+          expect(await store.count(), 0);
+          reported.add(entry.clientRef);
+        },
+      );
+      await syncQueue(store, send: send);
+      expect(reported, ['01J0000000000000000000000A']);
+    });
+
+    test('does not report a row that could not be removed', () async {
+      await store.enqueue(sale());
+      store.failRemove = true;
+      var reported = 0;
+      await expectLater(
+        syncQueue(store, send: send, onSynced: (entry, result) async {
+          reported++;
+        }),
+        throwsA(isA<PendingSaleStoreException>()),
+      );
+      expect(reported, 0);
+    });
+
     test('sends client_ref and paid_at so the server can dedupe', () async {
       await store.enqueue(sale());
 
@@ -1137,6 +1201,53 @@ void main() {
 
       expect(entry.clientRef, 'REF-9');
       expect(entry.payload.clientRef, isNull);
+    });
+
+    test('writes exclusive tax consistently to offline payload and receipt',
+        () {
+      final entry = buildTaxSale(
+        preferences: const POSPreferences(
+          requireShift: false,
+          taxEnabled: true,
+        ),
+      );
+
+      expect(entry.payload.items.single.taxId, 'tax_1');
+      expect(entry.receipt.subtotal, 10000);
+      expect(entry.receipt.taxAmount, 1100);
+      expect(entry.receipt.grandTotal, 11100);
+      expect(entry.receipt.items.single.lineTax, 1100);
+      expect(entry.receipt.items.single.lineTotal, 11100);
+    });
+
+    test('carves inclusive tax out of the offline price after line discount',
+        () {
+      final entry = buildTaxSale(
+        preferences: const POSPreferences(
+          requireShift: false,
+          taxEnabled: true,
+          priceIncludesTax: true,
+        ),
+        discountPercent: 10,
+      );
+      final lineTax = 9000 - 9000 / 1.11;
+
+      expect(entry.payload.items.single.taxId, 'tax_1');
+      expect(entry.receipt.taxAmount, lineTax);
+      expect(entry.receipt.grandTotal, 9000);
+      expect(entry.receipt.items.single.discountPercent, 10);
+      expect(entry.receipt.items.single.lineSubtotal, 9000 - lineTax);
+      expect(entry.receipt.items.single.lineTax, lineTax);
+    });
+
+    test('keeps an offline sale untaxed when the company switch is off', () {
+      final entry = buildTaxSale(
+        preferences: const POSPreferences(requireShift: false),
+      );
+
+      expect(entry.payload.items.single.taxId, isNull);
+      expect(entry.receipt.taxAmount, 0);
+      expect(entry.receipt.grandTotal, 10000);
     });
   });
 }

@@ -114,7 +114,7 @@ class HoldController extends ChangeNotifier {
     cart.clear();
     detail.reset();
     await refresh();
-    await _analytics.logEvent('basket_held');
+    await _analytics.logEvent('tenant_basket_held');
     return HoldOutcome.held;
   }
 
@@ -158,7 +158,7 @@ class HoldController extends ChangeNotifier {
     await dropHeldOrder(store, order.id);
     if (_resumed?.id == order.id) _resumed = null;
     await refresh();
-    await _analytics.logEvent('basket_discarded');
+    await _analytics.logEvent('tenant_basket_discarded');
   }
 
   /// The cart was paid for: a resumed basket is finally removed from the queue.
@@ -194,7 +194,7 @@ class HoldController extends ChangeNotifier {
     );
     _resumed = order;
     await refresh();
-    await _analytics.logEvent('basket_resumed');
+    await _analytics.logEvent('tenant_basket_resumed');
     return ResumeOutcome.resumed;
   }
 }

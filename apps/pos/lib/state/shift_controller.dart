@@ -148,7 +148,10 @@ class ShiftController extends ChangeNotifier {
       // The screen may be gone by now (a sign-out replaces it): nothing is left to tell.
       if (_disposed) return;
       _resumedShiftId = shift.id;
-      await _analytics.logEvent('shift_opened');
+      await _analytics.logEvent(
+        'tenant_shift_open',
+        parameters: {'opening_cash': openingCash},
+      );
       // Read again while still opening, so the form stays on screen until the answer is there
       // rather than flashing back to "open a shift" for a shift that now exists.
       await _context.load();
@@ -209,7 +212,10 @@ class ShiftController extends ChangeNotifier {
     // Not awaited: `_forward` is a synchronous callback (`notifyListeners`, `_context`'s own
     // listener), and the port's contract is that logging never throws.
     unawaited(
-      _analytics.logEvent('shift_open_blocked', parameters: {'reason': reason}),
+      _analytics.logEvent(
+        'tenant_shift_open_blocked',
+        parameters: {'reason': reason},
+      ),
     );
   }
 

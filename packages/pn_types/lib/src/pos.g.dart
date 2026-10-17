@@ -35,7 +35,13 @@ _SalesInvoiceItem _$SalesInvoiceItemFromJson(Map<String, dynamic> json) =>
       id: json['id'] as String,
       quantity: json['quantity'] as num,
       price: json['price'] as num,
+      discountPercent: json['discount_percent'] as num?,
+      discountAmount: json['discount_amount'] as num?,
+      taxId: json['tax_id'] as String?,
+      taxRate: json['tax_rate'] as num? ?? 0,
+      isTaxInclusive: json['is_tax_inclusive'] as bool? ?? false,
       lineSubtotal: json['line_subtotal'] as num,
+      lineTax: json['line_tax'] as num? ?? 0,
       lineTotal: json['line_total'] as num,
       description: json['description'] as String?,
       product: json['product'] == null
@@ -48,7 +54,13 @@ Map<String, dynamic> _$SalesInvoiceItemToJson(_SalesInvoiceItem instance) =>
       'id': instance.id,
       'quantity': instance.quantity,
       'price': instance.price,
+      'discount_percent': ?instance.discountPercent,
+      'discount_amount': ?instance.discountAmount,
+      'tax_id': ?instance.taxId,
+      'tax_rate': instance.taxRate,
+      'is_tax_inclusive': instance.isTaxInclusive,
       'line_subtotal': instance.lineSubtotal,
+      'line_tax': instance.lineTax,
       'line_total': instance.lineTotal,
       'description': instance.description,
       'product': instance.product?.toJson(),
@@ -85,6 +97,7 @@ _POSSale _$POSSaleFromJson(Map<String, dynamic> json) => _POSSale(
     unknownValue: JsonKey.nullForUndefinedEnumValue,
   ),
   createdAt: json['created_at'] as String,
+  invoiceId: json['invoice_id'] as String?,
   clientRef: json['client_ref'] as String?,
   paidAt: json['paid_at'] as String?,
   notes: json['notes'] as String?,
@@ -116,6 +129,7 @@ Map<String, dynamic> _$POSSaleToJson(_POSSale instance) => <String, dynamic>{
   'change_amount': instance.changeAmount,
   'status': _$POSSaleStatusEnumMap[instance.status],
   'created_at': instance.createdAt,
+  'invoice_id': instance.invoiceId,
   'client_ref': instance.clientRef,
   'paid_at': instance.paidAt,
   'notes': instance.notes,
@@ -137,6 +151,7 @@ _POSCheckoutItemDTO _$POSCheckoutItemDTOFromJson(Map<String, dynamic> json) =>
       unitId: json['unit_id'] as String,
       quantity: json['quantity'] as num,
       price: json['price'] as num,
+      taxId: json['tax_id'] as String?,
       discountPercent: json['discount_percent'] as num?,
       discountAmount: json['discount_amount'] as num?,
     );
@@ -147,6 +162,7 @@ Map<String, dynamic> _$POSCheckoutItemDTOToJson(_POSCheckoutItemDTO instance) =>
       'unit_id': instance.unitId,
       'quantity': instance.quantity,
       'price': instance.price,
+      'tax_id': ?instance.taxId,
       'discount_percent': ?instance.discountPercent,
       'discount_amount': ?instance.discountAmount,
     };
@@ -190,6 +206,8 @@ Map<String, dynamic> _$POSCheckoutDTOToJson(_POSCheckoutDTO instance) =>
 _POSPreferences _$POSPreferencesFromJson(Map<String, dynamic> json) =>
     _POSPreferences(
       requireShift: json['require_shift'] as bool,
+      taxEnabled: json['tax_enabled'] as bool? ?? false,
+      priceIncludesTax: json['price_includes_tax'] as bool? ?? false,
       showTableNumber: json['show_table_number'] as bool? ?? false,
       showQueueNumber: json['show_queue_number'] as bool? ?? false,
       queueNumberAuto: json['queue_number_auto'] as bool? ?? false,
@@ -203,6 +221,8 @@ _POSPreferences _$POSPreferencesFromJson(Map<String, dynamic> json) =>
 Map<String, dynamic> _$POSPreferencesToJson(_POSPreferences instance) =>
     <String, dynamic>{
       'require_shift': instance.requireShift,
+      'tax_enabled': instance.taxEnabled,
+      'price_includes_tax': instance.priceIncludesTax,
       'show_table_number': instance.showTableNumber,
       'show_queue_number': instance.showQueueNumber,
       'queue_number_auto': instance.queueNumberAuto,

@@ -18,6 +18,7 @@ import 'package:pn_types/src/api/transport.dart';
 import 'package:pn_types/src/native/analytics_port.dart';
 import 'package:pn_types/src/pos.dart';
 import 'package:pn_types/src/session.dart';
+import 'package:pos/analytics/tenant_analytics.dart';
 import 'package:pos/session/session_holder.dart';
 
 /// Drains the offline queue in the background: a pass every [interval] once [start] is called,
@@ -121,6 +122,15 @@ class QueueSync extends ChangeNotifier {
         send: _send,
         openShiftId: openShiftId,
         cashierId: cashierId,
+        onSynced: (entry, sale) async {
+          if (sale == null) return;
+          await logTenantSaleCompleted(
+            _analytics,
+            sale: sale,
+            payload: entry.payload,
+            offline: true,
+          );
+        },
       );
     }
 
@@ -169,9 +179,8 @@ class QueueSync extends ChangeNotifier {
 
   Future<SendOutcome> _send(POSCheckoutDTO payload) async {
     try {
-      await PosApi.salesCheckout(_client, payload);
-      await _analytics.logEvent('queue_sale_synced');
-      return const SendSucceeded();
+      final sale = await PosApi.salesCheckout(_client, payload);
+      return SendSucceeded(sale);
     } on ApiError catch (e) {
       // A 401 that reaches here already survived `PosTransport`'s own refresh-and-retry
       // (`pos_transport.dart`): the session could not be renewed, not the sale that is wrong.

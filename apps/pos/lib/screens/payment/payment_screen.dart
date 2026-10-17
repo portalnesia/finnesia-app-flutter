@@ -45,6 +45,7 @@ class PaymentScreen extends StatefulWidget {
     required this.cashierId,
     required this.onCancel,
     required this.submit,
+    this.preferences,
     this.detail = TransactionDetail.empty,
     this.transactionDate,
     this.outletName,
@@ -58,6 +59,9 @@ class PaymentScreen extends StatefulWidget {
   /// The basket, for the payload. The screen does not edit it: by the time money is being
   /// taken, what is being sold is settled.
   final List<CartLine> lines;
+
+  /// The settings used to price these lines; null leaves tax off until preferences are known.
+  final POSPreferences? preferences;
 
   /// Who the sale is for, and what the floor or the kitchen needs to know about it. Settled
   /// before this screen is opened (S8), and only carried through here.
@@ -222,6 +226,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
       transactionDate: widget.transactionDate ?? localToday(),
       lines: widget.lines,
       payments: built.tenders,
+      preferences: widget.preferences,
     );
     widget.onSent?.call(payload);
 
@@ -241,6 +246,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
             transactionDate: widget.transactionDate ?? localToday(),
             lines: widget.lines,
             payments: built.tenders,
+            preferences: widget.preferences,
             customerId: widget.detail.customerId,
             notes: widget.detail.customerMemo,
             tableNumber: widget.detail.tableNumber,

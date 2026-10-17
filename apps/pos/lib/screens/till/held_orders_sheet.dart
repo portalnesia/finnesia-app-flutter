@@ -10,6 +10,7 @@ import 'package:pn_pos/src/datetime.dart';
 import 'package:pn_pos/src/format.dart';
 import 'package:pn_pos/src/pos_calculations.dart';
 import 'package:pn_pos/src/pos_hold.dart';
+import 'package:pn_types/src/pos.dart';
 import 'package:pn_ui/src/theme/app_theme.dart';
 import 'package:pn_ui/src/theme/tokens.dart';
 import 'package:pn_ui/src/widgets/state_view.dart';
@@ -25,21 +26,25 @@ import 'package:pos/till/hold_controller.dart';
 Future<void> showHeldOrdersSheet(
   BuildContext context, {
   required HoldController hold,
+  POSPreferences? preferences,
   required Future<void> Function(HeldOrder order) onResume,
 }) => showPosSheet<void>(
   context,
   heightFactor: 0.9,
-  builder: (context) => HeldOrdersSheet(hold: hold, onResume: onResume),
+  builder: (context) =>
+      HeldOrdersSheet(hold: hold, preferences: preferences, onResume: onResume),
 );
 
 class HeldOrdersSheet extends StatelessWidget {
   const HeldOrdersSheet({
     super.key,
     required this.hold,
+    this.preferences,
     required this.onResume,
   });
 
   final HoldController hold;
+  final POSPreferences? preferences;
   final Future<void> Function(HeldOrder order) onResume;
 
   /// Throwing a basket away loses a sale in progress, so it asks first. The safe answer is the quiet
@@ -86,6 +91,7 @@ class HeldOrdersSheet extends StatelessWidget {
                 itemCount: orders.length,
                 itemBuilder: (context, i) => _HeldRow(
                   order: orders[i],
+                  preferences: preferences,
                   onResume: () => onResume(orders[i]),
                   onDrop: () => _confirmDrop(context, orders[i]),
                 ),
@@ -101,11 +107,13 @@ class HeldOrdersSheet extends StatelessWidget {
 class _HeldRow extends StatelessWidget {
   const _HeldRow({
     required this.order,
+    required this.preferences,
     required this.onResume,
     required this.onDrop,
   });
 
   final HeldOrder order;
+  final POSPreferences? preferences;
   final VoidCallback onResume;
   final VoidCallback onDrop;
 
@@ -115,7 +123,10 @@ class _HeldRow extends StatelessWidget {
     final theme = Theme.of(context).textTheme;
     final pn = context.pn;
     final pieces = order.lines.fold<num>(0, (sum, l) => sum + l.qty);
-    final total = totalsOfLines(order.lines).grandTotal;
+    final total = totalsOfLines(
+      order.lines,
+      preferences: preferences,
+    ).grandTotal;
 
     return DecoratedBox(
       decoration: BoxDecoration(

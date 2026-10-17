@@ -23,6 +23,7 @@ import 'package:pn_types/src/native/printer_port.dart';
 import 'package:pn_types/src/native/public_http_port.dart';
 import 'package:pn_types/src/native/store_port.dart';
 import 'package:pn_types/src/pos_shift.dart';
+import 'package:pn_types/src/session.dart';
 import 'package:pos/device/device_reset.dart';
 import 'package:pos/http/pos_transport.dart';
 import 'package:pos/login/login_controller.dart';
@@ -62,7 +63,23 @@ class AppServices extends ChangeNotifier {
       session: session,
       analytics: analytics,
     );
-    _unsubscribe = session.subscribe((_) => notifyListeners());
+    _lastAnalyticsSession = session.current;
+    _setAccountMode(session.current?.branding?.accountMode, force: true);
+    _unsubscribe = session.subscribe((next) {
+      final previous = _lastAnalyticsSession;
+      _lastAnalyticsSession = next;
+      final signedOut =
+          previous?.sessionToken.isNotEmpty == true &&
+          next?.sessionToken.isEmpty == true;
+      if (signedOut) _analyticsSignedOut = true;
+      if (next == null || next.sessionToken.isNotEmpty) {
+        _analyticsSignedOut = false;
+      }
+      _setAccountMode(
+        next == null || _analyticsSignedOut ? null : next.branding?.accountMode,
+      );
+      notifyListeners();
+    });
     // An incoming App Link is the browser's way of saying the login is done: wake the poll now
     // instead of letting it sit out its two-second interval.
     //
@@ -88,6 +105,17 @@ class AppServices extends ChangeNotifier {
   late final StreamSubscription<Uri>? _linkSubscription;
 
   late final void Function() _unsubscribe;
+
+  PosSession? _lastAnalyticsSession;
+  String? _analyticsAccountMode;
+  bool _analyticsSignedOut = false;
+
+  void _setAccountMode(String? value, {bool force = false}) {
+    if (value != null && value.isEmpty) value = null;
+    if (!force && value == _analyticsAccountMode) return;
+    _analyticsAccountMode = value;
+    unawaited(analytics.setUserProperty('account_mode', value));
+  }
 
   final SessionHolder session;
 
