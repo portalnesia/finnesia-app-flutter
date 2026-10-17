@@ -138,7 +138,14 @@ abstract class SalesInvoiceItem with _$SalesInvoiceItem {
     required String id,
     required num quantity,
     required num price,
+    @JsonKey(name: 'discount_percent', includeIfNull: false)
+    num? discountPercent,
+    @JsonKey(name: 'discount_amount', includeIfNull: false) num? discountAmount,
+    @JsonKey(name: 'tax_id', includeIfNull: false) String? taxId,
+    @JsonKey(name: 'tax_rate') @Default(0) num taxRate,
+    @JsonKey(name: 'is_tax_inclusive') @Default(false) bool isTaxInclusive,
     @JsonKey(name: 'line_subtotal') required num lineSubtotal,
+    @JsonKey(name: 'line_tax') @Default(0) num lineTax,
     @JsonKey(name: 'line_total') required num lineTotal,
     String? description,
     NamedRef? product,
@@ -223,6 +230,7 @@ abstract class POSCheckoutItemDTO with _$POSCheckoutItemDTO {
     @JsonKey(name: 'unit_id') required String unitId,
     required num quantity,
     required num price,
+    @JsonKey(name: 'tax_id') String? taxId,
     @JsonKey(name: 'discount_percent') num? discountPercent,
     @JsonKey(name: 'discount_amount') num? discountAmount,
   }) = _POSCheckoutItemDTO;
@@ -278,6 +286,8 @@ abstract class POSCheckoutDTO with _$POSCheckoutDTO {
 abstract class POSPreferences with _$POSPreferences {
   const factory POSPreferences({
     @JsonKey(name: 'require_shift') required bool requireShift,
+    @JsonKey(name: 'tax_enabled') @Default(false) bool taxEnabled,
+    @JsonKey(name: 'price_includes_tax') @Default(false) bool priceIncludesTax,
     @JsonKey(name: 'show_table_number') @Default(false) bool showTableNumber,
     @JsonKey(name: 'show_queue_number') @Default(false) bool showQueueNumber,
     @JsonKey(name: 'queue_number_auto') @Default(false) bool queueNumberAuto,

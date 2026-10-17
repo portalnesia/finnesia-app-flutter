@@ -7,6 +7,8 @@
 
 import 'dart:math' show max;
 
+import 'package:pn_types/src/pos.dart';
+
 import 'pos_cart.dart';
 
 /// Line shape used by the cart maths.
@@ -32,6 +34,7 @@ class CartMathLine {
     this.discountPercent,
     this.discountAmount,
     this.taxRate,
+    this.isTaxInclusive = false,
   });
 
   final num quantity;
@@ -39,6 +42,7 @@ class CartMathLine {
   final num? discountPercent;
   final num? discountAmount;
   final num? taxRate;
+  final bool isTaxInclusive;
 }
 
 class CartTotals {
@@ -65,20 +69,35 @@ num calcLineTotal(CartMathLine line) => calcLineAmounts(line).lineTotal;
 ///
 /// The halves mirror the wire fields the server writes (`pos_service.go:1314-1330`):
 /// `line_subtotal` is after the line's own discount and before tax, `line_total` is after both.
-({num lineSubtotal, num lineTax, num lineTotal}) calcLineAmounts(
+({num lineSubtotal, num lineDiscount, num lineTax, num lineTotal})
+    calcLineAmounts(
   CartMathLine line,
 ) {
-  final base = line.quantity * line.price;
-  final discPct =
-      line.discountPercent != null ? base * (line.discountPercent! / 100) : 0;
-  final discAmt = line.discountAmount ?? 0;
-  final lineSubtotal = max(0, base - discPct - discAmt);
-  final lineTax =
-      line.taxRate != null ? lineSubtotal * (line.taxRate! / 100) : 0;
+  final gross = line.quantity * line.price;
+  final percent = line.discountPercent;
+  // The server and TypeScript use `percent || amount`: 0 and NaN are absent, and a
+  // percentage wins when both discount fields are present.
+  final lineDiscount = percent != null && percent != 0 && !percent.isNaN
+      ? gross * (percent / 100)
+      : (line.discountAmount ?? 0);
+  var net = max(0, gross - lineDiscount);
+  final rate = line.taxRate ?? 0;
+  var lineTax = 0.0;
+  // Match JavaScript's `if (rate)`: NaN and zero are off; negative and infinite
+  // values remain truthy, with validation owned by the server.
+  if (rate != 0 && !rate.isNaN) {
+    if (line.isTaxInclusive) {
+      lineTax = net - net / (1 + rate / 100);
+      net -= lineTax;
+    } else {
+      lineTax = net * (rate / 100);
+    }
+  }
   return (
-    lineSubtotal: lineSubtotal,
+    lineSubtotal: net,
+    lineDiscount: lineDiscount,
     lineTax: lineTax,
-    lineTotal: lineSubtotal + lineTax,
+    lineTotal: net + lineTax,
   );
 }
 
@@ -87,14 +106,10 @@ CartTotals calcCartTotals(List<CartMathLine> lines) {
   num discount = 0;
   num tax = 0;
   for (final l in lines) {
-    final base = l.quantity * l.price;
-    subtotal += base;
-    final discPct =
-        l.discountPercent != null ? base * (l.discountPercent! / 100) : 0;
-    final discAmt = l.discountAmount ?? 0;
-    discount += discPct + discAmt;
-    final afterDisc = max(0, base - discPct - discAmt);
-    tax += l.taxRate != null ? afterDisc * (l.taxRate! / 100) : 0;
+    final amounts = calcLineAmounts(l);
+    subtotal += amounts.lineSubtotal + amounts.lineDiscount;
+    discount += amounts.lineDiscount;
+    tax += amounts.lineTax;
   }
   final grandTotal = max(0, subtotal - discount + tax);
   return CartTotals(
@@ -118,12 +133,25 @@ bool isTenderSufficient(num tendered, num grandTotal) => tendered >= grandTotal;
 ///
 /// Takes `num` and is null-tolerant rather than taking a `Product`: this file is about money,
 /// and it should not have to know what a catalogue row is.
-CartTotals totalsOfLines(List<CartLine> lines) => calcCartTotals([
-      for (final line in lines)
-        CartMathLine(
-          quantity: line.qty,
-          price: line.product.sellPrice ?? 0,
-          discountPercent: line.discountPercent,
-          discountAmount: line.discountAmount,
-        ),
+/// Maps a till line to the money shape, so the cart and its offline receipt use the same tax rules.
+CartMathLine toCartMathLine(
+  CartLine line, {
+  POSPreferences? preferences,
+}) =>
+    CartMathLine(
+      quantity: line.qty,
+      price: line.product.sellPrice ?? 0,
+      discountPercent: line.discountPercent,
+      discountAmount: line.discountAmount,
+      taxRate: preferences?.taxEnabled == true ? line.product.tax?.rate : null,
+      isTaxInclusive: preferences?.taxEnabled == true &&
+          preferences?.priceIncludesTax == true,
+    );
+
+CartTotals totalsOfLines(
+  List<CartLine> lines, {
+  POSPreferences? preferences,
+}) =>
+    calcCartTotals([
+      for (final line in lines) toCartMathLine(line, preferences: preferences),
     ]);

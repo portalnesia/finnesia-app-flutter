@@ -92,7 +92,10 @@ class _TillScreenState extends State<TillScreen> {
     super.didChangeDependencies();
     if (_cart != null) return;
     final services = AppScope.of(context);
-    _cart = CartController(analytics: services.analytics);
+    _cart = CartController(
+      analytics: services.analytics,
+      preferences: widget.preferences,
+    );
     _checkout = CheckoutService(
       client: services.client,
       // The queue belongs to the tenant the device is paired with, which is why the store is
@@ -174,8 +177,12 @@ class _TillScreenState extends State<TillScreen> {
   }
 
   /// Opens the list of held baskets.
-  Future<void> _openHeld() =>
-      showHeldOrdersSheet(context, hold: _hold!, onResume: _resumeHeld);
+  Future<void> _openHeld() => showHeldOrdersSheet(
+    context,
+    hold: _hold!,
+    preferences: widget.preferences,
+    onResume: _resumeHeld,
+  );
 
   /// Takes a held basket back onto the till, parking the one that was there.
   Future<void> _resumeHeld(HeldOrder order) async {
@@ -211,6 +218,7 @@ class _TillScreenState extends State<TillScreen> {
         builder: (context) => PaymentScreen(
           grandTotal: cart.totals.grandTotal,
           lines: cart.lines,
+          preferences: widget.preferences,
           shiftId: widget.shift?.id,
           outletId: current.outletId,
           companyId: current.companyId,

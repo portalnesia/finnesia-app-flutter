@@ -253,6 +253,7 @@ PendingSale buildPendingSale({
   required List<CartLine> lines,
   required List<POSTenderDTO> payments,
   required num discountAmount,
+  POSPreferences? preferences,
   String? customerId,
   String? notes,
   String? tableNumber,
@@ -262,7 +263,7 @@ PendingSale buildPendingSale({
   DateTime? now,
 }) {
   final at = (now ?? DateTime.now()).toUtc().toIso8601String();
-  final totals = totalsOfLines(lines);
+  final totals = totalsOfLines(lines, preferences: preferences);
   final tendered = _tendered(payments);
   // The bill discount comes off the total, exactly as the server computes it
   // (`pos_service.go:1395`: `grandTotal = subtotal + tax - discount_amount`). The receipt has to
@@ -273,14 +274,7 @@ PendingSale buildPendingSale({
   final payable = totals.grandTotal - billDiscount;
   final amounts = [
     for (final line in lines)
-      calcLineAmounts(
-        CartMathLine(
-          quantity: line.qty,
-          price: line.product.sellPrice ?? 0,
-          discountPercent: line.discountPercent,
-          discountAmount: line.discountAmount,
-        ),
-      ),
+      calcLineAmounts(toCartMathLine(line, preferences: preferences)),
   ];
 
   return PendingSale(
@@ -306,6 +300,7 @@ PendingSale buildPendingSale({
       transactionDate: transactionDate,
       lines: lines,
       payments: payments,
+      preferences: preferences,
     ),
     receipt: PendingSaleReceipt(
       outletName: outletName,
@@ -332,7 +327,16 @@ PendingSale buildPendingSale({
             id: line.id,
             quantity: line.qty,
             price: line.product.sellPrice ?? 0,
+            discountPercent: line.discountPercent,
+            discountAmount: line.discountAmount,
+            taxId: preferences?.taxEnabled == true ? line.product.taxId : null,
+            taxRate: preferences?.taxEnabled == true
+                ? line.product.tax?.rate ?? 0
+                : 0,
+            isTaxInclusive: preferences?.taxEnabled == true &&
+                preferences?.priceIncludesTax == true,
             lineSubtotal: amounts[index].lineSubtotal,
+            lineTax: amounts[index].lineTax,
             lineTotal: amounts[index].lineTotal,
             description: null,
             product: NamedRef(id: line.product.id, name: line.product.name),

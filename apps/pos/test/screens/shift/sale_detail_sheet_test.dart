@@ -45,12 +45,16 @@ Map<String, Object?> line(
   num price = 15000,
   num? subtotal,
   num? total,
+  num? discountPercent,
+  num? discountAmount,
 }) => {
   'id': id,
   'quantity': quantity,
   'price': price,
   'line_subtotal': subtotal ?? quantity * price,
   'line_total': total ?? subtotal ?? quantity * price,
+  'discount_percent': ?discountPercent,
+  'discount_amount': ?discountAmount,
   'description': ?description,
   if (name != null) 'product': {'id': 'p_$id', 'name': name},
 };
@@ -296,6 +300,7 @@ void main() {
                   'i1',
                   name: 'Kopi Susu',
                   quantity: 2,
+                  discountAmount: 3000,
                   subtotal: 27000, // 30000 less 3000
                   total: 27000,
                 ),

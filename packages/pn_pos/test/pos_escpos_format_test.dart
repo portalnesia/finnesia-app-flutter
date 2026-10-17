@@ -66,6 +66,8 @@ InvoiceItem invoiceItem({
       description: description,
       quantity: quantity,
       price: price,
+      discountPercent: null,
+      discountAmount: null,
       lineSubtotal: lineSubtotal,
       lineTotal: lineTotal,
       category: null,

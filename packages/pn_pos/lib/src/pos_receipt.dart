@@ -40,6 +40,8 @@ typedef InvoiceItem = ({
   String? description,
   num quantity,
   num price,
+  num? discountPercent,
+  num? discountAmount,
 
   /// `line_subtotal` from the server: the line after its discount, before tax.
   num lineSubtotal,
@@ -54,10 +56,8 @@ typedef InvoiceItem = ({
 
 /// One row of the receipt.
 ///
-/// [discount] is the gap between what the line would have cost and what the server says it
-/// actually cost, so it is always the discount the customer really got — not a re-derivation
-/// from `discount_percent` or `discount_amount`, which can both be set and neither of which
-/// accounts for a line-level override.
+/// [discount] comes from the discount the cashier entered. A price gap is not reliable here:
+/// on an inclusive-tax line the gap is the tax carved out of the price, not a discount.
 typedef ReceiptLine = ({
   String id,
   String name,
@@ -107,17 +107,17 @@ List<ReceiptLine> posReceiptLines({
         name: firstNonEmpty([item.productName, item.description, fallbackName]),
         quantity: item.quantity,
         price: item.price,
-        // Derived, not copied: a line may be discounted by percent, by amount, or both, and
-        // the difference the customer actually got is the gap the server already resolved.
-        //
-        // `max` from `dart:math`, not a ternary: `Math.max(0, NaN)` is `NaN` in JavaScript
-        // and `dart:math`'s `max` matches it, while a hand-rolled `v > 0 ? v : 0` returns
-        // `0`. Reachable from a NaN price or subtotal, and a receipt showing `Rp NaN` for a
-        // discount is at least visible, whereas silently reporting `0` would hide the
-        // upstream bug. (Compare `pos_shift.dart`, where the value *is* compared rather
-        // than displayed and rounding to 0 is the correct answer.)
-        discount: max(0, item.quantity * item.price - item.lineSubtotal),
+        discount: _receiptDiscount(item),
         total: item.lineTotal,
       ),
   ];
+}
+
+num _receiptDiscount(InvoiceItem item) {
+  final percent = item.discountPercent;
+  final discount = percent != null && percent != 0 && !percent.isNaN
+      ? item.quantity * item.price * (percent / 100)
+      : item.discountAmount ?? 0;
+  // `max` matches JavaScript for NaN and keeps a negative discount from printing as a gain.
+  return max(0, discount);
 }
