@@ -1,15 +1,4 @@
-# ══ DINONAKTIFKAN SEMENTARA ══════════════════════════════════════════════════
-#
-# Berkas ini sengaja bernama `ci.yml.disabled`: GitHub hanya membaca `.yml` dan
-# `.yaml` di `.github/workflows/`, jadi workflow ini tidak berjalan. Alasannya batas
-# menit GitHub Actions (2000 menit). Isinya utuh dan tidak dihapus.
-#
-# Untuk mengaktifkan lagi: ganti nama menjadi `ci.yml`. Tidak ada yang perlu diubah.
-# Selama nonaktif, pengaman yang setara dijalankan developer: `./dev check`
-# (urutan yang sama dengan berkas ini). `release-pos.yml` tetap aktif untuk tag `v*`.
-# ═════════════════════════════════════════════════════════════════════════════
-
-# Verifikasi untuk setiap push dan pull request.
+# CI ini hanya berjalan pada pull request dengan base `main`; tidak ada trigger `push`.
 #
 # Tujuannya menangkap pelanggaran aturan repo SEBELUM review, bukan menggantikan
 # verifikasi lokal. Urutannya sama dengan `AGENTS.md` §Verification dan
@@ -31,12 +20,10 @@
 name: CI
 
 on:
-  push:
-    branches: ["**"]
   pull_request:
+    branches: ["main"]
 
-# Push berturut-turut ke branch yang sama membatalkan run sebelumnya: hasil run
-# lama tidak berguna begitu ada commit baru.
+# Untuk PR yang sama, run lama dibatalkan saat ada commit baru.
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
