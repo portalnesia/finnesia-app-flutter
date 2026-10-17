@@ -34,11 +34,12 @@ env:
 
 jobs:
   verify:
-    runs-on: ubuntu-latest
+    # Pin the runner image; `ubuntu-latest` is migrating from 24.04 to 26.04.
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       # Pin versi, jangan `channel: stable`: template Flutter 3.47.4 mengunci
       # Gradle 9.3.1 / AGP 9.1.0 / Kotlin 2.4.0 / NDK 28.2.13676358. Flutter yang
@@ -52,7 +53,7 @@ jobs:
           cache: true
 
       - name: Setup Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: "17"
@@ -63,18 +64,10 @@ jobs:
       - name: Resolve workspace
         run: dart pub get
 
-      # `tools/dev`, `tools/rule_lint` dan `tools/string_lint` sengaja bukan member workspace
-      # (lihat pubspec masing-masing), jadi `dart pub get` di root tidak menulis
-      # `.dart_tool/package_config.json` mereka, dan `.dart_tool/` juga gitignored. Tanpa langkah
-      # ini, pemanggilan `tools/dev` dan `dart analyze` di bawah tidak menemukan package config,
-      # jatuh ke config root, lalu `package:dev` tidak dikenal. Sama dengan langkah `Resolve tools`
-      # di windows/release/staging/shorebird.
-      - name: Resolve tools
-        run: |
-          for tool in tools/dev tools/rule_lint tools/string_lint; do
-            echo "── dart pub get: $tool"
-            (cd "$tool" && dart pub get)
-          done
+      # `tools/dev` bukan member workspace, jadi root `dart pub get` tidak membuat
+      # package config-nya. Resolusikan sebelum formatter yang mengimpor `package:dev`.
+      - name: Resolve formatter
+        run: (cd tools/dev && dart pub get)
 
       # Memanggil tool, bukan menyalin path-nya. `dart format` tidak punya flag
       # exclusion dan tidak baca `.gitignore`, jadi `.` ikut masuk ke `build/`,
@@ -84,6 +77,15 @@ jobs:
       # `formatTargets` tanpa ikut diperiksa.
       - name: Verify formatting
         run: dart run tools/dev/bin/dev.dart format
+
+      # Tool packages bukan member workspace. `tools/dev` sudah di-resolve di atas;
+      # resolve dua tool lain tepat sebelum Analyze, sesuai kontrak workflow repo.
+      - name: Resolve tools
+        run: |
+          for tool in tools/rule_lint tools/string_lint; do
+            echo "── dart pub get: $tool"
+            (cd "$tool" && dart pub get)
+          done
 
       # ── Analisis ───────────────────────────────────────────────────────────
       - name: Analyze
