@@ -224,6 +224,8 @@
   "notificationAnnouncementTitle": "Pengumuman",
   "notificationLinkUnavailable": "Tautan notifikasi tidak aman atau tidak tersedia.",
   "notificationOpenFailed": "Notifikasi belum bisa dibuka. Coba lagi.",
+  "notificationEnablePush": "Aktifkan notifikasi",
+  "notificationAnnouncementUnavailable": "Pengumuman ini sudah tidak tersedia.",
   "menuAccountSection": "Akun",
   "menuSessionSection": "Perangkat ini",
   "menuCashierLabel": "Kasir",

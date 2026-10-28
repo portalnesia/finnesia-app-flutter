@@ -439,6 +439,13 @@ class L10nId extends L10n {
       'Notifikasi belum bisa dibuka. Coba lagi.';
 
   @override
+  String get notificationEnablePush => 'Aktifkan notifikasi';
+
+  @override
+  String get notificationAnnouncementUnavailable =>
+      'Pengumuman ini sudah tidak tersedia.';
+
+  @override
   String get menuAccountSection => 'Akun';
 
   @override

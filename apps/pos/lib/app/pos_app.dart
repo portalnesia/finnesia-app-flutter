@@ -9,6 +9,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:pn_types/src/native/push_messaging_port.dart';
 import 'package:pn_types/src/native/native_update_port.dart';
 import 'package:pn_types/src/native/updater_port.dart';
 import 'package:pn_types/src/session.dart';
@@ -18,8 +19,10 @@ import 'package:pos/app/boot_screens.dart';
 import 'package:pos/app/gate.dart';
 import 'package:pos/bootstrap.dart';
 import 'package:pos/l10n/app_localizations.dart';
+import 'package:pos/notifications/notification_inbox_controller.dart';
 import 'package:pos/preferences/app_preferences.dart';
 import 'package:pos/preferences/enum_preference.dart';
+import 'package:pos/screens/notifications/notification_inbox_screen.dart';
 
 /// Paints the Android status bar and navigation bar to match the theme in force: the screen's
 /// own background behind them, and icons that contrast with that background.
@@ -171,6 +174,12 @@ class PosApp extends StatefulWidget {
 
 class _PosAppState extends State<PosApp> with WidgetsBindingObserver {
   BootResult? _result;
+  final _navigatorKey = GlobalKey<NavigatorState>();
+  StreamSubscription<PushMessage>? _pushOpenSubscription;
+  final _pendingPushOpens = <PushMessage>[];
+  final _queuedPushIds = <String>{};
+  bool _pushRouteOpen = false;
+  bool _waitingForPushNavigator = false;
 
   /// Whether a downloaded patch is waiting for the app to restart. Never set outside
   /// production: [UpdaterPort.checkForUpdate] itself answers [UpdaterStatus.upToDate] on any
@@ -204,6 +213,7 @@ class _PosAppState extends State<PosApp> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    unawaited(_pushOpenSubscription?.cancel() ?? Future<void>.value());
     _restartRequired.dispose();
     _nativeUpdateReady.dispose();
     final result = _result;
@@ -239,6 +249,9 @@ class _PosAppState extends State<PosApp> with WidgetsBindingObserver {
       final result = await widget.boot();
       if (!mounted) return;
       final previous = _result;
+      final oldPushSubscription = _pushOpenSubscription;
+      _pushOpenSubscription = null;
+      if (oldPushSubscription != null) await oldPushSubscription.cancel();
       setState(() => _result = result);
       // After `setState`, so the tree never holds services that are already disposed. Disposing
       // also unsubscribes the old holder's listener, which is what keeps this from accumulating
@@ -247,6 +260,7 @@ class _PosAppState extends State<PosApp> with WidgetsBindingObserver {
       if (result is! BootReady) return;
       _bootedPairing = result.services.session.current;
       result.services.session.subscribe((_) => _onSessionChanged());
+      _bindPush(result);
       await result.services.resumeLogin();
       await result.services.refreshIfExpiring();
       result.services.queueSync.start();
@@ -258,6 +272,7 @@ class _PosAppState extends State<PosApp> with WidgetsBindingObserver {
   /// Rebuilds the services when the tenant the app is paired with changes, so nothing stays
   /// bound to the pairing it was built for.
   void _onSessionChanged() {
+    _drainPushOpens();
     if (!_tenantChanged) return;
     // Fire-and-forget: a rebuild is not something a caller waits for, and a `setState` during a
     // build (pairing saves the session from a button's callback, which is a build-adjacent
@@ -275,7 +290,14 @@ class _PosAppState extends State<PosApp> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state != AppLifecycleState.resumed) return;
     final result = _result;
-    if (result is BootReady) result.services.onForeground();
+    if (result is BootReady) {
+      result.services.onForeground();
+      final pushController = result.services.pushController;
+      if (pushController != null) {
+        unawaited(pushController.refreshPermissionStatus());
+      }
+      _drainPushOpens();
+    }
   }
 
   Future<void> _run() async {
@@ -288,6 +310,7 @@ class _PosAppState extends State<PosApp> with WidgetsBindingObserver {
     // app adds: the holder notifies on every save, and `_tenantChanged` filters out the ones that
     // are not a new tenant (a token rotation, a sign-in, a sign-out).
     result.services.session.subscribe((_) => _onSessionChanged());
+    _bindPush(result);
 
     // A login the app was killed in the middle of, then a session close to its end. Neither
     // throws, and the screen follows because the session is what the gate reads. In this
@@ -303,6 +326,80 @@ class _PosAppState extends State<PosApp> with WidgetsBindingObserver {
     if (updater != null) unawaited(_checkForUpdate(updater));
     final nativeUpdate = widget.nativeUpdate;
     if (nativeUpdate != null) unawaited(_checkForNativeUpdate(nativeUpdate));
+  }
+
+  void _bindPush(BootReady result) {
+    final controller = result.services.pushController;
+    if (controller == null) return;
+    _pushOpenSubscription = controller.openedMessages.listen(
+      _receivePushOpen,
+      onError: (Object _) {
+        // Notification navigation is best-effort and never blocks the till.
+      },
+    );
+    unawaited(controller.start());
+  }
+
+  void _receivePushOpen(PushMessage message) {
+    final notificationId = message.data['notification_id'];
+    if (notificationId == null ||
+        notificationId.isEmpty ||
+        !_queuedPushIds.add(notificationId)) {
+      return;
+    }
+    _pendingPushOpens.add(message);
+    _drainPushOpens();
+  }
+
+  void _drainPushOpens() {
+    if (!mounted || _pushRouteOpen || _pendingPushOpens.isEmpty) return;
+    final navigator = _navigatorKey.currentState;
+    if (navigator == null) {
+      if (_waitingForPushNavigator) return;
+      _waitingForPushNavigator = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _waitingForPushNavigator = false;
+        _drainPushOpens();
+      });
+      return;
+    }
+
+    final result = _result;
+    if (result is! BootReady) return;
+    final session = result.services.session.current;
+    if (session == null || session.sessionToken.isEmpty) return;
+
+    final message = _pendingPushOpens.removeAt(0);
+    final notificationId = message.data['notification_id']!;
+    final controller = NotificationInboxController(
+      client: result.services.client,
+    );
+    _pushRouteOpen = true;
+    final route = MaterialPageRoute<void>(
+      builder: (_) => NotificationInboxScreen(
+        controller: controller,
+        session: session,
+        pushController: result.services.pushController,
+        initialNotificationId: notificationId,
+        initialCompanyId: message.data['company_id'],
+      ),
+    );
+    unawaited(
+      navigator
+          .push<void>(route)
+          .then<void>((_) {
+            controller.dispose();
+            _queuedPushIds.remove(notificationId);
+            _pushRouteOpen = false;
+            _drainPushOpens();
+          })
+          .catchError((Object _) {
+            controller.dispose();
+            _queuedPushIds.remove(notificationId);
+            _pushRouteOpen = false;
+            _drainPushOpens();
+          }),
+    );
   }
 
   Future<void> _checkForUpdate(UpdaterPort updater) async {
@@ -339,6 +436,7 @@ class _PosAppState extends State<PosApp> with WidgetsBindingObserver {
     return ListenableBuilder(
       listenable: Listenable.merge([widget.language, widget.theme]),
       builder: (context, _) => MaterialApp(
+        navigatorKey: _navigatorKey,
         onGenerateTitle: (context) => L10n.of(context).appName,
         theme: pnTheme(Brightness.light),
         darkTheme: pnTheme(Brightness.dark),

@@ -232,6 +232,7 @@ class _NotificationInboxCard extends StatelessWidget {
                     builder: (_) => NotificationInboxScreen(
                       controller: controller,
                       session: session,
+                      pushController: AppScope.of(context).pushController,
                     ),
                   ),
                 ),
@@ -550,6 +551,10 @@ class _SignOutButton extends StatelessWidget {
 
     try {
       // The pairing stays: only the credential goes.
+      final pushController = services.pushController;
+      if (pushController != null) {
+        await pushController.unregisterCurrentToken();
+      }
       await services.session.clearToken();
       // The gate has already moved to the login screen by now — it reads the session, and this
       // screen is subscribed to the same holder, so it takes itself off the top. Nothing to do

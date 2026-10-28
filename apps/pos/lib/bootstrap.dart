@@ -21,6 +21,7 @@ import 'package:pn_types/src/native/link_port.dart';
 import 'package:pn_types/src/native/opener_port.dart';
 import 'package:pn_types/src/native/printer_port.dart';
 import 'package:pn_types/src/native/public_http_port.dart';
+import 'package:pn_types/src/native/push_messaging_port.dart';
 import 'package:pn_types/src/native/store_port.dart';
 import 'package:pn_types/src/pos_shift.dart';
 import 'package:pn_types/src/session.dart';
@@ -28,6 +29,7 @@ import 'package:pos/device/device_reset.dart';
 import 'package:pos/http/pos_transport.dart';
 import 'package:pos/login/login_controller.dart';
 import 'package:pos/login/native_login.dart';
+import 'package:pos/notifications/push_lifecycle_controller.dart';
 import 'package:pos/native/scanner/scanner_port.dart';
 import 'package:pos/pairing/pairing.dart';
 import 'package:pos/queue/queue_sync.dart';
@@ -56,7 +58,17 @@ class AppServices extends ChangeNotifier {
     required this.language,
     required this.theme,
     LinkPort? link,
-  }) : pendingSaleStore = pendingSaleStore(session.current?.companyId ?? '') {
+    PushMessagingPort? pushMessaging,
+  }) : pendingSaleStore = pendingSaleStore(session.current?.companyId ?? ''),
+       pushController = pushMessaging == null
+           ? null
+           : PushLifecycleController(
+               client: client,
+               messaging: pushMessaging,
+               session: session,
+               deviceInfo: deviceInfo,
+               locale: () => language.value.name,
+             ) {
     queueSync = QueueSync(
       client: client,
       queue: this.pendingSaleStore,
@@ -151,6 +163,9 @@ class AppServices extends ChangeNotifier {
   /// Where product-usage events go (`plan/firebase/README.md`).
   final AnalyticsPort analytics;
 
+  /// Optional FCM lifecycle for platforms that provide push messaging.
+  final PushLifecycleController? pushController;
+
   /// Every call to the tenant's API goes through this: the host and the bearer come from
   /// [session] on each request (`PosTransport`), never from the caller.
   final ApiClient client;
@@ -213,6 +228,7 @@ class AppServices extends ChangeNotifier {
     _linkSubscription?.cancel();
     login.dispose();
     queueSync.dispose();
+    pushController?.dispose();
     shiftClosed.dispose();
     activeShift.dispose();
     super.dispose();
@@ -344,6 +360,7 @@ Future<BootResult> bootstrap({
   required EnumPreference<AppLanguage> language,
   required EnumPreference<ThemeMode> theme,
   LinkPort? link,
+  PushMessagingPort? pushMessaging,
   Future<void> Function() delay = _pollEvery2Seconds,
   Duration pollTimeout = _pollFor,
   DateTime Function() now = DateTime.now,
@@ -399,6 +416,7 @@ Future<BootResult> bootstrap({
       language: language,
       theme: theme,
       link: link,
+      pushMessaging: pushMessaging,
     ),
   );
 }

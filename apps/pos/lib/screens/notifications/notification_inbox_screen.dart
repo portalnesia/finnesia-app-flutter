@@ -12,6 +12,7 @@ import 'package:pn_types/src/api/api_error.dart';
 import 'package:pn_types/src/api/transport.dart';
 import 'package:pn_types/src/native/notification_webview_port.dart';
 import 'package:pn_types/src/native/opener_port.dart';
+import 'package:pn_types/src/native/push_messaging_port.dart';
 import 'package:pn_types/src/notification.dart';
 import 'package:pn_types/src/session.dart';
 import 'package:pn_ui/src/theme/app_theme.dart';
@@ -20,6 +21,7 @@ import 'package:pos/l10n/app_localizations.dart';
 import 'package:pos/native/notification_webview/active.dart' as webview;
 import 'package:pos/native/opener/active.dart' as browser;
 import 'package:pos/notifications/notification_inbox_controller.dart';
+import 'package:pos/notifications/push_lifecycle_controller.dart';
 import 'package:pos/notifications/notification_link_policy.dart';
 import 'package:pos/screens/common/paged_list.dart';
 import 'package:pos/screens/common/screen_header.dart';
@@ -33,12 +35,18 @@ class NotificationInboxScreen extends StatefulWidget {
     required this.session,
     this.webView,
     this.opener,
+    this.pushController,
+    this.initialNotificationId,
+    this.initialCompanyId,
   });
 
   final NotificationInboxController controller;
   final PosSession? session;
   final NotificationWebViewPort? webView;
   final OpenerPort? opener;
+  final PushLifecycleController? pushController;
+  final String? initialNotificationId;
+  final String? initialCompanyId;
 
   @override
   State<NotificationInboxScreen> createState() =>
@@ -56,6 +64,16 @@ class _NotificationInboxScreenState extends State<NotificationInboxScreen> {
   void initState() {
     super.initState();
     unawaited(widget.controller.loadInbox());
+    final notificationId = widget.initialNotificationId;
+    if (notificationId != null && notificationId.trim().isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          unawaited(
+            _openNotificationId(notificationId, widget.initialCompanyId),
+          );
+        }
+      });
+    }
   }
 
   @override
@@ -66,6 +84,8 @@ class _NotificationInboxScreenState extends State<NotificationInboxScreen> {
         child: Column(
           children: [
             ScreenHeader(title: l10n.notificationInboxTitle),
+            if (widget.pushController != null)
+              _PushPermissionPrompt(controller: widget.pushController!),
             Expanded(
               child: PagedListPane<NotificationItem>(
                 source: widget.controller.inbox,
@@ -156,14 +176,31 @@ class _NotificationInboxScreenState extends State<NotificationInboxScreen> {
     );
   }
 
-  Future<void> _openItem(NotificationItem item) async {
+  Future<void> _openItem(NotificationItem item) => _open(
+    operationId: item.id,
+    request: () => widget.controller.open(item),
+    fallbackItem: item,
+  );
+
+  Future<void> _openNotificationId(String notificationId, String? companyId) =>
+      _open(
+        operationId: notificationId,
+        request: () =>
+            widget.controller.openById(notificationId, companyId: companyId),
+      );
+
+  Future<void> _open({
+    required String operationId,
+    required Future<NotificationOpenResponse> Function() request,
+    NotificationItem? fallbackItem,
+  }) async {
     if (_openingId != null) return;
-    setState(() => _openingId = item.id);
+    setState(() => _openingId = operationId);
     final l10n = L10n.of(context);
     try {
       // The endpoint authorizes/resolves the destination and marks the recipient read. Do not
       // navigate or display a CTA until this request has completed successfully.
-      final response = await widget.controller.open(item);
+      final response = await request();
       if (!mounted) return;
 
       final link = response.link.trim();
@@ -177,7 +214,12 @@ class _NotificationInboxScreenState extends State<NotificationInboxScreen> {
         return;
       }
 
-      await _showAnnouncement(response.item ?? item);
+      final announcement = response.item ?? fallbackItem;
+      if (announcement == null) {
+        _showMessage(l10n.notificationAnnouncementUnavailable);
+      } else {
+        await _showAnnouncement(announcement);
+      }
     } on ApiError catch (error) {
       if (mounted) {
         _showMessage(failedReadText(error, l10n.notificationOpenFailed));
@@ -276,4 +318,33 @@ class _NotificationInboxScreenState extends State<NotificationInboxScreen> {
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(content: Text(message)));
   }
+}
+
+class _PushPermissionPrompt extends StatelessWidget {
+  const _PushPermissionPrompt({required this.controller});
+
+  final PushLifecycleController controller;
+
+  @override
+  Widget build(BuildContext context) =>
+      ValueListenableBuilder<PushAuthorizationStatus>(
+        valueListenable: controller.authorizationStatus,
+        builder: (context, status, _) {
+          if (status.canReceivePush ||
+              status == PushAuthorizationStatus.unsupported) {
+            return const SizedBox.shrink();
+          }
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+            child: SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: () => unawaited(controller.requestPermission()),
+                icon: const Icon(Icons.notifications_active_outlined),
+                label: Text(L10n.of(context).notificationEnablePush),
+              ),
+            ),
+          );
+        },
+      );
 }

@@ -190,6 +190,34 @@ void main() {
       },
     );
 
+    test('openById resolves a notification from a push tap', () async {
+      transport.respond(
+        _jsonResponse({
+          'company_id': 'comp_1',
+          'link': '/reports/weekly',
+          'item': _itemJson(
+            id: 'recipient_42',
+            notificationId: 'notification_42',
+          ),
+        }),
+      );
+      transport.respond(_jsonResponse({'items': [], 'next_cursor': ''}));
+      transport.respond(_jsonResponse({'total': 0}));
+
+      final response = await controller.openById(
+        'notification_42',
+        companyId: 'comp_1',
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      expect(response.link, '/reports/weekly');
+      expect(transport.requests.first.path, '/api/v1/notifications/open');
+      expect(jsonDecode(transport.requests.first.body!), {
+        'notification_id': 'notification_42',
+        'company_id': 'comp_1',
+      });
+    });
+
     test('global open sends a null company id', () async {
       transport.respond(
         _jsonResponse({

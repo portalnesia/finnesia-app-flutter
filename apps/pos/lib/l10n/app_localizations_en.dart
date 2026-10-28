@@ -443,6 +443,13 @@ class L10nEn extends L10n {
       'Could not open the notification. Try again.';
 
   @override
+  String get notificationEnablePush => 'Turn on notifications';
+
+  @override
+  String get notificationAnnouncementUnavailable =>
+      'This announcement is no longer available.';
+
+  @override
   String get menuAccountSection => 'Account';
 
   @override

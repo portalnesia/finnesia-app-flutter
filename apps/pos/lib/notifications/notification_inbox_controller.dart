@@ -70,11 +70,19 @@ class NotificationInboxController {
   /// The API's open route also marks the row read. Its refreshed unread count and inbox are
   /// requested in the background so they do not delay the navigation that follows the response.
   Future<NotificationOpenResponse> open(NotificationItem item) async {
+    return openById(item.notificationId, companyId: item.companyId);
+  }
+
+  /// Opens a notification delivered by FCM without trusting its `link` field.
+  Future<NotificationOpenResponse> openById(
+    String notificationId, {
+    String? companyId,
+  }) async {
     final response = await NotificationApi.open.call(
       client,
       NotificationOpenRequest(
-        notificationId: item.notificationId,
-        companyId: item.companyId,
+        notificationId: notificationId,
+        companyId: companyId,
       ),
     );
     unawaited(_refresh());

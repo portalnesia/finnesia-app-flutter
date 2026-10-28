@@ -793,6 +793,18 @@ abstract class L10n {
   /// **'Notifikasi belum bisa dibuka. Coba lagi.'**
   String get notificationOpenFailed;
 
+  /// No description provided for @notificationEnablePush.
+  ///
+  /// In id, this message translates to:
+  /// **'Aktifkan notifikasi'**
+  String get notificationEnablePush;
+
+  /// No description provided for @notificationAnnouncementUnavailable.
+  ///
+  /// In id, this message translates to:
+  /// **'Pengumuman ini sudah tidak tersedia.'**
+  String get notificationAnnouncementUnavailable;
+
   /// No description provided for @menuAccountSection.
   ///
   /// In id, this message translates to:

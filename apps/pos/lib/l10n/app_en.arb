@@ -224,6 +224,8 @@
   "notificationAnnouncementTitle": "Announcement",
   "notificationLinkUnavailable": "This notification link is unsafe or unavailable.",
   "notificationOpenFailed": "Could not open the notification. Try again.",
+  "notificationEnablePush": "Turn on notifications",
+  "notificationAnnouncementUnavailable": "This announcement is no longer available.",
   "menuAccountSection": "Account",
   "menuSessionSection": "This device",
   "menuCashierLabel": "Cashier",
