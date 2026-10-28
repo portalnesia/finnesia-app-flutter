@@ -727,6 +727,72 @@ abstract class L10n {
   /// **'Kembali'**
   String get menuBack;
 
+  /// No description provided for @notificationMenuEntry.
+  ///
+  /// In id, this message translates to:
+  /// **'Notifikasi'**
+  String get notificationMenuEntry;
+
+  /// No description provided for @notificationUnreadBadge.
+  ///
+  /// In id, this message translates to:
+  /// **'{count} belum dibaca'**
+  String notificationUnreadBadge(int count);
+
+  /// No description provided for @notificationInboxTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Kotak Masuk Notifikasi'**
+  String get notificationInboxTitle;
+
+  /// No description provided for @notificationInboxEmpty.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum ada notifikasi.'**
+  String get notificationInboxEmpty;
+
+  /// No description provided for @notificationInboxLoadFailed.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum bisa memuat notifikasi. Periksa koneksi lalu coba lagi.'**
+  String get notificationInboxLoadFailed;
+
+  /// No description provided for @notificationInboxMoreFailed.
+  ///
+  /// In id, this message translates to:
+  /// **'Gagal memuat notifikasi berikutnya. Ketuk untuk mencoba lagi.'**
+  String get notificationInboxMoreFailed;
+
+  /// No description provided for @notificationMarkRead.
+  ///
+  /// In id, this message translates to:
+  /// **'Tandai sudah dibaca'**
+  String get notificationMarkRead;
+
+  /// No description provided for @notificationMarkReadFailed.
+  ///
+  /// In id, this message translates to:
+  /// **'Gagal menandai notifikasi sebagai dibaca. Coba lagi.'**
+  String get notificationMarkReadFailed;
+
+  /// No description provided for @notificationAnnouncementTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Pengumuman'**
+  String get notificationAnnouncementTitle;
+
+  /// No description provided for @notificationLinkUnavailable.
+  ///
+  /// In id, this message translates to:
+  /// **'Tautan notifikasi tidak aman atau tidak tersedia.'**
+  String get notificationLinkUnavailable;
+
+  /// No description provided for @notificationOpenFailed.
+  ///
+  /// In id, this message translates to:
+  /// **'Notifikasi belum bisa dibuka. Coba lagi.'**
+  String get notificationOpenFailed;
+
   /// No description provided for @menuAccountSection.
   ///
   /// In id, this message translates to:

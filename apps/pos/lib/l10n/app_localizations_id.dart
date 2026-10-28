@@ -399,6 +399,46 @@ class L10nId extends L10n {
   String get menuBack => 'Kembali';
 
   @override
+  String get notificationMenuEntry => 'Notifikasi';
+
+  @override
+  String notificationUnreadBadge(int count) {
+    return '$count belum dibaca';
+  }
+
+  @override
+  String get notificationInboxTitle => 'Kotak Masuk Notifikasi';
+
+  @override
+  String get notificationInboxEmpty => 'Belum ada notifikasi.';
+
+  @override
+  String get notificationInboxLoadFailed =>
+      'Belum bisa memuat notifikasi. Periksa koneksi lalu coba lagi.';
+
+  @override
+  String get notificationInboxMoreFailed =>
+      'Gagal memuat notifikasi berikutnya. Ketuk untuk mencoba lagi.';
+
+  @override
+  String get notificationMarkRead => 'Tandai sudah dibaca';
+
+  @override
+  String get notificationMarkReadFailed =>
+      'Gagal menandai notifikasi sebagai dibaca. Coba lagi.';
+
+  @override
+  String get notificationAnnouncementTitle => 'Pengumuman';
+
+  @override
+  String get notificationLinkUnavailable =>
+      'Tautan notifikasi tidak aman atau tidak tersedia.';
+
+  @override
+  String get notificationOpenFailed =>
+      'Notifikasi belum bisa dibuka. Coba lagi.';
+
+  @override
   String get menuAccountSection => 'Akun';
 
   @override

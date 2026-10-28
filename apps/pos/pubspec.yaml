@@ -62,6 +62,7 @@ dependencies:
   # Shorebird patch, which never changes the installed app's versionCode at all. Cannot
   # be exercised locally: Play Core requires the app to be installed through Play.
   in_app_update: ^5.0.0
+  flutter_inappwebview: ^6.1.5
 dev_dependencies:
   build_runner: ^2.4.0
   flutter_test:

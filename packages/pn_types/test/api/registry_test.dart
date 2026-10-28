@@ -12,6 +12,7 @@ import 'package:pn_types/src/api/endpoint.dart';
 import 'package:pn_types/src/api/endpoints/auth.dart';
 import 'package:pn_types/src/api/endpoints/features.dart';
 import 'package:pn_types/src/api/endpoints/master.dart';
+import 'package:pn_types/src/api/endpoints/notification.dart';
 import 'package:pn_types/src/api/endpoints/pos.dart';
 import 'package:pn_types/src/api/endpoints/products.dart';
 import 'package:pn_types/src/api/endpoints/team.dart';
@@ -196,11 +197,29 @@ void main() {
       '/api/v1/team/my-permissions',
       TeamApi.permissionsMy,
     ),
+    read('notification.list', '/api/v1/notifications', NotificationApi.list),
+    read(
+      'notification.unreadCount',
+      '/api/v1/notifications/unread-count',
+      NotificationApi.unreadCount,
+    ),
+    write(
+      'notification.markRead',
+      HttpMethod.post,
+      '/api/v1/notifications/mark-read',
+      NotificationApi.markRead,
+    ),
+    write(
+      'notification.open',
+      HttpMethod.post,
+      '/api/v1/notifications/open',
+      NotificationApi.open,
+    ),
   ];
 
   group('the registry table', () {
-    test('has the 23 endpoints the POS uses', () {
-      expect(rows, hasLength(23));
+    test('has the 27 endpoints the POS uses', () {
+      expect(rows, hasLength(27));
     });
 
     test(

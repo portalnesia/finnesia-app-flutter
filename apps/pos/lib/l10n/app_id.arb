@@ -206,6 +206,24 @@
   "loginResetQueueBlocked": "Reset belum bisa dilakukan: masih ada penjualan yang belum terkirim di tablet ini. Masuk lalu kirim dulu, atau buang di Penjualan tertunda, sebelum mereset.",
   "menuTitle": "Menu",
   "menuBack": "Kembali",
+  "notificationMenuEntry": "Notifikasi",
+  "notificationUnreadBadge": "{count} belum dibaca",
+  "@notificationUnreadBadge": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "notificationInboxTitle": "Kotak Masuk Notifikasi",
+  "notificationInboxEmpty": "Belum ada notifikasi.",
+  "notificationInboxLoadFailed": "Belum bisa memuat notifikasi. Periksa koneksi lalu coba lagi.",
+  "notificationInboxMoreFailed": "Gagal memuat notifikasi berikutnya. Ketuk untuk mencoba lagi.",
+  "notificationMarkRead": "Tandai sudah dibaca",
+  "notificationMarkReadFailed": "Gagal menandai notifikasi sebagai dibaca. Coba lagi.",
+  "notificationAnnouncementTitle": "Pengumuman",
+  "notificationLinkUnavailable": "Tautan notifikasi tidak aman atau tidak tersedia.",
+  "notificationOpenFailed": "Notifikasi belum bisa dibuka. Coba lagi.",
   "menuAccountSection": "Akun",
   "menuSessionSection": "Perangkat ini",
   "menuCashierLabel": "Kasir",
