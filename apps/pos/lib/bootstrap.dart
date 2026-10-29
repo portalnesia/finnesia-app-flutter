@@ -66,6 +66,7 @@ class AppServices extends ChangeNotifier {
                client: client,
                messaging: pushMessaging,
                session: session,
+               store: loginDeps.store,
                deviceInfo: deviceInfo,
                locale: () => language.value.name,
              ) {

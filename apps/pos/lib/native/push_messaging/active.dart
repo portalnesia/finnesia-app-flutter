@@ -9,6 +9,7 @@ import 'package:flutter/foundation.dart';
 import 'package:pn_types/src/native/push_messaging_port.dart';
 import 'package:pos/native/push_messaging/android_firebase_push_messaging.dart';
 import 'package:pos/native/push_messaging/unsupported_push_messaging.dart';
+import 'package:pos/native/push_messaging/windows_wns_push_messaging.dart';
 
 PushMessagingPort get pushMessaging => _pushMessaging;
 PushMessagingPort _pushMessaging = _createPushMessaging();
@@ -16,6 +17,9 @@ PushMessagingPort _pushMessaging = _createPushMessaging();
 PushMessagingPort _createPushMessaging() {
   if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
     return AndroidFirebasePushMessaging();
+  }
+  if (!kIsWeb && defaultTargetPlatform == TargetPlatform.windows) {
+    return WindowsWnsPushMessaging();
   }
   return UnsupportedPushMessaging();
 }

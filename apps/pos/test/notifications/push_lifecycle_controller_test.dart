@@ -7,6 +7,7 @@
 
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart' as foundation;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pn_types/src/api/client.dart';
 import 'package:pn_types/src/api/transport.dart';
@@ -55,6 +56,7 @@ void main() {
         client: ApiClient(transport: transport, language: () => 'id'),
         messaging: messaging,
         session: session,
+        store: store,
         deviceInfo: deviceInfo,
         locale: () => 'id',
       );
@@ -105,6 +107,75 @@ void main() {
         expect(messaging.requestPermissionCalls, 0);
       },
     );
+
+    test('registers and refreshes a Windows WNS channel and unregisters its registered URI', () async {
+      deviceInfo.description = (
+        platform: 'windows',
+        osVersion: '10.0.26220',
+        deviceModel: null,
+      );
+      deviceInfo.id = null;
+      await session.save(_signedIn);
+      messaging.status = PushAuthorizationStatus.authorized;
+      messaging.token = 'https://wns.windows.com/channel-1';
+      transport.respond(_noContent());
+      transport.respond(_noContent());
+      transport.respond(_noContent());
+
+      await controller.start();
+      await _flushEvents();
+
+      final initial =
+          jsonDecode(transport.requests.single.body!) as Map<String, dynamic>;
+      final deviceId = initial['device_id'] as String;
+      expect(deviceId, isNotEmpty);
+      expect(await store.read('device_id'), deviceId);
+      expect(initial, {
+        'token': 'https://wns.windows.com/channel-1',
+        'platform': 'windows',
+        'app': 'pos',
+        'device_id': deviceId,
+        'locale': 'id',
+      });
+
+      messaging.token = 'https://wns.windows.com/channel-2';
+      await controller.refreshPermissionStatus();
+      await _flushEvents();
+
+      expect(transport.requests, hasLength(2));
+      expect(jsonDecode(transport.requests.last.body!)['device_id'], deviceId);
+      expect(
+        jsonDecode(transport.requests.last.body!)['token'],
+        'https://wns.windows.com/channel-2',
+      );
+
+      messaging.token = 'https://wns.windows.com/channel-3';
+      await controller.unregisterCurrentToken();
+
+      expect(jsonDecode(transport.requests.last.body!), {
+        'token': 'https://wns.windows.com/channel-2',
+      });
+    });
+
+    test('debug registration logs never include the raw FCM token', () async {
+      final originalDebugPrint = foundation.debugPrint;
+      final logs = <String>[];
+      foundation.debugPrint = (message, {wrapWidth}) {
+        if (message != null) logs.add(message);
+      };
+      addTearDown(() => foundation.debugPrint = originalDebugPrint);
+
+      const rawToken = 'sensitive-fcm-token-for-test';
+      messaging.status = PushAuthorizationStatus.authorized;
+      messaging.token = rawToken;
+      transport.respond(_noContent());
+      await controller.start();
+      await session.save(_signedIn);
+      await _flushEvents();
+
+      expect(logs.join('\n'), contains('token registration request completed'));
+      expect(logs.join('\n'), isNot(contains(rawToken)));
+    });
 
     test(
       'asks permission only on explicit request and registers after grant',

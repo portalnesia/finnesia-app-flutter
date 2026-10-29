@@ -3,16 +3,19 @@
 #include <flutter/flutter_view_controller.h>
 #include <windows.h>
 
+#include <cwchar>
+
 #include "flutter_window.h"
 #include "utils.h"
+#include "windows_wns_push_messaging.h"
 
 int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
                       _In_ wchar_t *command_line, _In_ int show_command) {
-  // A second launch that carries an App Link must not open a second window: it forwards the
-  // URL to the instance already running (over WM_COPYDATA, handled inside the app_links
-  // plugin) and exits. Without this, the second instance wins and the running app never
-  // hears about the link.
-  if (SendAppLinkToInstance()) {
+  // WNS uses a COM-server argument and must reach AppInstance redirection below. The app_links
+  // helper handles normal secondary launches; keep browser-link behavior unchanged.
+  const bool is_windows_app_sdk_push_activation =
+      std::wcsstr(command_line, L"WindowsAppRuntimePushServer:") != nullptr;
+  if (!is_windows_app_sdk_push_activation && SendAppLinkToInstance()) {
     return EXIT_SUCCESS;
   }
 
@@ -25,6 +28,11 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   // Initialize COM, so that it is available for use in the library and/or
   // plugins.
   ::CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
+
+  if (WindowsWnsPushMessaging::InitializeAndRedirectActivation()) {
+    ::CoUninitialize();
+    return EXIT_SUCCESS;
+  }
 
   flutter::DartProject project(L"data");
 
@@ -39,6 +47,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   // The title bar and the taskbar entry. The product name, not the binary name: this is the
   // one a person reads. Same string as the Android launcher label (`@string/app_name`).
   if (!window.Create(L"Finnesia POS", origin, size)) {
+    WindowsWnsPushMessaging::Unregister();
+    ::CoUninitialize();
     return EXIT_FAILURE;
   }
   window.SetQuitOnClose(true);
@@ -49,6 +59,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
     ::DispatchMessage(&msg);
   }
 
+  WindowsWnsPushMessaging::Unregister();
   ::CoUninitialize();
   return EXIT_SUCCESS;
 }

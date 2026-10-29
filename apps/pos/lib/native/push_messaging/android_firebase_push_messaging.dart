@@ -13,6 +13,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:pn_types/src/native/push_messaging_port.dart';
 import 'package:pos/firebase_options.dart';
+import 'package:pos/notifications/push_debug_log.dart';
 
 const _channelId = 'finnesia_pos_notifications';
 const _channelName = 'Finnesia POS';
@@ -37,19 +38,37 @@ const _androidNotificationDetails = NotificationDetails(
 /// an active checkout is never covered by a push banner.
 @pragma('vm:entry-point')
 Future<void> firebasePushBackgroundMessageHandler(RemoteMessage message) async {
-  if (message.notification != null) return;
+  logPushDebug(
+    'background message received; notification present=${message.notification != null}; data field count=${message.data.length}',
+  );
+  if (message.notification != null) {
+    logPushDebug('background message ignored: notification payload present');
+    return;
+  }
   final payload = _tapPayload(message.data);
-  if (payload == null) return;
+  if (payload == null) {
+    logPushDebug(
+      'background message ignored: notification id present=${message.data.containsKey('notification_id')}',
+    );
+    return;
+  }
 
   try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
+    logPushDebug('background Firebase initialized');
     final notifications = FlutterLocalNotificationsPlugin();
     await notifications.initialize(settings: _androidInitialization);
     final title = _stringValue(message.data['title']);
     final body = _stringValue(message.data['body']);
-    if ((title == null || title.isEmpty) && (body == null || body.isEmpty)) {
+    final titlePresent = title != null && title.isNotEmpty;
+    final bodyPresent = body != null && body.isNotEmpty;
+    logPushDebug(
+      'background display text present; title=$titlePresent; body=$bodyPresent',
+    );
+    if (!titlePresent && !bodyPresent) {
+      logPushDebug('background notification skipped: display text unavailable');
       return;
     }
     await notifications.show(
@@ -59,14 +78,19 @@ Future<void> firebasePushBackgroundMessageHandler(RemoteMessage message) async {
       notificationDetails: _androidNotificationDetails,
       payload: payload,
     );
-  } on Object {
+    logPushDebug('background local notification displayed');
+  } on Object catch (error) {
     // Notifications are best-effort; a plugin failure must not crash the POS process.
+    logPushDebug(
+      'background notification handling failed (${error.runtimeType})',
+    );
   }
 }
 
 /// Registers the top-level callback from the single Android composition root.
 void registerAndroidPushBackgroundHandler() {
   FirebaseMessaging.onBackgroundMessage(firebasePushBackgroundMessageHandler);
+  logPushDebug('Android background message handler registered');
 }
 
 /// Android FCM and local-notification adapter. Other platforms use the unsupported port.
@@ -94,12 +118,18 @@ class AndroidFirebasePushMessaging implements PushMessagingPort {
   Future<bool> initialize() async {
     if (_initialized) return true;
     try {
-      if (!await FirebaseMessaging.instance.isSupported()) return false;
+      if (!await FirebaseMessaging.instance.isSupported()) {
+        logPushDebug('FCM unsupported on Android runtime');
+        return false;
+      }
       final initialized = await _notifications.initialize(
         settings: _androidInitialization,
         onDidReceiveNotificationResponse: _onLocalNotificationResponse,
       );
-      if (initialized != true) return false;
+      if (initialized != true) {
+        logPushDebug('local notification initialization failed');
+        return false;
+      }
 
       FirebaseMessaging.onMessageOpenedApp.listen(
         (message) => _opened.add(_fromRemoteMessage(message)),
@@ -119,8 +149,10 @@ class AndroidFirebasePushMessaging implements PushMessagingPort {
       if (remoteLaunch != null) _initial = _fromRemoteMessage(remoteLaunch);
 
       _initialized = true;
+      logPushDebug('Android push messaging initialized');
       return true;
-    } on Object {
+    } on Object catch (error) {
+      logPushDebug('Android push initialization failed (${error.runtimeType})');
       return false;
     }
   }

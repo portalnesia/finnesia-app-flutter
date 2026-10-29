@@ -5,7 +5,7 @@
  * Written by Putu Aditya <aditya@portalnesia.com>
  */
 
-/// Permission states the POS needs to decide whether it should register an FCM token.
+/// Permission states the POS needs before registering a platform push credential.
 enum PushAuthorizationStatus {
   notDetermined,
   denied,
@@ -20,7 +20,7 @@ extension PushAuthorizationStatusPermission on PushAuthorizationStatus {
       this == PushAuthorizationStatus.provisional;
 }
 
-/// FCM data used by the POS. The server remains the authority for notification destinations.
+/// Minimal notification data used by the POS. The server remains the authority for destinations.
 final class PushMessage {
   PushMessage({required Map<String, String> data, this.messageId})
     : data = Map.unmodifiable(data);
@@ -29,7 +29,7 @@ final class PushMessage {
   final String? messageId;
 }
 
-/// Platform boundary for FCM, foreground delivery, and local-notification tap handling.
+/// Platform boundary for push registration, foreground delivery, and notification tap handling.
 ///
 /// Implementations report unsupported or unavailable platform state as values rather than
 /// making push setup a prerequisite for signing in or taking a sale.
@@ -42,6 +42,7 @@ abstract interface class PushMessagingPort {
   /// Called only after a cashier explicitly chooses to enable notifications.
   Future<PushAuthorizationStatus> requestPermission();
 
+  /// Returns the provider's registration credential (for example, an FCM token or WNS channel URI).
   Future<String?> getToken();
 
   Stream<String> get tokenRefreshes;

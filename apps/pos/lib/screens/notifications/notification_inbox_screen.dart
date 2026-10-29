@@ -10,7 +10,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:pn_types/src/api/api_error.dart';
 import 'package:pn_types/src/api/transport.dart';
-import 'package:pn_types/src/native/notification_webview_port.dart';
 import 'package:pn_types/src/native/opener_port.dart';
 import 'package:pn_types/src/native/push_messaging_port.dart';
 import 'package:pn_types/src/notification.dart';
@@ -18,7 +17,6 @@ import 'package:pn_types/src/session.dart';
 import 'package:pn_ui/src/theme/app_theme.dart';
 import 'package:pn_ui/src/theme/tokens.dart';
 import 'package:pos/l10n/app_localizations.dart';
-import 'package:pos/native/notification_webview/active.dart' as webview;
 import 'package:pos/native/opener/active.dart' as browser;
 import 'package:pos/notifications/notification_inbox_controller.dart';
 import 'package:pos/notifications/push_lifecycle_controller.dart';
@@ -33,7 +31,6 @@ class NotificationInboxScreen extends StatefulWidget {
     super.key,
     required this.controller,
     required this.session,
-    this.webView,
     this.opener,
     this.pushController,
     this.initialNotificationId,
@@ -42,7 +39,6 @@ class NotificationInboxScreen extends StatefulWidget {
 
   final NotificationInboxController controller;
   final PosSession? session;
-  final NotificationWebViewPort? webView;
   final OpenerPort? opener;
   final PushLifecycleController? pushController;
   final String? initialNotificationId;
@@ -87,13 +83,17 @@ class _NotificationInboxScreenState extends State<NotificationInboxScreen> {
             if (widget.pushController != null)
               _PushPermissionPrompt(controller: widget.pushController!),
             Expanded(
-              child: PagedListPane<NotificationItem>(
-                source: widget.controller.inbox,
-                failedTitle: l10n.notificationInboxLoadFailed,
-                emptyTitle: l10n.notificationInboxEmpty,
-                moreFailedLabel: l10n.notificationInboxMoreFailed,
-                listKey: const Key('notification-inbox-list'),
-                itemBuilder: (context, item) => _notificationRow(context, item),
+              child: Padding(
+                padding: const EdgeInsets.only(top: 16),
+                child: PagedListPane<NotificationItem>(
+                  source: widget.controller.inbox,
+                  failedTitle: l10n.notificationInboxLoadFailed,
+                  emptyTitle: l10n.notificationInboxEmpty,
+                  moreFailedLabel: l10n.notificationInboxMoreFailed,
+                  listKey: const Key('notification-inbox-list'),
+                  itemBuilder: (context, item) =>
+                      _notificationRow(context, item),
+                ),
               ),
             ),
           ],
@@ -278,17 +278,6 @@ class _NotificationInboxScreenState extends State<NotificationInboxScreen> {
 
   Future<void> _openDestination(Uri destination) async {
     final l10n = L10n.of(context);
-    final embedded = widget.webView ?? webview.notificationWebView;
-    try {
-      final opened = await embedded.openUrl(
-        destination,
-        allowsNavigation: _linkPolicy.allowsNavigation,
-      );
-      if (opened) return;
-    } on NotificationWebViewException {
-      // Fall back to the system browser, but only after the same origin check above.
-    }
-
     final systemBrowser = widget.opener ?? browser.opener;
     try {
       await systemBrowser.openUrl(destination.toString());

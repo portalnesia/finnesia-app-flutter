@@ -13,7 +13,6 @@ import 'package:pn_types/src/api/client.dart';
 import 'package:pn_types/src/api/transport.dart';
 import 'package:pn_types/src/api/transport_fake.dart';
 import 'package:pn_types/src/native/device_info_fake.dart';
-import 'package:pn_types/src/native/notification_webview_fake.dart';
 import 'package:pn_types/src/native/opener_fake.dart';
 import 'package:pn_types/src/native/push_messaging_fake.dart';
 import 'package:pn_types/src/native/push_messaging_port.dart';
@@ -22,6 +21,7 @@ import 'package:pn_ui/src/theme/app_theme.dart';
 import 'package:pos/l10n/app_localizations.dart';
 import 'package:pos/notifications/notification_inbox_controller.dart';
 import 'package:pos/notifications/push_lifecycle_controller.dart';
+import 'package:pos/screens/common/screen_header.dart';
 import 'package:pos/screens/notifications/notification_inbox_screen.dart';
 import 'package:pos/session/session_holder.dart';
 
@@ -60,7 +60,6 @@ Map<String, Object?> _itemJson({
 
 Widget _screenApp({
   required NotificationInboxController controller,
-  required FakeNotificationWebViewPort webView,
   required FakeOpener opener,
   PushLifecycleController? pushController,
   String? initialNotificationId,
@@ -73,7 +72,6 @@ Widget _screenApp({
   home: NotificationInboxScreen(
     controller: controller,
     session: paired,
-    webView: webView,
     opener: opener,
     pushController: pushController,
     initialNotificationId: initialNotificationId,
@@ -85,7 +83,6 @@ void main() {
   group('NotificationInboxScreen', () {
     late FakeApiTransport transport;
     late NotificationInboxController controller;
-    late FakeNotificationWebViewPort webView;
     late FakeOpener opener;
 
     setUp(() {
@@ -93,7 +90,6 @@ void main() {
       controller = NotificationInboxController(
         client: ApiClient(transport: transport, language: () => 'id'),
       );
-      webView = FakeNotificationWebViewPort();
       opener = FakeOpener();
     });
 
@@ -105,14 +101,14 @@ void main() {
         final pushTransport = FakeApiTransport();
         final messaging = FakePushMessaging()
           ..permissionResult = PushAuthorizationStatus.authorized;
-        final sessionHolder = SessionHolder(
-          FakeStorePort(storedSession(paired)),
-        );
+        final pushStore = FakeStorePort(storedSession(paired));
+        final sessionHolder = SessionHolder(pushStore);
         await sessionHolder.hydrate();
         final pushController = PushLifecycleController(
           client: ApiClient(transport: pushTransport, language: () => 'id'),
           messaging: messaging,
           session: sessionHolder,
+          store: pushStore,
           deviceInfo: FakeDeviceInfo(),
           locale: () => 'id',
         );
@@ -124,7 +120,6 @@ void main() {
         await tester.pumpWidget(
           _screenApp(
             controller: controller,
-            webView: webView,
             opener: opener,
             pushController: pushController,
           ),
@@ -154,7 +149,7 @@ void main() {
       );
 
       await tester.pumpWidget(
-        _screenApp(controller: controller, webView: webView, opener: opener),
+        _screenApp(controller: controller, opener: opener),
       );
       await tester.pump();
       await tester.pump();
@@ -162,6 +157,9 @@ void main() {
       expect(find.text('Kotak Masuk Notifikasi'), findsOneWidget);
       expect(find.text('Laporan siap'), findsOneWidget);
       expect(find.text('Laporan mingguan dapat dibuka.'), findsOneWidget);
+      final headerBottom = tester.getBottomLeft(find.byType(ScreenHeader)).dy;
+      final firstCardTop = tester.getTopLeft(find.byType(Card).first).dy;
+      expect(firstCardTop - headerBottom, 16);
     });
 
     testWidgets('waits for server open before opening the resolved URL', (
@@ -180,7 +178,7 @@ void main() {
       transport.respond(_answer({'total': 0}));
 
       await tester.pumpWidget(
-        _screenApp(controller: controller, webView: webView, opener: opener),
+        _screenApp(controller: controller, opener: opener),
       );
       await tester.pump();
       await tester.pump();
@@ -191,7 +189,7 @@ void main() {
         '/api/v1/notifications?page_size=20&unread=false',
         '/api/v1/notifications/open',
       ]);
-      expect(webView.opened, isEmpty);
+      expect(opener.opened, isEmpty);
 
       transport.release(
         _answer({'company_id': 'comp_1', 'link': destination, 'item': item}),
@@ -199,20 +197,7 @@ void main() {
       await tester.pump();
       await tester.pump();
 
-      expect(webView.opened.single.destination, Uri.parse(destination));
-      expect(
-        webView.opened.single.allowsNavigation(
-          Uri.parse('https://accounts.portalnesia.com/authorize'),
-        ),
-        isTrue,
-      );
-      expect(
-        webView.opened.single.allowsNavigation(
-          Uri.parse('https://attacker.example/steal'),
-        ),
-        isFalse,
-      );
-      expect(opener.opened, isEmpty);
+      expect(opener.opened, [destination]);
     });
 
     testWidgets('shows an announcement and safe CTA when open has no link', (
@@ -240,7 +225,7 @@ void main() {
       transport.respond(_answer({'total': 0}));
 
       await tester.pumpWidget(
-        _screenApp(controller: controller, webView: webView, opener: opener),
+        _screenApp(controller: controller, opener: opener),
       );
       await tester.pump();
       await tester.pump();
@@ -250,7 +235,7 @@ void main() {
 
       expect(find.text('Laporan mingguan dapat dibuka.'), findsWidgets);
       expect(find.text('Lihat laporan'), findsOneWidget);
-      expect(webView.opened, isEmpty);
+      expect(opener.opened, isEmpty);
       expect(transport.requests.map((request) => request.path).take(2), [
         '/api/v1/notifications?page_size=20&unread=false',
         '/api/v1/notifications/open',
@@ -259,16 +244,12 @@ void main() {
       await tester.tap(find.text('Lihat laporan'));
       await tester.pump();
 
-      expect(
-        webView.opened.single.destination,
-        Uri.parse('https://erp.perusahaan.com/reports/weekly'),
-      );
+      expect(opener.opened, ['https://erp.perusahaan.com/reports/weekly']);
     });
 
     testWidgets('opens a push tap only after the server resolves it', (
       tester,
     ) async {
-      webView.available = false;
       const destination = 'https://erp.perusahaan.com/reports/weekly';
       final item = _itemJson(
         id: 'recipient_42',
@@ -285,7 +266,6 @@ void main() {
       await tester.pumpWidget(
         _screenApp(
           controller: controller,
-          webView: webView,
           opener: opener,
           initialNotificationId: 'notification_42',
           initialCompanyId: 'comp_1',
@@ -302,8 +282,6 @@ void main() {
         'notification_id': 'notification_42',
         'company_id': 'comp_1',
       });
-      expect(webView.opened, hasLength(1));
-      expect(webView.opened.single.destination, Uri.parse(destination));
       expect(opener.opened, [destination]);
     });
 
@@ -328,7 +306,7 @@ void main() {
       transport.respond(_answer({'total': 0}));
 
       await tester.pumpWidget(
-        _screenApp(controller: controller, webView: webView, opener: opener),
+        _screenApp(controller: controller, opener: opener),
       );
       await tester.pump();
       await tester.pump();
@@ -336,7 +314,6 @@ void main() {
       await tester.pump();
       await tester.pump();
 
-      expect(webView.opened, isEmpty);
       expect(opener.opened, isEmpty);
       expect(
         find.text('Tautan notifikasi tidak aman atau tidak tersedia.'),
@@ -344,10 +321,9 @@ void main() {
       );
     });
 
-    testWidgets('uses the system browser if embedded WebView is unavailable', (
+    testWidgets('opens a trusted notification link in the system browser', (
       tester,
     ) async {
-      webView.available = false;
       final item = _itemJson();
       transport.respond(
         _answer({
@@ -366,7 +342,7 @@ void main() {
       transport.respond(_answer({'total': 0}));
 
       await tester.pumpWidget(
-        _screenApp(controller: controller, webView: webView, opener: opener),
+        _screenApp(controller: controller, opener: opener),
       );
       await tester.pump();
       await tester.pump();
