@@ -22,6 +22,7 @@ import 'package:pos/native/native_update/active.dart';
 import 'package:pos/native/opener/active.dart';
 import 'package:pos/native/preferences/active.dart';
 import 'package:pos/native/printer/active.dart';
+import 'package:pos/native/push_messaging/active.dart';
 import 'package:pos/native/queue/active.dart';
 import 'package:pos/native/scanner/active.dart';
 import 'package:pos/native/store/active.dart';
@@ -39,10 +40,10 @@ Future<void> main() async {
   // The preferences are plugin calls, and they need the binding before `runApp`.
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Crashlytics/Analytics only for now — no FCM, so no messaging setup here
-  // (`.claude/rules/project.md` §2: this app is a thin client, and the backend cannot send a
-  // token yet).
+  // Firebase must be ready before the Android background FCM callback is registered. This
+  // installs handling only; the cashier is asked for notification permission from the inbox.
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  registerPushBackgroundHandler();
   // Everything the framework catches on its own — a build error, a gesture callback that
   // throws — still goes to the console (`presentError`) and now also to Crashlytics.
   final defaultOnError = FlutterError.onError;
@@ -85,6 +86,7 @@ Future<void> main() async {
         analytics: analytics,
         language: language,
         theme: theme,
+        pushMessaging: pushMessaging,
       ),
       language: language,
       theme: theme,

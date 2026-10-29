@@ -23,10 +23,15 @@
 # Huruf `v` tetap di nama tag tapi TIDAK ikut ke nilai versi: `pub_semver` menolak `v1.2.0`,
 # sehingga Shorebird release gagal.
 #
-# `env:` yang dipakai:
+# `env:` dan konfigurasi repo yang dipakai:
 #
 #   FLUTTER_VERSION      versi Flutter, sama dengan workflow lain
 #   STORE_IDENTITY_NAME  Package/Identity/Name di Partner Center
+#   FINNESIA_POS_WNS_APP_ID  Actions repository variable, Application (client) ID resmi
+#   FINNESIA_POS_WNS_OBJECT_ID Actions repository variable, service-principal Object ID resmi
+#
+# Jika kedua WNS variable belum ada, workflow mempertahankan build lama dengan WNS nonaktif.
+# Keduanya bukan secret; jangan menyimpan client secret Entra di aplikasi atau repo ini.
 #
 # Setup identitas Store: plan/windows-distribution/README.md §2.
 
@@ -70,6 +75,8 @@ concurrency:
 
 env:
   FLUTTER_VERSION: "3.47.4"
+  FINNESIA_POS_WINDOWS_APP_SDK_VERSION: "1.7.250909003"
+  FINNESIA_POS_CPPWINRT_VERSION: "2.0.250303.1"
   # Partner Center: Package/Identity/Name. Sama dengan `msix_config: identity_name` di
   # apps/pos/pubspec.yaml. Bukan rahasia — sudah publik di listing Store.
   STORE_IDENTITY_NAME: "PutuAditya.FinnesiaPOS"
@@ -82,6 +89,8 @@ jobs:
       contents: write
     env:
       SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
+      FINNESIA_POS_WNS_APP_ID: ${{ vars.FINNESIA_POS_WNS_APP_ID }}
+      FINNESIA_POS_WNS_OBJECT_ID: ${{ vars.FINNESIA_POS_WNS_OBJECT_ID }}
     defaults:
       run:
         shell: bash
@@ -89,6 +98,26 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Validate WNS repository variables
+        run: |
+          if [[ -z "$FINNESIA_POS_WNS_APP_ID" && -z "$FINNESIA_POS_WNS_OBJECT_ID" ]]; then
+            echo "WNS IDs are not configured; keeping the existing WNS-disabled Windows build."
+            exit 0
+          fi
+
+          if [[ -z "$FINNESIA_POS_WNS_APP_ID" || -z "$FINNESIA_POS_WNS_OBJECT_ID" ]]; then
+            echo "::error::Set both FINNESIA_POS_WNS_APP_ID and FINNESIA_POS_WNS_OBJECT_ID repository variables, or leave both unset."
+            exit 1
+          fi
+
+          GUID_RE='^[[:xdigit:]]{8}-[[:xdigit:]]{4}-[[:xdigit:]]{4}-[[:xdigit:]]{4}-[[:xdigit:]]{12}$'
+          if [[ ! "$FINNESIA_POS_WNS_APP_ID" =~ $GUID_RE || ! "$FINNESIA_POS_WNS_OBJECT_ID" =~ $GUID_RE ]]; then
+            echo "::error::WNS repository variables must contain the official Entra GUID values."
+            exit 1
+          fi
+
+          echo "WNS identifiers are configured; the Windows App SDK bridge will be enabled."
 
       # Rumus build number identik dengan release-pos.yml, supaya satu versi punya satu
       # nomor di kedua platform.
@@ -186,6 +215,92 @@ jobs:
             fi
           done
 
+      # Microsoft.WindowsAppSDK ships WinMD metadata, not C++/WinRT projection headers.
+      # Generate the two required projections with the pinned official CppWinRT tool.
+      # The step runs only after the owner supplies both public IDs as repository variables.
+      - name: Prepare Windows App SDK WNS headers
+        if: vars.FINNESIA_POS_WNS_APP_ID != '' && vars.FINNESIA_POS_WNS_OBJECT_ID != ''
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $packageRoot = Join-Path $env:RUNNER_TEMP 'finnesia-wns-nuget'
+          New-Item -ItemType Directory -Path $packageRoot -Force | Out-Null
+
+          function Expand-NuGetPackage([string]$Id, [string]$Version) {
+            $lowerId = $Id.ToLowerInvariant()
+            $packagePath = Join-Path $packageRoot "$Id.$Version"
+            $archivePath = Join-Path $packageRoot "$Id.$Version.zip"
+            $uri = "https://api.nuget.org/v3-flatcontainer/$lowerId/$Version/$lowerId.$Version.nupkg"
+            Invoke-WebRequest -Uri $uri -OutFile $archivePath
+            Expand-Archive -LiteralPath $archivePath -DestinationPath $packagePath -Force
+            Remove-Item -LiteralPath $archivePath -Force
+            return $packagePath
+          }
+
+          $appSdkPath = Expand-NuGetPackage 'Microsoft.WindowsAppSDK' $env:FINNESIA_POS_WINDOWS_APP_SDK_VERSION
+          $cppWinRtPath = Expand-NuGetPackage 'Microsoft.Windows.CppWinRT' $env:FINNESIA_POS_CPPWINRT_VERSION
+          $winmdPath = Join-Path $appSdkPath 'lib\uap10.0'
+          $pushWinmd = Join-Path $winmdPath 'Microsoft.Windows.PushNotifications.winmd'
+          $lifecycleWinmd = Join-Path $winmdPath 'Microsoft.Windows.AppLifecycle.winmd'
+          $cppwinrt = Join-Path $cppWinRtPath 'bin\cppwinrt.exe'
+
+          foreach ($required in @($pushWinmd, $lifecycleWinmd, $cppwinrt)) {
+            if (-not (Test-Path -LiteralPath $required -PathType Leaf)) {
+              throw "Required Windows App SDK input is missing: $required"
+            }
+          }
+
+          $kitsRoot = Join-Path ${env:ProgramFiles(x86)} 'Windows Kits\10'
+          $unionMetadataRoot = Join-Path $kitsRoot 'UnionMetadata'
+          $referencesRoot = Join-Path $kitsRoot 'References'
+          $sdkMetadataVersion = Get-ChildItem -LiteralPath $unionMetadataRoot -Directory |
+            Where-Object { Test-Path -LiteralPath (Join-Path $referencesRoot $_.Name) } |
+            Sort-Object { [version]$_.Name } -Descending |
+            Select-Object -First 1
+          if (-not $sdkMetadataVersion) {
+            throw 'Could not find a Windows SDK UnionMetadata version with matching References.'
+          }
+
+          # CppWinRT's own MSBuild target uses all WinMDs under UnionMetadata as references.
+          $platformWinmds = @(Get-ChildItem -LiteralPath $sdkMetadataVersion.FullName -Filter '*.winmd' -File -Recurse)
+          $appSdkReferences = @(
+            Get-ChildItem -LiteralPath $winmdPath -Filter '*.winmd' -File |
+              Where-Object { $_.Name -notin @('Microsoft.Windows.PushNotifications.winmd', 'Microsoft.Windows.AppLifecycle.winmd') }
+          )
+          if ($platformWinmds.Count -eq 0) {
+            throw "No Windows SDK WinMD references found under $($sdkMetadataVersion.FullName)."
+          }
+
+          $includePath = Join-Path $env:RUNNER_TEMP 'finnesia-windows-app-sdk-include'
+          New-Item -ItemType Directory -Path $includePath -Force | Out-Null
+          $responseFile = Join-Path $env:RUNNER_TEMP 'finnesia-cppwinrt.rsp'
+          $cppwinrtArgs = @(
+            "-in `"$pushWinmd`""
+            "-in `"$lifecycleWinmd`""
+            "-out `"$includePath`""
+          )
+          foreach ($reference in @($appSdkReferences) + @($platformWinmds)) {
+            $cppwinrtArgs += "-ref `"$($reference.FullName)`""
+          }
+          [System.IO.File]::WriteAllLines($responseFile, [string[]]$cppwinrtArgs, [System.Text.Encoding]::ASCII)
+          & $cppwinrt "@$responseFile"
+          if ($LASTEXITCODE -ne 0) {
+            throw "cppwinrt.exe failed with exit code $LASTEXITCODE."
+          }
+
+          foreach ($header in @(
+            (Join-Path $includePath 'winrt\Microsoft.Windows.PushNotifications.h'),
+            (Join-Path $includePath 'winrt\Microsoft.Windows.AppLifecycle.h')
+          )) {
+            if (-not (Test-Path -LiteralPath $header -PathType Leaf)) {
+              throw "CppWinRT did not generate the expected header: $header"
+            }
+          }
+
+          Add-Content -LiteralPath $env:GITHUB_ENV -Value "FINNESIA_POS_WINDOWS_APP_SDK_INCLUDE_DIR=$includePath"
+          Remove-Item -LiteralPath 'apps\pos\build\windows' -Recurse -Force -ErrorAction SilentlyContinue
+          Write-Host "Generated Windows App SDK $env:FINNESIA_POS_WINDOWS_APP_SDK_VERSION C++/WinRT headers and cleared the Windows CMake cache."
+
       # Rilis nyata dibangun oleh Shorebird agar menjadi baseline untuk patch OTA Windows.
       # Trial membangun Flutter biasa dan tidak mendaftarkan versi ke Shorebird.
       - name: Setup Shorebird
@@ -220,9 +335,17 @@ jobs:
       - name: Build MSIX for the Store
         working-directory: apps/pos
         run: |
-          dart run msix:create \
-            --store \
-            --version "${{ steps.version.outputs.msix_version }}"
+          if [[ -n "$FINNESIA_POS_WNS_APP_ID" ]]; then
+            dart run msix:create \
+              --store \
+              --version "${{ steps.version.outputs.msix_version }}" \
+              --toast-activator-clsid "$FINNESIA_POS_WNS_APP_ID" \
+              --toast-activator-arguments '----WindowsAppRuntimePushServer:'
+          else
+            dart run msix:create \
+              --store \
+              --version "${{ steps.version.outputs.msix_version }}"
+          fi
 
       - name: Locate MSIX
         id: msix
@@ -280,6 +403,14 @@ jobs:
           grep -q "Version=\"${{ steps.version.outputs.msix_version }}\"" /tmp/AppxManifest.xml \
             || { echo "::error::versi paket bukan versi tag (${{ steps.version.outputs.msix_version }})"; exit 1; }
           echo "✅ manifest: Version = ${{ steps.version.outputs.msix_version }}"
+
+          if [ -n "$FINNESIA_POS_WNS_APP_ID" ]; then
+            grep -Fq "ToastActivatorCLSID=\"$FINNESIA_POS_WNS_APP_ID\"" /tmp/AppxManifest.xml \
+              || { echo "::error::ToastActivatorCLSID paket tidak cocok dengan FINNESIA_POS_WNS_APP_ID"; exit 1; }
+            grep -Fq 'Arguments="----WindowsAppRuntimePushServer:"' /tmp/AppxManifest.xml \
+              || { echo "::error::COM activator arguments untuk Windows App SDK push tidak ditemukan"; exit 1; }
+            echo "✅ manifest: WNS toast activator CLSID dan COM server arguments"
+          fi
 
       # Artifact Actions selalu ada, baik trial maupun rilis: `Create draft
       # release` di bawah dilewati saat `draft_release = no`, sedangkan langkah

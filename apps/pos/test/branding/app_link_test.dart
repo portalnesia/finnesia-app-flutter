@@ -192,4 +192,21 @@ void main() {
       );
     });
   });
+
+  group('Windows WNS activation', () {
+    final main = File('windows/runner/main.cpp').readAsStringSync();
+
+    test('keeps the COM activation out of generic app-link forwarding', () {
+      expect(
+        main,
+        contains('std::wcsstr(command_line, L"WindowsAppRuntimePushServer:")'),
+      );
+      expect(
+        main,
+        contains(
+          'if (!is_windows_app_sdk_push_activation && SendAppLinkToInstance())',
+        ),
+      );
+    });
+  });
 }

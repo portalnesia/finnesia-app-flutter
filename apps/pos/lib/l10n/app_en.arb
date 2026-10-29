@@ -206,6 +206,26 @@
   "loginResetQueueBlocked": "Reset is not possible yet: this tablet still has a sale that has not been sent. Sign in and send it, or discard it in Pending sales, before resetting.",
   "menuTitle": "Menu",
   "menuBack": "Back",
+  "notificationMenuEntry": "Notifications",
+  "notificationUnreadBadge": "{count} unread",
+  "@notificationUnreadBadge": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "notificationInboxTitle": "Notification inbox",
+  "notificationInboxEmpty": "No notifications yet.",
+  "notificationInboxLoadFailed": "Could not load notifications. Check the connection and try again.",
+  "notificationInboxMoreFailed": "Could not load more notifications. Tap to try again.",
+  "notificationMarkRead": "Mark as read",
+  "notificationMarkReadFailed": "Could not mark the notification as read. Try again.",
+  "notificationAnnouncementTitle": "Announcement",
+  "notificationLinkUnavailable": "This notification link is unsafe or unavailable.",
+  "notificationOpenFailed": "Could not open the notification. Try again.",
+  "notificationEnablePush": "Turn on notifications",
+  "notificationAnnouncementUnavailable": "This announcement is no longer available.",
   "menuAccountSection": "Account",
   "menuSessionSection": "This device",
   "menuCashierLabel": "Cashier",

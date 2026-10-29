@@ -12,6 +12,8 @@ import 'package:pn_types/src/api/endpoint.dart';
 import 'package:pn_types/src/api/endpoints/auth.dart';
 import 'package:pn_types/src/api/endpoints/features.dart';
 import 'package:pn_types/src/api/endpoints/master.dart';
+import 'package:pn_types/src/api/endpoints/notification.dart';
+import 'package:pn_types/src/api/endpoints/push_token.dart';
 import 'package:pn_types/src/api/endpoints/pos.dart';
 import 'package:pn_types/src/api/endpoints/products.dart';
 import 'package:pn_types/src/api/endpoints/team.dart';
@@ -24,7 +26,7 @@ import 'package:pn_types/src/pos.dart';
 import 'package:pn_types/src/pos_shift.dart';
 import 'package:test/test.dart';
 
-// The table is the contract: the 23 endpoints the POS uses, with the method and path the
+// The table is the contract: the 29 endpoints the POS uses, with the method and path the
 // monorepo's own registry (`packages/shared/src/api/all-endpoints/`) declares. Each
 // `path` below was copied from that registry's output, and `plan/api-client/findings.md`
 // records the comparison of this table against it. `:id` marks a path parameter.
@@ -196,11 +198,41 @@ void main() {
       '/api/v1/team/my-permissions',
       TeamApi.permissionsMy,
     ),
+    read('notification.list', '/api/v1/notifications', NotificationApi.list),
+    read(
+      'notification.unreadCount',
+      '/api/v1/notifications/unread-count',
+      NotificationApi.unreadCount,
+    ),
+    write(
+      'notification.markRead',
+      HttpMethod.post,
+      '/api/v1/notifications/mark-read',
+      NotificationApi.markRead,
+    ),
+    write(
+      'notification.open',
+      HttpMethod.post,
+      '/api/v1/notifications/open',
+      NotificationApi.open,
+    ),
+    write(
+      'pushToken.register',
+      HttpMethod.post,
+      '/api/v1/push-tokens',
+      PushTokenApi.register,
+    ),
+    write(
+      'pushToken.unregister',
+      HttpMethod.post,
+      '/api/v1/push-tokens/unregister',
+      PushTokenApi.unregister,
+    ),
   ];
 
   group('the registry table', () {
-    test('has the 23 endpoints the POS uses', () {
-      expect(rows, hasLength(23));
+    test('has the 29 endpoints the POS uses', () {
+      expect(rows, hasLength(29));
     });
 
     test(

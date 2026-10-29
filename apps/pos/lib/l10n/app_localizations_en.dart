@@ -403,6 +403,53 @@ class L10nEn extends L10n {
   String get menuBack => 'Back';
 
   @override
+  String get notificationMenuEntry => 'Notifications';
+
+  @override
+  String notificationUnreadBadge(int count) {
+    return '$count unread';
+  }
+
+  @override
+  String get notificationInboxTitle => 'Notification inbox';
+
+  @override
+  String get notificationInboxEmpty => 'No notifications yet.';
+
+  @override
+  String get notificationInboxLoadFailed =>
+      'Could not load notifications. Check the connection and try again.';
+
+  @override
+  String get notificationInboxMoreFailed =>
+      'Could not load more notifications. Tap to try again.';
+
+  @override
+  String get notificationMarkRead => 'Mark as read';
+
+  @override
+  String get notificationMarkReadFailed =>
+      'Could not mark the notification as read. Try again.';
+
+  @override
+  String get notificationAnnouncementTitle => 'Announcement';
+
+  @override
+  String get notificationLinkUnavailable =>
+      'This notification link is unsafe or unavailable.';
+
+  @override
+  String get notificationOpenFailed =>
+      'Could not open the notification. Try again.';
+
+  @override
+  String get notificationEnablePush => 'Turn on notifications';
+
+  @override
+  String get notificationAnnouncementUnavailable =>
+      'This announcement is no longer available.';
+
+  @override
   String get menuAccountSection => 'Account';
 
   @override
