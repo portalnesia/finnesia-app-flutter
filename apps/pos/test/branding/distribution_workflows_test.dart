@@ -995,6 +995,33 @@ void main() {
       }
     });
 
+    test('a skipped Android preflight does not suppress the selected Windows lane', () {
+      final windows = jobBlock(workflow, 'production-windows').join('\n');
+      expect(
+        windows,
+        contains(
+          "if: always() && needs.validate.result == 'success' && needs.tag.result == 'success' && inputs.env == 'production' && (inputs.device == 'windows' || inputs.device == 'all')",
+        ),
+      );
+
+      for (final name in const [
+        'staging-android',
+        'production-android',
+        'patch-android',
+        'patch-windows',
+      ]) {
+        final block = jobBlock(workflow, name).join('\n');
+        expect(
+          block,
+          contains(
+            "if: always() && needs.validate.result == 'success' && needs.tag.result == 'success'",
+          ),
+          reason:
+              '$name must override transitive skipped-job propagation but still require successful gates',
+        );
+      }
+    });
+
     test('names the secrets of each callee explicitly, never inherit', () {
       const signing = [
         'ANDROID_KEY_BASE64',

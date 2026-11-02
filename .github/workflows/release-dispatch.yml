@@ -122,15 +122,16 @@ jobs:
             }
 
   # ── Pemanggilan ──────────────────────────────────────────────────────────
-  # `needs: [validate, tag]` adalah syaratNYA build: validate yang gagal menghentikan semuanya, dan
-  # tag harus ada lebih dulu karena action itu gagal kalau tag belum ada.
+  # Semua lane bergantung pada validate dan tag. Karena job tag juga bergantung pada preflight Android
+  # yang sengaja dilewati oleh lane non-Android, kondisi lane memakai `always()` agar skip transitif
+  # tidak membatalkan build; hasil validate/tag tetap harus sukses.
   #
   # Lima job lane platform ditambah preflight Android production. `all` memilih dua job platform;
   # kombinasi yang tidak ada di matriks ditolak `validate` sebelum job mana pun dievaluasi.
 
   staging-android:
     needs: [validate, tag]
-    if: inputs.env == 'staging' && inputs.device == 'android'
+    if: always() && needs.validate.result == 'success' && needs.tag.result == 'success' && inputs.env == 'staging' && inputs.device == 'android'
     uses: ./.github/workflows/staging-pos.yml
     with:
       version: ${{ inputs.version }}
@@ -145,7 +146,7 @@ jobs:
   # menulis judul — android yang memilikinya.
   production-android:
     needs: [validate, tag]
-    if: inputs.env == 'production' && (inputs.device == 'android' || inputs.device == 'all') && inputs.draft_release == 'yes'
+    if: always() && needs.validate.result == 'success' && needs.tag.result == 'success' && inputs.env == 'production' && (inputs.device == 'android' || inputs.device == 'all') && inputs.draft_release == 'yes'
     uses: ./.github/workflows/release-pos.yml
     with:
       version: ${{ inputs.version }}
@@ -158,7 +159,7 @@ jobs:
 
   production-windows:
     needs: [validate, tag]
-    if: inputs.env == 'production' && (inputs.device == 'windows' || inputs.device == 'all')
+    if: always() && needs.validate.result == 'success' && needs.tag.result == 'success' && inputs.env == 'production' && (inputs.device == 'windows' || inputs.device == 'all')
     uses: ./.github/workflows/windows-pos.yml
     with:
       version: ${{ inputs.version }}
@@ -170,7 +171,7 @@ jobs:
   # `pos-vX.Y.Z-N` itu sendiri, dan tag itu dibuat job di atas.
   patch-android:
     needs: [validate, tag]
-    if: inputs.env == 'patch' && (inputs.device == 'android' || inputs.device == 'all')
+    if: always() && needs.validate.result == 'success' && needs.tag.result == 'success' && inputs.env == 'patch' && (inputs.device == 'android' || inputs.device == 'all')
     uses: ./.github/workflows/shorebird-patch.yml
     with:
       version: ${{ inputs.version }}
@@ -183,7 +184,7 @@ jobs:
 
   patch-windows:
     needs: [validate, tag]
-    if: inputs.env == 'patch' && (inputs.device == 'windows' || inputs.device == 'all')
+    if: always() && needs.validate.result == 'success' && needs.tag.result == 'success' && inputs.env == 'patch' && (inputs.device == 'windows' || inputs.device == 'all')
     uses: ./.github/workflows/shorebird-patch-windows.yml
     with:
       version: ${{ inputs.version }}
