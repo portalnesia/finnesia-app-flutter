@@ -44,10 +44,10 @@ GitHub Release. Ia tidak menyentuh Store sama sekali.
 Windows juga punya dokumen sendiri: [`plan/windows-distribution/README.md`](../plan/windows-distribution/README.md).
 Ringkasnya, dan tiga hal yang membedakannya dari tiga alur di atas:
 
-- **Tag-nya sama dengan rilis Android** (`pos-v1.2.0` polos), tapi **job-nya terpisah** — jadi
+- **Tag-nya sama dengan rilis Android** (`pos-v1.2.0` polos), tapi job build-nya terpisah — jadi
   kegagalan build Windows tidak memblokir rilis Android dan sebaliknya. Satu nomor versi untuk
-  satu produk di dua platform. Keduanya menulis **satu** GitHub Release yang sama, dan
-  `concurrency` dengan group yang sama membuat keduanya berbaris, bukan berpacu.
+  satu produk di dua platform. Build keduanya berjalan paralel; hanya job yang menulis ke **satu**
+  GitHub Release bersama yang berbaris lewat `concurrency` group yang sama.
 - **Tidak ada signing, tidak ada secret.** Microsoft Store menandatangani ulang paket MSIX saat
   sertifikasi, dan `msix:create --store` sendiri tidak menandatangani apa pun. Ini kebalikan
   total dari `release-pos.yml`.
@@ -100,11 +100,11 @@ Trigger: `push` tag `pos-v*` **polos** (rilis native), atau `workflow_dispatch` 
 git tag pos-v1.2.0 && git push origin pos-v1.2.0
         │
         ▼
-release-pos.yml (job tunggal)        ← TIDAK ada upload ke Store di run ini
+release-pos.yml (build job)          ← TIDAK ada upload ke Store di run ini
         │
         ├─ dart analyze · dart test · flutter test   (gagal → rilis tidak dibangun)
         ├─ build APK (--release, arm64+arm)  ──┐
-        └─ build AAB (--release / shorebird)  ──┴──► GitHub Release (DRAFT): APK + AAB
+        └─ build AAB (--release / shorebird)  ──┴──► publisher → GitHub Release (DRAFT): APK + AAB
                                                           │
                                        ANDA menekan Publish │ (gerbang manusia)
                                                           ▼
@@ -168,9 +168,11 @@ publish-to-store.yml  (on: release types: [published])
 
 ### 1.2 Dispatcher manual (`release-dispatch.yml`) — pintu kedua
 
-Dispatcher **tidak membangun apa pun**. Ia memvalidasi kombinasi input, membuat tag kalau
-diminta, lalu memanggil workflow yang sudah ada sebagai reusable workflow (logika build tidak
-digabung di sana).
+Dispatcher memvalidasi kombinasi input terlebih dahulu. Untuk production Android, ia menjalankan
+preflight yang membangun dan memeriksa APK memakai versi rilis yang benar sebelum membuat tag.
+Setelah tag lolos, Android memakai ulang APK artifact preflight dan membangun AAB Shorebird; untuk
+pilihan `all`, build Android dan Windows berjalan paralel. Hanya job publikasi asset yang antre agar
+keduanya aman memperbarui draft yang sama.
 
 | Input | Nilai |
 | --- | --- |
@@ -194,9 +196,9 @@ target tidak punya base, dengan target mendorong OTA ke production). `draft rele
 | env | `device` | draft `no` | draft `yes` |
 | --- | --- | --- | --- |
 | staging | android | artifact saja, `version` diabaikan | tag `pos-vX.Y.Z-staging.N` + draft berisi APK |
-| production | android | **APK saja**, tanpa AAB, tanpa `shorebird release` | tag `pos-vX.Y.Z` + draft berisi APK + AAB; upload ke Play menyusul setelah Publish |
+| production | android | **APK saja**, tanpa AAB, tanpa `shorebird release` | APK preflight yang sama dipakai ulang setelah tag; lane rilis membangun AAB Shorebird; upload ke Play menyusul setelah Publish |
 | production | windows | MSIX artifact saja | tag `pos-vX.Y.Z` + draft berisi MSIX |
-| production | all | APK + MSIX artifact saja | satu draft berisi APK + AAB + MSIX |
+| production | all | APK + MSIX artifact saja | build Android/Windows paralel; satu draft berisi APK + AAB + MSIX |
 | patch | android | **ditolak** | tag `pos-vX.Y.Z-N`, kirim patch ke base `X.Y.Z`, tanpa draft release |
 | patch | windows | **ditolak** | tag `pos-vX.Y.Z-N`, kirim patch Windows ke base `X.Y.Z`, tanpa draft release |
 | patch | all | **ditolak** | satu tag `pos-vX.Y.Z-N`, dua workflow patch berjalan terpisah |

@@ -151,7 +151,7 @@ List<String> jobBlock(String workflow, String jobName) {
   return lines.sublist(starts[at], end);
 }
 
-/// The named step and its configuration, stopping before the next step.
+/// The named step and its configuration, stopping before the next step or job.
 String workflowStepBlock(String workflow, String stepName) {
   final lines = workflow.split(RegExp(r'\r?\n'));
   final at = lines.indexWhere(
@@ -160,7 +160,9 @@ String workflowStepBlock(String workflow, String stepName) {
   if (at == -1) return '';
   final end = lines.indexWhere(
     (line) =>
-        line.startsWith('      - name:') || line.startsWith('      - uses:'),
+        line.startsWith('      - name:') ||
+        line.startsWith('      - uses:') ||
+        RegExp(r'^  [\w-]+:\s*$').hasMatch(line),
     at + 1,
   );
   return lines.sublist(at, end == -1 ? lines.length : end).join('\n');
@@ -697,7 +699,7 @@ void main() {
     test('creates a draft GitHub Release and attaches the MSIX to it', () {
       expect(workflow, contains('softprops/action-gh-release'));
       expect(workflow, contains('draft: true'));
-      expect(workflow, contains(r'${{ steps.msix.outputs.path }}'));
+      expect(workflow, contains('release-assets/*.msix'));
     });
 
     test('does not overwrite the release title that release-pos.yml sets', () {
@@ -848,7 +850,10 @@ void main() {
       // mirrors: a refactor that deletes either upload silences a download.
       final blocks = uploadArtifactBlocks(readWorkflow('release-pos.yml'));
       expect(blocks, isNotEmpty);
-      expect(blocks.join('\n'), contains(r'${{ steps.apk.outputs.path }}'));
+      expect(
+        blocks.join('\n'),
+        contains(r'${{ steps.apk_path.outputs.path }}'),
+      );
     });
   });
 
@@ -870,7 +875,8 @@ void main() {
       'still attaches the release APK, and still marks the release a draft',
       () {
         expect(workflow, contains('draft: true'));
-        expect(workflow, contains(r'${{ steps.apk.outputs.path }}'));
+        expect(workflow, contains('Prepare Android release assets'));
+        expect(workflow, contains(r'${{ steps.apk_path.outputs.path }}'));
       },
     );
 
@@ -922,6 +928,38 @@ void main() {
         contains("! grep -q 'apps-dev.finnesia.com' /tmp/manifest.txt"),
       );
     });
+
+    test('reuses the checked APK and serializes only release publishers', () {
+      final download = workflowStepBlock(
+        workflow,
+        'Download checked APK from production preflight',
+      );
+      expect(download, contains('if: inputs.reuse_preflight_apk'));
+      expect(download, contains('actions/download-artifact@v4'));
+      expect(download, contains('production-android-preflight-apk'));
+      expect(
+        workflowStepBlock(workflow, 'Build release APK'),
+        contains(r'if: ${{ !inputs.reuse_preflight_apk }}'),
+      );
+
+      for (final name in const ['release-pos.yml', 'windows-pos.yml']) {
+        final source = readWorkflow(name);
+        expect(
+          RegExp(r'^concurrency:', multiLine: true).hasMatch(source),
+          isFalse,
+          reason:
+              '$name must not hold the shared release queue while compiling',
+        );
+        expect(
+          jobBlock(source, 'build').join('\n'),
+          isNot(contains('concurrency:')),
+          reason: '$name build must remain parallelizable',
+        );
+        final publisher = jobBlock(source, 'publish').join('\n');
+        expect(publisher, contains('needs: build'));
+        expect(publisher, contains(r'group: release-pos-${{ github.ref }}'));
+      }
+    });
   });
 
   group('the dispatcher', () {
@@ -947,10 +985,18 @@ void main() {
           'shorebird-patch.yml',
           'shorebird-patch-windows.yml',
         ]) {
-          expect(childKeys(readWorkflow(name), 'workflow_call', 'inputs'), [
-            'version',
-            'draft_release',
-          ], reason: '$name must stay callable as a reusable workflow');
+          expect(
+            childKeys(readWorkflow(name), 'workflow_call', 'inputs'),
+            name == 'release-pos.yml'
+                ? [
+                    'version',
+                    'draft_release',
+                    'preflight',
+                    'reuse_preflight_apk',
+                  ]
+                : ['version', 'draft_release'],
+            reason: '$name must stay callable as a reusable workflow',
+          );
         }
       },
     );
@@ -973,7 +1019,8 @@ void main() {
       const needsByJob = {
         'production-android-preflight': 'needs: validate',
         'staging-android': 'needs: [validate, tag]',
-        'production-android': 'needs: [validate, tag]',
+        'production-android':
+            'needs: [validate, tag, production-android-preflight]',
         'production-windows': 'needs: [validate, tag]',
         'patch-android': 'needs: [validate, tag]',
         'patch-windows': 'needs: [validate, tag]',
@@ -1043,7 +1090,7 @@ void main() {
 
       for (final call in calls) {
         final needed = switch (call.callee) {
-          'release-pos.yml' when call.block.contains('draft_release: "no"') =>
+          'release-pos.yml' when call.block.contains('preflight: true') =>
             signing,
           _ => expected[call.callee]!,
         };
@@ -1095,8 +1142,12 @@ void main() {
         ),
       );
       expect(preflight, contains('uses: ./.github/workflows/release-pos.yml'));
-      expect(preflight, contains('draft_release: "no"'));
+      expect(
+        preflight,
+        contains(r'draft_release: ${{ inputs.draft_release }}'),
+      );
       expect(preflight, contains(r'version: ${{ inputs.version }}'));
+      expect(preflight, contains('preflight: true'));
       expect(preflight, isNot(contains('SHOREBIRD_TOKEN')));
 
       final tag = jobBlock(workflow, 'tag').join('\n');
@@ -1130,52 +1181,78 @@ void main() {
         );
 
         final android = jobBlock(workflow, 'production-android').join('\n');
-        expect(android, contains('needs: [validate, tag]'));
+        expect(
+          android,
+          contains('needs: [validate, tag, production-android-preflight]'),
+        );
+        expect(android, contains('reuse_preflight_apk: true'));
         expect(android, contains("inputs.draft_release == 'yes'"));
       },
     );
 
-    test('the no-release preflight checks the APK and suppresses release side effects', () {
-      final preflight = jobBlock(
-        workflow,
-        'production-android-preflight',
-      ).join('\n');
-      expect(preflight, contains('draft_release: "no"'));
-
-      final release = readWorkflow('release-pos.yml');
-      for (final stepName in const [
-        'Build release APK',
-        'Verify production API endpoint in AOT mode',
-        'Release APK must be the production build',
-        'Upload artifact',
-      ]) {
-        final step = workflowStepBlock(release, stepName);
-        expect(step, isNotEmpty, reason: 'release-pos.yml must keep $stepName');
+    test(
+      'production preflight checks the APK and suppresses release side effects',
+      () {
+        final preflight = jobBlock(
+          workflow,
+          'production-android-preflight',
+        ).join('\n');
         expect(
-          RegExp(r'^\s+if:', multiLine: true).hasMatch(step),
-          isFalse,
-          reason: '$stepName must run during the draft_release=no preflight',
+          preflight,
+          contains(r'draft_release: ${{ inputs.draft_release }}'),
         );
-      }
+        expect(preflight, contains('preflight: true'));
 
-      for (final stepName in const [
-        'Setup Shorebird',
-        'Build release AAB (shorebird release android)',
-        'Create draft release',
-      ]) {
+        final release = readWorkflow('release-pos.yml');
+        for (final stepName in const [
+          'Build release APK',
+          'Verify production API endpoint in AOT mode',
+          'Release APK must be the production build',
+        ]) {
+          final step = workflowStepBlock(release, stepName);
+          expect(
+            step,
+            isNotEmpty,
+            reason: 'release-pos.yml must keep $stepName',
+          );
+          if (stepName == 'Build release APK' ||
+              stepName == 'Verify production API endpoint in AOT mode') {
+            expect(step, contains(r'if: ${{ !inputs.reuse_preflight_apk }}'));
+          } else {
+            expect(RegExp(r'^\s+if:', multiLine: true).hasMatch(step), isFalse);
+          }
+        }
+
+        final upload = workflowStepBlock(
+          release,
+          'Upload production preflight APK',
+        );
+        expect(upload, contains('if: inputs.preflight'));
+        expect(upload, contains('production-android-preflight-apk'));
+
+        for (final stepName in const [
+          'Setup Shorebird',
+          'Build release AAB (shorebird release android)',
+        ]) {
+          expect(
+            workflowStepBlock(release, stepName),
+            contains("if: inputs.draft_release != 'no' && !inputs.preflight"),
+            reason: '$stepName must not execute during preflight',
+          );
+        }
+
         expect(
-          workflowStepBlock(release, stepName),
-          contains("if: inputs.draft_release != 'no'"),
-          reason: '$stepName must not execute in the no-release preflight',
+          jobBlock(release, 'publish').join('\n'),
+          contains("if: inputs.draft_release != 'no' && !inputs.preflight"),
         );
-      }
 
-      expect(
-        jobBlock(workflow, 'tag').join('\n'),
-        contains("if: inputs.draft_release == 'yes'"),
-        reason: 'draft_release=no must not create the dispatch tag',
-      );
-    });
+        expect(
+          jobBlock(workflow, 'tag').join('\n'),
+          contains("if: inputs.draft_release == 'yes'"),
+          reason: 'draft_release=no must not create the dispatch tag',
+        );
+      },
+    );
   });
 
   group('the YAML 1.1 boolean options', () {
@@ -2014,8 +2091,7 @@ List<String> pathConsumersWithWorkingDirectory(String workflow) {
 /// step changes nothing.
 ///
 /// A line scan rather than a YAML parse, for the same reason as [tagPatterns]:
-/// the repo has no YAML dependency and the shape is one step list two keys
-/// deep and fixed.
+/// the repo has no YAML dependency and the shape is one or more job step lists.
 List<String> uploadArtifactBlocks(String workflow) {
   final lines = workflow.split(RegExp(r'\r?\n'));
   final blocks = <String>[];
@@ -2030,6 +2106,10 @@ List<String> uploadArtifactBlocks(String workflow) {
   }
 
   for (final line in lines) {
+    if (inStep && RegExp(r'^  [\w-]+:\s*$').hasMatch(line)) {
+      closeStep();
+      inStep = false;
+    }
     if (RegExp(r'^\s*-\s+(name|uses):\s*(.+?)\s*$').hasMatch(line)) {
       closeStep();
       inStep = true;

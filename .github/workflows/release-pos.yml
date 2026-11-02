@@ -1,5 +1,6 @@
-# Build rilis Android: APK + AAB, keduanya dilampirkan ke DRAFT GitHub Release. Tidak ada upload
-# ke Play di file ini lagi — dipisah ke `publish-to-store.yml`.
+# Build rilis Android: APK + AAB, keduanya dilampirkan ke DRAFT GitHub Release. Preflight dispatcher
+# membangun dan memeriksa APK versi rilis sebelum tag; lane setelah tag memakai APK itu, lalu hanya
+# membangun AAB Shorebird. Tidak ada upload ke Play di file ini lagi — dipisah ke `publish-to-store.yml`.
 #
 # Alur distribusi lengkap dan langkah setup manual: docs/distribution.md.
 #
@@ -65,6 +66,16 @@ on:
         required: false
         default: "yes"
         type: string
+      preflight:
+        description: "Build APK versi rilis untuk diperiksa sebelum tag; tidak membuat release"
+        required: false
+        default: false
+        type: boolean
+      reuse_preflight_apk:
+        description: "Pakai artifact APK preflight dari run dispatcher yang sama"
+        required: false
+        default: false
+        type: boolean
     secrets:
       ANDROID_KEY_BASE64:
         required: true
@@ -75,11 +86,8 @@ on:
       SHOREBIRD_TOKEN:
         required: false
 
-# Satu rilis per tag. Tag tidak bisa dipush ulang, jadi run yang sedang berjalan
-# tidak perlu dibatalkan.
-concurrency:
-  group: release-pos-${{ github.ref }}
-  cancel-in-progress: false
+# Build berjalan tanpa antrean bersama. Hanya job `publish` yang memakai concurrency group bersama
+# `windows-pos.yml`, agar kedua publisher boleh build paralel tanpa berebut draft yang sama.
 
 env:
   FLUTTER_VERSION: "3.47.4"
@@ -92,10 +100,13 @@ env:
   ANDROID_PACKAGE_NAME: "com.finnesia.pos"
 
 jobs:
-  release:
+  build:
     runs-on: ubuntu-latest
     permissions:
-      contents: write # untuk membuat GitHub Release
+      contents: read
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
     env:
       # Hanya dipakai oleh blok "── Shorebird" di bawah. Job-level, bukan step-level,
       # supaya action Shorebird bisa membacanya tanpa `with:` tambahan — begitu cara
@@ -112,16 +123,30 @@ jobs:
       # dibaca dari nama tag. `GITHUB_REF_NAME` hanya dibaca di pintu tag: saat dispatch ia berisi
       # nama BRANCH (`main`), dan `main` bukan versi.
       #
-      # Uji coba (`draft release = no`) tidak punya versi sama sekali — dispatcher ignorar
-      # `version` untuknya. Versi fallback-nya `0.0.0`, bukan `0.0.0+local`: build metadata `+local`
-      # ikut terbawa kepecahan versi di step di bawah (`PATCH` jadi `0+local`) dan membuat
-      # aritmetikanya gagal, bukan hanya-strings.
+      # `draft release = no` selalu mengabaikan input versi dan memakai 0.0.0, termasuk saat preflight
+      # uji-coba. Preflight rilis nyata (`draft release = yes`) memakai versi/build number dari
+      # dispatcher agar APK yang diperiksa bisa dipakai kembali setelah tag; bukan dari nama ref.
       - name: Derive version
         id: version
         env:
           INPUT_VERSION: ${{ inputs.version }}
           DRAFT_RELEASE: ${{ inputs.draft_release }}
+          PREFLIGHT: ${{ inputs.preflight }}
+          REUSE_PREFLIGHT_APK: ${{ inputs.reuse_preflight_apk }}
         run: |
+          if [ "$PREFLIGHT" = "true" ] && [ "$REUSE_PREFLIGHT_APK" = "true" ]; then
+            echo "::error::Preflight tidak boleh memakai artifact APK preflight."
+            exit 64
+          fi
+          if [ "$PREFLIGHT" = "true" ] && [ "$DRAFT_RELEASE" = "yes" ] && [ -z "$INPUT_VERSION" ]; then
+            echo "::error::Preflight rilis harus menerima versi yang akan ditag."
+            exit 64
+          fi
+          if [ "$REUSE_PREFLIGHT_APK" = "true" ] && [ "$DRAFT_RELEASE" = "no" ]; then
+            echo "::error::APK preflight hanya boleh dipakai oleh build release setelah preflight."
+            exit 64
+          fi
+
           if [ "$DRAFT_RELEASE" = "no" ]; then
             VERSION=""
           elif [ -n "$INPUT_VERSION" ]; then
@@ -216,6 +241,7 @@ jobs:
       # root, lalu `package:dev` tidak dikenal: ratusan issue `Target of URI doesn't exist` dan
       # exit code 3.
       - name: Resolve tools
+        if: ${{ !inputs.reuse_preflight_apk }}
         run: |
           for tool in tools/dev tools/rule_lint tools/string_lint; do
             echo "── dart pub get: $tool"
@@ -225,9 +251,11 @@ jobs:
       # ── Verifikasi ────────────────────────────────────────────────────────
       # Rilis tidak dibangun kalau ini gagal. Urutan mengikuti AGENTS.md.
       - name: Analyze
+        if: ${{ !inputs.reuse_preflight_apk }}
         run: dart analyze
 
       - name: Test pure Dart packages
+        if: ${{ !inputs.reuse_preflight_apk }}
         run: |
           for pkg in packages/pn_types packages/pn_pos; do
             if [ -d "$pkg/test" ]; then
@@ -239,6 +267,7 @@ jobs:
           done
 
       - name: Test Flutter packages
+        if: ${{ !inputs.reuse_preflight_apk }}
         run: |
           for pkg in packages/pn_ui apps/pos; do
             if [ -d "$pkg/test" ]; then
@@ -253,6 +282,7 @@ jobs:
       # with the same product define as a release build so the API endpoint is tested independently
       # of other legitimate `apps-dev` strings such as the notification-link allowlist.
       - name: Verify production API endpoint in AOT mode
+        if: ${{ !inputs.reuse_preflight_apk }}
         run: |
           dart compile exe --define=dart.vm.product=true \
             packages/pn_types/tool/verify_release_environment.dart \
@@ -282,6 +312,7 @@ jobs:
       # `--target-platform` — Play Store sendiri yang memilih ABI per perangkat lewat
       # split delivery, jadi satu AAB sudah mencakup keduanya.
       - name: Build release APK
+        if: ${{ !inputs.reuse_preflight_apk }}
         working-directory: apps/pos
         run: |
           flutter build apk --release \
@@ -289,8 +320,16 @@ jobs:
             --build-number "${{ steps.build_number.outputs.value }}" \
             --target-platform android-arm64,android-arm
 
+      - name: Download checked APK from production preflight
+        if: inputs.reuse_preflight_apk
+        uses: actions/download-artifact@v4
+        with:
+          name: production-android-preflight-apk
+          path: ${{ runner.temp }}/preflight-apk
+
       - name: Locate APK
         id: apk
+        if: ${{ !inputs.reuse_preflight_apk }}
         run: |
           # Debug dikecualikan supaya tidak salah ambil kalau ada sisa build lokal.
           APK=$(find apps/pos/build/app/outputs/flutter-apk \
@@ -303,6 +342,33 @@ jobs:
           echo "path=$APK" >> "$GITHUB_OUTPUT"
           echo "name=finnesia-pos-${{ steps.version.outputs.version }}.apk" >> "$GITHUB_OUTPUT"
           ls -lh "$APK"
+
+      - name: Locate reused preflight APK
+        id: reused_apk
+        if: inputs.reuse_preflight_apk
+        run: |
+          mapfile -t APKS < <(find "$RUNNER_TEMP/preflight-apk" -type f -name '*.apk')
+          if [ "${#APKS[@]}" -ne 1 ]; then
+            echo "::error::Preflight harus menyediakan tepat satu APK; ditemukan ${#APKS[@]}."
+            exit 1
+          fi
+
+          echo "path=${APKS[0]}" >> "$GITHUB_OUTPUT"
+          ls -lh "${APKS[0]}"
+
+      - name: Select APK to verify and publish
+        id: apk_path
+        env:
+          BUILT_APK: ${{ steps.apk.outputs.path }}
+          REUSED_APK: ${{ steps.reused_apk.outputs.path }}
+        run: |
+          APK="$BUILT_APK"
+          if [ -n "$REUSED_APK" ]; then APK="$REUSED_APK"; fi
+          if [ -z "$APK" ] || [ ! -f "$APK" ]; then
+            echo "::error::APK build/preflight tidak ditemukan."
+            exit 1
+          fi
+          echo "path=$APK" >> "$GITHUB_OUTPUT"
 
       # ── Pengaman: APK rilis harus production, bukan debug/staging ──────────
       # Diperiksa atas ARTIFACT, bukan input build: yang beredar ke tablet adalah APK-nya.
@@ -332,7 +398,7 @@ jobs:
       # yang sama dua kali.
       - name: Release APK must be the production build
         env:
-          APK: ${{ steps.apk.outputs.path }}
+          APK: ${{ steps.apk_path.outputs.path }}
         run: |
           # ── 1. Payload Dart ────────────────────────────────────────────────
           unzip -o -q "$APK" 'lib/*/libapp.so' -d /tmp/apk
@@ -409,20 +475,20 @@ jobs:
       #
       # Tidak ada bagian lain di workflow ini yang perlu diubah — "Locate AAB" mencari
       # di path output yang sama untuk kedua cara.
-      # Dua step Shorebird ini dikunci di `draft release = no`. Alasannya struktural, bukan
-      #Hsembunyi: Shorebird menolak dua release untuk versi yang sama (shorebirdtech/shorebird#1174),
+      # Dua step Shorebird ini dilewati saat preflight dan `draft release = no`. Alasannya struktural, bukan
+      # tersembunyi: Shorebird menolak dua release untuk versi yang sama (shorebirdtech/shorebird#1174),
       # jadi uji-coba yang menjalankan `shorebird release` dengan 1.2.0 akan memakan slot versi
       # production dan membuat rilis 1.2.0 yang sebenarnya gagal belakangan. Karena itu uji-coba
       # tidak pernah memanggil `shorebird release` — dan AAB tidak dibangun di sana, sebab tanpa AAB
       # tidak ada yang perlu diunduh ke Play.
       - name: Setup Shorebird
-        if: inputs.draft_release != 'no'
+        if: inputs.draft_release != 'no' && !inputs.preflight
         uses: shorebirdtech/setup-shorebird@v1
         with:
           cache: true
 
       - name: Build release AAB (shorebird release android)
-        if: inputs.draft_release != 'no'
+        if: inputs.draft_release != 'no' && !inputs.preflight
         uses: shorebirdtech/shorebird-release@v1
         with:
           platform: android
@@ -433,10 +499,10 @@ jobs:
             --build-number=${{ steps.build_number.outputs.value }}
             --no-confirm
 
-      # yang tidak dibangun di uji-coba, jadi langkah ini ikut dikunci.
+      # yang tidak dibangun pada preflight atau uji-coba, jadi langkah ini ikut dikunci.
       - name: Locate AAB
         id: aab
-        if: inputs.draft_release != 'no'
+        if: inputs.draft_release != 'no' && !inputs.preflight
         run: |
           AAB=$(find apps/pos/build/app/outputs/bundle/release \
             -type f -name '*.aab' | head -n1)
@@ -448,13 +514,43 @@ jobs:
           echo "path=$AAB" >> "$GITHUB_OUTPUT"
           ls -lh "$AAB"
 
-      # ── Terbitkan ─────────────────────────────────────────────────────────
-      - name: Upload artifact
+      # Preflight menyimpan satu APK bernama stabil untuk dipakai oleh reusable workflow berikutnya
+      # dalam run dispatcher yang sama. Uji coba biasa tetap mengunggah APK seperti sebelumnya.
+      - name: Upload production preflight APK
+        if: inputs.preflight
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-android-preflight-apk
+          path: ${{ steps.apk_path.outputs.path }}
+          retention-days: 7
+          overwrite: true
+
+      - name: Upload trial APK artifact
+        if: inputs.draft_release == 'no' && !inputs.preflight
         uses: actions/upload-artifact@v4
         with:
           name: finnesia-pos-${{ steps.version.outputs.version }}
-          path: ${{ steps.apk.outputs.path }}
+          path: ${{ steps.apk_path.outputs.path }}
           retention-days: 30
+
+      - name: Prepare Android release assets
+        if: inputs.draft_release != 'no' && !inputs.preflight
+        env:
+          APK: ${{ steps.apk_path.outputs.path }}
+          AAB: ${{ steps.aab.outputs.path }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/release-assets"
+          cp -- "$APK" "$RUNNER_TEMP/release-assets/"
+          cp -- "$AAB" "$RUNNER_TEMP/release-assets/"
+
+      - name: Upload Android release assets
+        if: inputs.draft_release != 'no' && !inputs.preflight
+        uses: actions/upload-artifact@v4
+        with:
+          name: finnesia-pos-${{ steps.version.outputs.version }}
+          path: ${{ runner.temp }}/release-assets/*
+          retention-days: 30
+          overwrite: true
 
       # Draft, bukan rilis langsung: APK tidak bisa diunduh sampai Anda publish dari
       # dashboard. Rilis otomatis tanpa dilihat dulu bukan hal yang diinginkan untuk
@@ -466,14 +562,29 @@ jobs:
       #
       # `tag_name` bukan `github.ref_name` karena pintu dispatcher tidak punya tag: `github.ref_name`
       # di sana berisi nama branch, dan action itu akan membuat release pada branch itu.
+      # Publish dipisah dari build agar Windows dan Android compile paralel, sementara dua penulis
+      # draft tetap berbaris di concurrency group yang sama.
+  publish:
+    needs: build
+    if: inputs.draft_release != 'no' && !inputs.preflight
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: release-pos-${{ github.ref }}
+      cancel-in-progress: false
+    steps:
+      - name: Download Android release assets
+        uses: actions/download-artifact@v4
+        with:
+          name: finnesia-pos-${{ needs.build.outputs.version }}
+          path: release-assets
+
       - name: Create draft release
-        if: inputs.draft_release != 'no'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.version.outputs.tag }}
-          name: "Finnesia POS v${{ steps.version.outputs.version }}"
+          tag_name: ${{ needs.build.outputs.tag }}
+          name: "Finnesia POS v${{ needs.build.outputs.version }}"
           draft: true
           generate_release_notes: true
-          files: |
-            ${{ steps.apk.outputs.path }}
-            ${{ steps.aab.outputs.path }}
+          files: release-assets/*
