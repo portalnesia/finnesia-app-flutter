@@ -56,11 +56,30 @@ class NotificationInboxController {
 
   Future<void> loadUnreadCount() => unreadCount.load();
 
-  /// Marks this recipient row read and refreshes the list and menu count.
-  Future<void> markRead(NotificationItem item) async {
+  /// Marks this recipient row read through the same batch path as multi-selection.
+  Future<void> markRead(NotificationItem item) => markReadItems([item]);
+
+  /// Sends selected recipient rows in one request, then refreshes the inbox and menu count.
+  Future<void> markReadItems(Iterable<NotificationItem> items) async {
+    final ids = items
+        .map((item) => item.id)
+        .where((id) => id.isNotEmpty)
+        .toSet()
+        .toList(growable: false);
+    if (ids.isEmpty) return;
+
     await NotificationApi.markRead.call(
       client,
-      NotificationMarkReadRequest(ids: [item.id]),
+      NotificationMarkReadRequest(ids: ids),
+    );
+    await _refresh();
+  }
+
+  /// Marks every unread recipient read without depending on which pages are loaded in the UI.
+  Future<void> markAllRead() async {
+    await NotificationApi.markRead.call(
+      client,
+      const NotificationMarkReadRequest(all: true),
     );
     await _refresh();
   }

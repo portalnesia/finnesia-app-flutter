@@ -221,6 +221,30 @@
   "notificationInboxMoreFailed": "Could not load more notifications. Tap to try again.",
   "notificationMarkRead": "Mark as read",
   "notificationMarkReadFailed": "Could not mark the notification as read. Try again.",
+  "notificationSelect": "Select",
+  "notificationCancelSelection": "Cancel",
+  "notificationSelectAll": "Select all",
+  "notificationMarkSelectedRead": "Mark selected as read",
+  "notificationMarkAllRead": "Mark all as read",
+  "notificationMarkAllConfirm": "Mark ALL notifications as read?",
+  "notificationMarkSelectedConfirm": "Mark {count} notifications as read?",
+  "@notificationMarkSelectedConfirm": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "notificationConfirmMarkRead": "Mark as read",
+  "notificationMarkBulkReadFailed": "Could not mark notifications as read. Try again.",
+  "notificationSelectedCount": "{count} selected",
+  "@notificationSelectedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "notificationAnnouncementTitle": "Announcement",
   "notificationLinkUnavailable": "This notification link is unsafe or unavailable.",
   "notificationOpenFailed": "Could not open the notification. Try again.",

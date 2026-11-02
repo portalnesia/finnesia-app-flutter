@@ -24,6 +24,7 @@ import 'package:pos/notifications/notification_link_policy.dart';
 import 'package:pos/screens/common/paged_list.dart';
 import 'package:pos/screens/common/screen_header.dart';
 import 'package:pos/state/loadable.dart';
+import 'package:pos/state/paged_loadable.dart';
 
 /// The in-app notification inbox. The menu owns [controller] so its unread badge stays in sync.
 class NotificationInboxScreen extends StatefulWidget {
@@ -54,7 +55,27 @@ class _NotificationInboxScreenState extends State<NotificationInboxScreen> {
     widget.session,
   );
   final Set<String> _markingRead = {};
+  final Set<String> _selectedIds = {};
+  bool _selectionMode = false;
+  bool _markingBulkRead = false;
   String? _openingId;
+
+  bool get _isBusy =>
+      _openingId != null || _markingBulkRead || _markingRead.isNotEmpty;
+
+  List<NotificationItem> get _loadedUnreadItems {
+    final state = widget.controller.inbox.state;
+    if (state is! Ready<PagedItems<NotificationItem>>) return const [];
+    return state.data.items
+        .where((item) => item.readAt == null)
+        .toList(growable: false);
+  }
+
+  bool get _allUnreadSelected {
+    final unreadItems = _loadedUnreadItems;
+    return unreadItems.isNotEmpty &&
+        unreadItems.every((item) => _selectedIds.contains(item.id));
+  }
 
   @override
   void initState() {
@@ -79,9 +100,40 @@ class _NotificationInboxScreenState extends State<NotificationInboxScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            ScreenHeader(title: l10n.notificationInboxTitle),
+            ScreenHeader(
+              title: l10n.notificationInboxTitle,
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextButton(
+                    onPressed: _isBusy ? null : _toggleSelectionMode,
+                    child: Text(
+                      _selectionMode
+                          ? l10n.notificationCancelSelection
+                          : l10n.notificationSelect,
+                    ),
+                  ),
+                  if (!_selectionMode)
+                    TextButton.icon(
+                      onPressed: _isBusy ? null : _markAllRead,
+                      icon: _markingBulkRead
+                          ? const SizedBox.square(
+                              dimension: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.mark_email_read_outlined),
+                      label: Text(l10n.notificationMarkAllRead),
+                    ),
+                ],
+              ),
+            ),
             if (widget.pushController != null)
               _PushPermissionPrompt(controller: widget.pushController!),
+            if (_selectionMode)
+              ListenableBuilder(
+                listenable: widget.controller.inbox,
+                builder: (context, _) => _selectionToolbar(context, l10n),
+              ),
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.only(top: 16),
@@ -106,12 +158,13 @@ class _NotificationInboxScreenState extends State<NotificationInboxScreen> {
     final theme = Theme.of(context).textTheme;
     final pn = context.pn;
     final isUnread = item.readAt == null;
+    final isSelected = _selectedIds.contains(item.id);
 
     return Card(
       margin: const EdgeInsets.only(bottom: 10),
       child: InkWell(
         borderRadius: BorderRadius.circular(PnRadius.surface),
-        onTap: _openingId == null ? () => _openItem(item) : null,
+        onTap: _rowTap(item),
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 14, 8, 14),
           child: Row(
@@ -156,12 +209,18 @@ class _NotificationInboxScreenState extends State<NotificationInboxScreen> {
                   ],
                 ),
               ),
-              if (isUnread)
+              if (isUnread && _selectionMode)
+                Checkbox(
+                  key: Key('notification-select-${item.id}'),
+                  value: isSelected,
+                  onChanged: _isBusy
+                      ? null
+                      : (selected) => _setSelected(item, selected),
+                )
+              else if (isUnread)
                 IconButton(
                   tooltip: L10n.of(context).notificationMarkRead,
-                  onPressed: _markingRead.contains(item.id)
-                      ? null
-                      : () => _markRead(item),
+                  onPressed: _isBusy ? null : () => _markRead(item),
                   icon: _markingRead.contains(item.id)
                       ? const SizedBox.square(
                           dimension: 18,
@@ -174,6 +233,83 @@ class _NotificationInboxScreenState extends State<NotificationInboxScreen> {
         ),
       ),
     );
+  }
+
+  Widget _selectionToolbar(BuildContext context, L10n l10n) {
+    final unreadItems = _loadedUnreadItems;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      child: Column(
+        children: [
+          CheckboxListTile(
+            key: const Key('notification-select-all'),
+            value: _allUnreadSelected,
+            onChanged: unreadItems.isEmpty || _isBusy ? null : _selectAll,
+            title: Text(l10n.notificationSelectAll),
+            controlAffinity: ListTileControlAffinity.leading,
+            contentPadding: EdgeInsets.zero,
+            dense: true,
+          ),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  l10n.notificationSelectedCount(_selectedIds.length),
+                ),
+              ),
+              FilledButton.icon(
+                onPressed: _selectedIds.isEmpty || _isBusy
+                    ? null
+                    : _markSelectedRead,
+                icon: _markingBulkRead
+                    ? const SizedBox.square(
+                        dimension: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.mark_email_read_outlined),
+                label: Text(l10n.notificationMarkSelectedRead),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  VoidCallback? _rowTap(NotificationItem item) {
+    if (_isBusy || _selectionMode) return null;
+    return () => _openItem(item);
+  }
+
+  void _toggleSelectionMode() {
+    if (_isBusy) return;
+    setState(() {
+      _selectionMode = !_selectionMode;
+      _selectedIds.clear();
+    });
+  }
+
+  void _selectAll(bool? selected) {
+    if (selected == null || _isBusy) return;
+    final ids = _loadedUnreadItems.map((item) => item.id).toList();
+    setState(() {
+      if (selected) {
+        _selectedIds.addAll(ids);
+      } else {
+        _selectedIds.removeAll(ids);
+      }
+    });
+  }
+
+  void _setSelected(NotificationItem item, bool? selected) {
+    if (selected == null || _isBusy) return;
+    setState(() {
+      if (selected) {
+        _selectedIds.add(item.id);
+      } else {
+        _selectedIds.remove(item.id);
+      }
+    });
   }
 
   Future<void> _openItem(NotificationItem item) => _open(
@@ -299,6 +435,79 @@ class _NotificationInboxScreenState extends State<NotificationInboxScreen> {
       if (mounted) _showMessage(l10n.notificationMarkReadFailed);
     } finally {
       if (mounted) setState(() => _markingRead.remove(item.id));
+    }
+  }
+
+  Future<void> _markSelectedRead() async {
+    final selectedItems = _loadedUnreadItems
+        .where((item) => _selectedIds.contains(item.id))
+        .toList(growable: false);
+    if (selectedItems.isEmpty) return;
+    final l10n = L10n.of(context);
+    final confirmed = await _confirmBulkMarkRead(
+      title: l10n.notificationMarkSelectedRead,
+      message: l10n.notificationMarkSelectedConfirm(selectedItems.length),
+    );
+    if (!confirmed || !mounted) return;
+    await _markBulkRead(() => widget.controller.markReadItems(selectedItems));
+  }
+
+  Future<void> _markAllRead() async {
+    final l10n = L10n.of(context);
+    final confirmed = await _confirmBulkMarkRead(
+      title: l10n.notificationMarkAllRead,
+      message: l10n.notificationMarkAllConfirm,
+    );
+    if (!confirmed || !mounted) return;
+    await _markBulkRead(widget.controller.markAllRead);
+  }
+
+  Future<bool> _confirmBulkMarkRead({
+    required String title,
+    required String message,
+  }) async {
+    final l10n = L10n.of(context);
+    return await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: Text(title),
+            content: Text(message),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+                child: Text(l10n.commonCancel),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(dialogContext).pop(true),
+                child: Text(l10n.notificationConfirmMarkRead),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+  }
+
+  Future<void> _markBulkRead(Future<void> Function() request) async {
+    if (_isBusy) return;
+    setState(() => _markingBulkRead = true);
+    final l10n = L10n.of(context);
+    try {
+      await request();
+      if (!mounted) return;
+      setState(() {
+        _selectionMode = false;
+        _selectedIds.clear();
+      });
+    } on ApiError catch (error) {
+      if (mounted) {
+        _showMessage(
+          failedReadText(error, l10n.notificationMarkBulkReadFailed),
+        );
+      }
+    } on TransportException {
+      if (mounted) _showMessage(l10n.notificationMarkBulkReadFailed);
+    } finally {
+      if (mounted) setState(() => _markingBulkRead = false);
     }
   }
 

@@ -428,6 +428,42 @@ class L10nId extends L10n {
       'Gagal menandai notifikasi sebagai dibaca. Coba lagi.';
 
   @override
+  String get notificationSelect => 'Pilih';
+
+  @override
+  String get notificationCancelSelection => 'Batal';
+
+  @override
+  String get notificationSelectAll => 'Pilih semua';
+
+  @override
+  String get notificationMarkSelectedRead => 'Tandai pilihan dibaca';
+
+  @override
+  String get notificationMarkAllRead => 'Tandai semua sudah dibaca';
+
+  @override
+  String get notificationMarkAllConfirm =>
+      'Tandai SEMUA notifikasi sebagai sudah dibaca?';
+
+  @override
+  String notificationMarkSelectedConfirm(int count) {
+    return 'Tandai $count notifikasi sebagai dibaca?';
+  }
+
+  @override
+  String get notificationConfirmMarkRead => 'Tandai dibaca';
+
+  @override
+  String get notificationMarkBulkReadFailed =>
+      'Gagal menandai notifikasi sebagai dibaca. Coba lagi.';
+
+  @override
+  String notificationSelectedCount(int count) {
+    return '$count dipilih';
+  }
+
+  @override
   String get notificationAnnouncementTitle => 'Pengumuman';
 
   @override

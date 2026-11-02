@@ -775,6 +775,66 @@ abstract class L10n {
   /// **'Gagal menandai notifikasi sebagai dibaca. Coba lagi.'**
   String get notificationMarkReadFailed;
 
+  /// No description provided for @notificationSelect.
+  ///
+  /// In id, this message translates to:
+  /// **'Pilih'**
+  String get notificationSelect;
+
+  /// No description provided for @notificationCancelSelection.
+  ///
+  /// In id, this message translates to:
+  /// **'Batal'**
+  String get notificationCancelSelection;
+
+  /// No description provided for @notificationSelectAll.
+  ///
+  /// In id, this message translates to:
+  /// **'Pilih semua'**
+  String get notificationSelectAll;
+
+  /// No description provided for @notificationMarkSelectedRead.
+  ///
+  /// In id, this message translates to:
+  /// **'Tandai pilihan dibaca'**
+  String get notificationMarkSelectedRead;
+
+  /// No description provided for @notificationMarkAllRead.
+  ///
+  /// In id, this message translates to:
+  /// **'Tandai semua sudah dibaca'**
+  String get notificationMarkAllRead;
+
+  /// No description provided for @notificationMarkAllConfirm.
+  ///
+  /// In id, this message translates to:
+  /// **'Tandai SEMUA notifikasi sebagai sudah dibaca?'**
+  String get notificationMarkAllConfirm;
+
+  /// No description provided for @notificationMarkSelectedConfirm.
+  ///
+  /// In id, this message translates to:
+  /// **'Tandai {count} notifikasi sebagai dibaca?'**
+  String notificationMarkSelectedConfirm(int count);
+
+  /// No description provided for @notificationConfirmMarkRead.
+  ///
+  /// In id, this message translates to:
+  /// **'Tandai dibaca'**
+  String get notificationConfirmMarkRead;
+
+  /// No description provided for @notificationMarkBulkReadFailed.
+  ///
+  /// In id, this message translates to:
+  /// **'Gagal menandai notifikasi sebagai dibaca. Coba lagi.'**
+  String get notificationMarkBulkReadFailed;
+
+  /// No description provided for @notificationSelectedCount.
+  ///
+  /// In id, this message translates to:
+  /// **'{count} dipilih'**
+  String notificationSelectedCount(int count);
+
   /// No description provided for @notificationAnnouncementTitle.
   ///
   /// In id, this message translates to:

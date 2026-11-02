@@ -38,6 +38,7 @@ Map<String, Object?> _itemJson({
   String notificationId = 'notification_1',
   String? companyId = 'comp_1',
   String? link,
+  String? readAt,
   List<Object?> buttons = const [],
 }) => {
   'id': id,
@@ -54,7 +55,7 @@ Map<String, Object?> _itemJson({
   'image': null,
   'image_ratio': null,
   'buttons': buttons,
-  'read_at': null,
+  'read_at': readAt,
   'created_at': '2026-10-28T01:02:03Z',
 };
 
@@ -161,6 +162,163 @@ void main() {
       final firstCardTop = tester.getTopLeft(find.byType(Card).first).dy;
       expect(firstCardTop - headerBottom, 16);
     });
+
+    testWidgets('marks selected unread notifications in one batch', (
+      tester,
+    ) async {
+      transport.respond(
+        _answer({
+          'items': [
+            _itemJson(id: 'recipient_1'),
+            _itemJson(id: 'recipient_2'),
+            _itemJson(id: 'recipient_read', readAt: '2026-10-27T00:00:00Z'),
+          ],
+          'next_cursor': '',
+        }),
+      );
+      transport.respond(_answer({'updated': 2}));
+      transport.respond(_answer({'items': [], 'next_cursor': ''}));
+      transport.respond(_answer({'total': 0}));
+
+      await tester.pumpWidget(
+        _screenApp(controller: controller, opener: opener),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Pilih'));
+      await tester.pump();
+      await tester.tap(
+        find.byKey(const Key('notification-select-recipient_1')),
+      );
+      await tester.tap(
+        find.byKey(const Key('notification-select-recipient_2')),
+      );
+      await tester.pump();
+      expect(find.text('2 dipilih'), findsOneWidget);
+      await tester.tap(find.text('Tandai pilihan dibaca'));
+      await tester.pumpAndSettle();
+      expect(find.text('Tandai 2 notifikasi sebagai dibaca?'), findsOneWidget);
+      expect(
+        transport.requests.where(
+          (request) => request.path == '/api/v1/notifications/mark-read',
+        ),
+        isEmpty,
+      );
+      await tester.tap(find.text('Tandai dibaca'));
+      await tester.pumpAndSettle();
+
+      final markRequest = transport.requests.singleWhere(
+        (request) => request.path == '/api/v1/notifications/mark-read',
+      );
+      expect(jsonDecode(markRequest.body!), {
+        'ids': ['recipient_1', 'recipient_2'],
+        'all': false,
+      });
+    });
+
+    testWidgets('select all selects each loaded unread notification', (
+      tester,
+    ) async {
+      transport.respond(
+        _answer({
+          'items': [
+            _itemJson(id: 'recipient_1'),
+            _itemJson(id: 'recipient_2'),
+            _itemJson(id: 'recipient_read', readAt: '2026-10-27T00:00:00Z'),
+          ],
+          'next_cursor': '',
+        }),
+      );
+
+      await tester.pumpWidget(
+        _screenApp(controller: controller, opener: opener),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Pilih'));
+      await tester.pump();
+      await tester.tap(find.text('Pilih semua'));
+      await tester.pump();
+
+      expect(find.text('2 dipilih'), findsOneWidget);
+      expect(
+        tester
+            .widget<Checkbox>(
+              find.byKey(const Key('notification-select-recipient_1')),
+            )
+            .value,
+        isTrue,
+      );
+      expect(
+        tester
+            .widget<Checkbox>(
+              find.byKey(const Key('notification-select-recipient_2')),
+            )
+            .value,
+        isTrue,
+      );
+      expect(
+        find.byKey(const Key('notification-select-recipient_read')),
+        findsNothing,
+      );
+    });
+
+    testWidgets(
+      'marks all notifications read with the global endpoint option',
+      (tester) async {
+        transport.respond(
+          _answer({
+            'items': [_itemJson(id: 'recipient_1')],
+            'next_cursor': '',
+          }),
+        );
+        transport.respond(_answer({'updated': 1}));
+        transport.respond(_answer({'items': [], 'next_cursor': ''}));
+        transport.respond(_answer({'total': 0}));
+
+        await tester.pumpWidget(
+          _screenApp(controller: controller, opener: opener),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Tandai semua sudah dibaca'));
+        await tester.pumpAndSettle();
+        expect(
+          find.text('Tandai SEMUA notifikasi sebagai sudah dibaca?'),
+          findsOneWidget,
+        );
+        expect(
+          transport.requests.where(
+            (request) => request.path == '/api/v1/notifications/mark-read',
+          ),
+          isEmpty,
+        );
+        await tester.tap(find.text('Batal'));
+        await tester.pumpAndSettle();
+        expect(
+          transport.requests.where(
+            (request) => request.path == '/api/v1/notifications/mark-read',
+          ),
+          isEmpty,
+        );
+        await tester.tap(find.text('Tandai semua sudah dibaca'));
+        await tester.pumpAndSettle();
+        expect(
+          find.text('Tandai SEMUA notifikasi sebagai sudah dibaca?'),
+          findsOneWidget,
+        );
+        expect(
+          transport.requests.where(
+            (request) => request.path == '/api/v1/notifications/mark-read',
+          ),
+          isEmpty,
+        );
+        await tester.tap(find.text('Tandai dibaca'));
+        await tester.pumpAndSettle();
+
+        final markRequest = transport.requests.singleWhere(
+          (request) => request.path == '/api/v1/notifications/mark-read',
+        );
+        expect(jsonDecode(markRequest.body!), {'ids': <String>[], 'all': true});
+      },
+    );
 
     testWidgets('waits for server open before opening the resolved URL', (
       tester,

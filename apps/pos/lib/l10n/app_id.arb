@@ -221,6 +221,30 @@
   "notificationInboxMoreFailed": "Gagal memuat notifikasi berikutnya. Ketuk untuk mencoba lagi.",
   "notificationMarkRead": "Tandai sudah dibaca",
   "notificationMarkReadFailed": "Gagal menandai notifikasi sebagai dibaca. Coba lagi.",
+  "notificationSelect": "Pilih",
+  "notificationCancelSelection": "Batal",
+  "notificationSelectAll": "Pilih semua",
+  "notificationMarkSelectedRead": "Tandai pilihan dibaca",
+  "notificationMarkAllRead": "Tandai semua sudah dibaca",
+  "notificationMarkAllConfirm": "Tandai SEMUA notifikasi sebagai sudah dibaca?",
+  "notificationMarkSelectedConfirm": "Tandai {count} notifikasi sebagai dibaca?",
+  "@notificationMarkSelectedConfirm": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "notificationConfirmMarkRead": "Tandai dibaca",
+  "notificationMarkBulkReadFailed": "Gagal menandai notifikasi sebagai dibaca. Coba lagi.",
+  "notificationSelectedCount": "{count} dipilih",
+  "@notificationSelectedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "notificationAnnouncementTitle": "Pengumuman",
   "notificationLinkUnavailable": "Tautan notifikasi tidak aman atau tidak tersedia.",
   "notificationOpenFailed": "Notifikasi belum bisa dibuka. Coba lagi.",
