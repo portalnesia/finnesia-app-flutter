@@ -10,6 +10,7 @@ import 'dart:convert';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:pn_types/src/native/push_messaging_port.dart';
 import 'package:pos/firebase_options.dart';
@@ -18,8 +19,10 @@ import 'package:pos/notifications/push_debug_log.dart';
 const _channelId = 'finnesia_pos_notifications';
 const _channelName = 'Finnesia POS';
 const _channelDescription = 'Notifications from your Finnesia POS account.';
-const _androidInitialization = InitializationSettings(
-  android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+/// Exposed for a regression test so notification UI never falls back to the square launcher icon.
+@visibleForTesting
+const androidPushNotificationInitializationSettings = InitializationSettings(
+  android: AndroidInitializationSettings('ic_launcher_monochrome'),
 );
 const _androidNotificationDetails = NotificationDetails(
   android: AndroidNotificationDetails(
@@ -59,7 +62,9 @@ Future<void> firebasePushBackgroundMessageHandler(RemoteMessage message) async {
     );
     logPushDebug('background Firebase initialized');
     final notifications = FlutterLocalNotificationsPlugin();
-    await notifications.initialize(settings: _androidInitialization);
+    await notifications.initialize(
+      settings: androidPushNotificationInitializationSettings,
+    );
     final title = _stringValue(message.data['title']);
     final body = _stringValue(message.data['body']);
     final titlePresent = title != null && title.isNotEmpty;
@@ -123,7 +128,7 @@ class AndroidFirebasePushMessaging implements PushMessagingPort {
         return false;
       }
       final initialized = await _notifications.initialize(
-        settings: _androidInitialization,
+        settings: androidPushNotificationInitializationSettings,
         onDidReceiveNotificationResponse: _onLocalNotificationResponse,
       );
       if (initialized != true) {
