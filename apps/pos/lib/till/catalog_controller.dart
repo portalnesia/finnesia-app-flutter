@@ -112,7 +112,7 @@ class CatalogController extends ChangeNotifier {
     notifyListeners();
     unawaited(
       _analytics.logEvent(
-        'category_selected',
+        'tenant_category_selected',
         parameters: {'category_id': id ?? 'all'},
       ),
     );

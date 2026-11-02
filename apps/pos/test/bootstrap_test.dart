@@ -103,6 +103,77 @@ TransportResponse saleResponse() => TransportResponse(
 
 void main() {
   group('starting up', () {
+    test(
+      'clears persisted account_mode when boot has no session or branding',
+      () async {
+        final rig = Rig();
+
+        final services = await rig.ready();
+
+        expect(rig.analytics.userProperties, [('account_mode', null)]);
+        services.dispose();
+      },
+    );
+
+    test('sets account_mode once stored tenant branding is known', () async {
+      final tenant = signedIn.copyWith(
+        branding: const PosBranding(accountMode: 'managed'),
+      );
+      final rig = Rig(storedSession(tenant));
+
+      final services = await rig.ready();
+
+      expect(rig.analytics.userProperties, [('account_mode', 'managed')]);
+      services.dispose();
+    });
+
+    test(
+      'updates account_mode when branding changes and clears it on sign-out',
+      () async {
+        final tenant = signedIn.copyWith(
+          branding: const PosBranding(accountMode: 'managed'),
+        );
+        final rig = Rig(storedSession(tenant));
+        final services = await rig.ready();
+
+        await services.session.save(
+          tenant.copyWith(
+            branding: const PosBranding(accountMode: 'self_service'),
+          ),
+        );
+        await services.session.clearToken();
+        await services.session.save(
+          tenant.copyWith(
+            sessionToken: '',
+            branding: const PosBranding(accountMode: 'managed'),
+          ),
+        );
+
+        expect(rig.analytics.userProperties, [
+          ('account_mode', 'managed'),
+          ('account_mode', 'self_service'),
+          ('account_mode', null),
+        ]);
+        services.dispose();
+      },
+    );
+
+    test('clears account_mode when the device session is reset', () async {
+      final tenant = signedIn.copyWith(
+        branding: const PosBranding(accountMode: 'managed'),
+      );
+      final rig = Rig(storedSession(tenant));
+      final services = await rig.ready();
+
+      await services.session.clear();
+
+      expect(rig.analytics.userProperties, [
+        ('account_mode', 'managed'),
+        ('account_mode', null),
+      ]);
+      services.dispose();
+    });
+
     test('comes up paired when a session was stored', () async {
       final services = await Rig(storedSession(paired)).ready();
 

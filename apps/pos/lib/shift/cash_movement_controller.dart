@@ -148,7 +148,7 @@ class CashMovementController extends ChangeNotifier {
       );
       isRecorded = true;
       await _analytics.logEvent(
-        'cash_movement_recorded',
+        'tenant_cash_movement_recorded',
         parameters: {'type': type.name},
       );
     } on ApiError catch (failure) {

@@ -211,8 +211,8 @@ const _rows = <_Row>[
     refusal: null,
   ),
 
-  // production windows: `windows-pos.yml` needs no secret and no store upload, so there is
-  // nothing here that a trial run could damage (SPEC §2a rows 9-10).
+  // Production Windows needs a Shorebird token but no Store credentials or upload
+  // (SPEC §2a rows 9-10).
   (
     env: DispatchEnv.production,
     device: DispatchDevice.windows,
@@ -233,7 +233,7 @@ const _rows = <_Row>[
       workflows: ['windows-pos.yml'],
       createsTag: true,
       createsDraftRelease: true,
-      shorebirdRelease: false,
+      shorebirdRelease: true,
     ),
     refusal: null,
   ),
@@ -257,17 +257,15 @@ const _rows = <_Row>[
       workflows: ['release-pos.yml', 'windows-pos.yml'],
       createsTag: true,
       createsDraftRelease: true,
-      // The android half of `all` builds the AAB through `shorebird release android`, so `all`
-      // registers a production slot exactly like `android` does. A baseline for a version that is
-      // about to reach Play, not an accident (SPEC §2a row 12, §1.4).
+      // Both platform workflows register the same production version with Shorebird.
       shorebirdRelease: true,
     ),
     refusal: null,
   ),
 
-  // patch: android only, and never as a trial run. A patch acts on a release that already exists:
-  // without a target version it has no base, and with one it pushes OTA to production tablets
-  // (SPEC §2a row 13).
+  // Patch can target either platform or both, but never as a trial run. It acts on an existing
+  // release: without a target version it has no base, and with one it pushes OTA to production
+  // (SPEC §2a rows 13-18).
   (
     env: DispatchEnv.patch,
     device: DispatchDevice.android,
@@ -293,30 +291,40 @@ const _rows = <_Row>[
     device: DispatchDevice.windows,
     draft: DispatchDraft.no,
     action: null,
-    refusal: 'patch tidak punya varian windows '
-        '(shorebird-patch.yml tidak punya build windows); pakai device=android',
+    refusal: 'patch butuh versi target: tanpa target tidak punya base release, '
+        'dengan target ia mendorong OTA ke production',
   ),
   (
     env: DispatchEnv.patch,
     device: DispatchDevice.windows,
     draft: DispatchDraft.yes,
-    action: null,
-    refusal: 'patch tidak punya varian windows '
-        '(shorebird-patch.yml tidak punya build windows); pakai device=android',
+    action: DispatchAction(
+      workflows: ['shorebird-patch-windows.yml'],
+      createsTag: true,
+      createsDraftRelease: false,
+      shorebirdRelease: false,
+    ),
+    refusal: null,
   ),
   (
     env: DispatchEnv.patch,
     device: DispatchDevice.all,
     draft: DispatchDraft.no,
     action: null,
-    refusal: 'patch tidak punya varian windows, pakai device=android',
+    refusal: 'patch butuh versi target: tanpa target tidak punya base release, '
+        'dengan target ia mendorong OTA ke production',
   ),
   (
     env: DispatchEnv.patch,
     device: DispatchDevice.all,
     draft: DispatchDraft.yes,
-    action: null,
-    refusal: 'patch tidak punya varian windows, pakai device=android',
+    action: DispatchAction(
+      workflows: ['shorebird-patch.yml', 'shorebird-patch-windows.yml'],
+      createsTag: true,
+      createsDraftRelease: false,
+      shorebirdRelease: false,
+    ),
+    refusal: null,
   ),
 ];
 
@@ -393,9 +401,8 @@ DispatchAction planDispatch(DispatchRequest request) {
   return row.action!;
 }
 
-/// Whether this run calls `shorebird release android`, which is what spends a production version
-/// slot (SPEC §1.4: Shorebird refuses a second release for the same version, so a trial run that
-/// called it would make the real production release fail afterwards).
+/// Whether this run registers a Shorebird production baseline for Android or Windows, which spends
+/// a version slot (SPEC §1.4: a trial run must never register one before the real release).
 ///
 /// A total function on purpose, so a caller can ask before validating: a refused combination has
 /// no run at all, and the answer there is `false` without an exception to catch.

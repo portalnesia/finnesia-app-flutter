@@ -15,6 +15,9 @@
 ///
 /// Pure types — no plugin import may appear here (§2.1).
 abstract interface class AnalyticsPort {
+  /// Sets a Firebase user property, or clears it when [value] is `null`.
+  Future<void> setUserProperty(String name, String? value);
+
   /// Logs [name] with [parameters]. Values follow Firebase Analytics' own restriction: `String`,
   /// `num`, or `bool` — no `null`, no nested maps.
   Future<void> logEvent(String name, {Map<String, Object>? parameters});

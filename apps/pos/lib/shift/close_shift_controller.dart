@@ -86,7 +86,7 @@ class CloseShiftController extends ChangeNotifier {
         ),
       );
       isClosed = true;
-      await _analytics.logEvent('shift_closed');
+      await _analytics.logEvent('tenant_shift_close');
     } on ApiError catch (failure) {
       problem = SubmitProblem.answered(failure);
     } on TransportException {

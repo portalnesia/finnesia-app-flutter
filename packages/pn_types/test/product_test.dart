@@ -156,5 +156,15 @@ void main() {
         throwsA(isA<TypeError>()),
       );
     });
+
+    test('reads tax_id and the linked tax rate', () {
+      final p = parse('''
+        {"id":"p1","name":"Kopi","unit_id":"u1","sell_price":10000,
+         "tax_id":"tax_1","tax":{"id":"tax_1","name":"PPN","rate":11}}''');
+
+      final wire = jsonEncode(p);
+      expect(wire, contains('"tax_id":"tax_1"'));
+      expect(wire, contains('"rate":11'));
+    });
   });
 }

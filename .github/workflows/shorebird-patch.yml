@@ -6,8 +6,9 @@
 # Trigger: tag `pos-vMAJOR.MINOR.PATCH-N` — mis. `pos-v1.2.0-5` untuk patch ke-5 di atas rilis
 # native `pos-v1.2.0`. `N` cuma untuk penomoran/log; yang dikirim ke Shorebird adalah versi
 # BASE-nya (`1.2.0`), karena itulah versi yang `release-pos.yml` daftarkan lewat
-# `shorebird release android`. Keempat pattern tag di repo ini SENGAJA tidak tumpang tindih —
-# satu tag hanya bisa cocok salah satu, lihat docs/distribution.md §4.3.
+# `shorebird release android`. Tag patch yang sama juga menjalankan workflow Windows; dua job
+# platform mem-patch baseline masing-masing secara independen. Kategori staging tetap terpisah
+# dari kategori patch — lihat docs/distribution.md §4.3.
 #
 # Prefix `pos-` menandakan aplikasi (repo ini monorepo, akan ada aplikasi lain), bukan bagian
 # dari versinya — versi dibaca sebagai `${GITHUB_REF_NAME#pos-v}`, jadi `pos-v1.2.0` → `1.2.0`.
@@ -36,7 +37,7 @@ on:
         type: string
       # Tidak ada draft release di sini sama sekali — patch tidak punya berkas untuk dilampirkan,
       # dan ketertelurusannya adalah tag `pos-vX.Y.Z-N` itu sendiri. Input ini tetap ada supaya
-      # keempat workflow punya bentuk yang sama; hanya `yes` yang lolos validasi dispatcher, karena
+      # reusable workflow menerima bentuk input yang konsisten; hanya `yes` yang lolos validasi, karena
       # patch tidak punya bentuk uji-coba yang aman (tanpa target tidak punya base, dengan target ia
       # mendorong OTA ke tablet production).
       draft_release:

@@ -10,12 +10,12 @@
 # YAML karena YAML tidak bisa diuji di repo ini; sumber kebenarannya fungsi murni
 # `tools/dev/lib/dispatch.dart` yang diuji `dart test`, dan file ini memanggilnya.
 #
-# Dua pintu masuk hidup berdampingan. Push tag tetap ada di keempat workflow — keputusan pemilik:
-# satu `git push --tags` tidak boleh pernah memicu dua workflow. File ini MENAMBAH pintu manual, ia
-# tidak mengganti yang lama.
+# Dua pintu masuk hidup berdampingan: tag langsung dan dispatcher manual. Tag release/patch
+# memicu workflow platform yang sesuai; satu kegagalan platform tidak membatalkan yang lain.
+# platform tidak membatalkan yang lain. File ini MENAMBAH pintu manual, bukan mengganti tag.
 #
 # Secret ditulis eksplisit per pemanggilan, bukan `secrets: inherit`: eksplisit bisa di-grep dan
-# diuji, dan `inherit` akan meneruskan semua secret ke `windows-pos.yml` yang butuh nol secret.
+# diuji, dan `inherit` akan meneruskan secret yang tidak dibutuhkan ke workflow lain.
 
 name: Release Dispatch
 
@@ -111,8 +111,8 @@ jobs:
   # `needs: [validate, tag]` adalah syaratNYA build: validate yang gagal menghentikan semuanya, dan
   # tag harus ada lebih dulu karena action itu gagal kalau tag belum ada.
   #
-  # Empat job, bukan sembilan: satu job per (env, device) yang memang punya workflow. Kombinasi yang
-  # tidak ada di matriks sudah ditolak `validate` sebelum job mana pun dievaluasi.
+  # Lima job: satu per lane platform. `all` memilih dua job platform; kombinasi yang tidak ada di
+  # matriks ditolak `validate` sebelum job mana pun dievaluasi.
 
   staging-android:
     needs: [validate, tag]
@@ -149,12 +149,14 @@ jobs:
     with:
       version: ${{ inputs.version }}
       draft_release: ${{ inputs.draft_release }}
+    secrets:
+      SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
 
   # Patch tidak membuat draft: tidak ada berkas untuk dilampirkan. Ketertelusurannya adalah tag
   # `pos-vX.Y.Z-N` itu sendiri, dan tag itu dibuat job di atas.
   patch-android:
     needs: [validate, tag]
-    if: inputs.env == 'patch' && inputs.device == 'android'
+    if: inputs.env == 'patch' && (inputs.device == 'android' || inputs.device == 'all')
     uses: ./.github/workflows/shorebird-patch.yml
     with:
       version: ${{ inputs.version }}
@@ -163,4 +165,14 @@ jobs:
       ANDROID_KEY_BASE64: ${{ secrets.ANDROID_KEY_BASE64 }}
       ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
       ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
+
+  patch-windows:
+    needs: [validate, tag]
+    if: inputs.env == 'patch' && (inputs.device == 'windows' || inputs.device == 'all')
+    uses: ./.github/workflows/shorebird-patch-windows.yml
+    with:
+      version: ${{ inputs.version }}
+      draft_release: ${{ inputs.draft_release }}
+    secrets:
       SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}

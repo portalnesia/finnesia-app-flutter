@@ -45,12 +45,16 @@ Map<String, Object?> line(
   num price = 15000,
   num? subtotal,
   num? total,
+  num? discountPercent,
+  num? discountAmount,
 }) => {
   'id': id,
   'quantity': quantity,
   'price': price,
   'line_subtotal': subtotal ?? quantity * price,
   'line_total': total ?? subtotal ?? quantity * price,
+  'discount_percent': ?discountPercent,
+  'discount_amount': ?discountAmount,
   'description': ?description,
   if (name != null) 'product': {'id': 'p_$id', 'name': name},
 };
@@ -296,6 +300,7 @@ void main() {
                   'i1',
                   name: 'Kopi Susu',
                   quantity: 2,
+                  discountAmount: 3000,
                   subtotal: 27000, // 30000 less 3000
                   total: 27000,
                 ),
@@ -584,7 +589,7 @@ void main() {
       await tester.tap(printButton());
       await tester.pumpAndSettle();
 
-      expect(rig.analytics.logged.map((e) => e.$1), ['receipt_printed']);
+      expect(rig.analytics.logged.map((e) => e.$1), ['tenant_receipt_printed']);
     });
 
     // A slip for a cancelled sale still has to say so — the same banner the printed receipt

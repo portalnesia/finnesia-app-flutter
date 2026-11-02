@@ -21,12 +21,15 @@ import 'package:pn_types/src/native/link_port.dart';
 import 'package:pn_types/src/native/opener_port.dart';
 import 'package:pn_types/src/native/printer_port.dart';
 import 'package:pn_types/src/native/public_http_port.dart';
+import 'package:pn_types/src/native/push_messaging_port.dart';
 import 'package:pn_types/src/native/store_port.dart';
 import 'package:pn_types/src/pos_shift.dart';
+import 'package:pn_types/src/session.dart';
 import 'package:pos/device/device_reset.dart';
 import 'package:pos/http/pos_transport.dart';
 import 'package:pos/login/login_controller.dart';
 import 'package:pos/login/native_login.dart';
+import 'package:pos/notifications/push_lifecycle_controller.dart';
 import 'package:pos/native/scanner/scanner_port.dart';
 import 'package:pos/pairing/pairing.dart';
 import 'package:pos/queue/queue_sync.dart';
@@ -55,14 +58,41 @@ class AppServices extends ChangeNotifier {
     required this.language,
     required this.theme,
     LinkPort? link,
-  }) : pendingSaleStore = pendingSaleStore(session.current?.companyId ?? '') {
+    PushMessagingPort? pushMessaging,
+  }) : pendingSaleStore = pendingSaleStore(session.current?.companyId ?? ''),
+       pushController = pushMessaging == null
+           ? null
+           : PushLifecycleController(
+               client: client,
+               messaging: pushMessaging,
+               session: session,
+               store: loginDeps.store,
+               deviceInfo: deviceInfo,
+               locale: () => language.value.name,
+             ) {
     queueSync = QueueSync(
       client: client,
       queue: this.pendingSaleStore,
       session: session,
       analytics: analytics,
     );
-    _unsubscribe = session.subscribe((_) => notifyListeners());
+    _lastAnalyticsSession = session.current;
+    _setAccountMode(session.current?.branding?.accountMode, force: true);
+    _unsubscribe = session.subscribe((next) {
+      final previous = _lastAnalyticsSession;
+      _lastAnalyticsSession = next;
+      final signedOut =
+          previous?.sessionToken.isNotEmpty == true &&
+          next?.sessionToken.isEmpty == true;
+      if (signedOut) _analyticsSignedOut = true;
+      if (next == null || next.sessionToken.isNotEmpty) {
+        _analyticsSignedOut = false;
+      }
+      _setAccountMode(
+        next == null || _analyticsSignedOut ? null : next.branding?.accountMode,
+      );
+      notifyListeners();
+    });
     // An incoming App Link is the browser's way of saying the login is done: wake the poll now
     // instead of letting it sit out its two-second interval.
     //
@@ -88,6 +118,17 @@ class AppServices extends ChangeNotifier {
   late final StreamSubscription<Uri>? _linkSubscription;
 
   late final void Function() _unsubscribe;
+
+  PosSession? _lastAnalyticsSession;
+  String? _analyticsAccountMode;
+  bool _analyticsSignedOut = false;
+
+  void _setAccountMode(String? value, {bool force = false}) {
+    if (value != null && value.isEmpty) value = null;
+    if (!force && value == _analyticsAccountMode) return;
+    _analyticsAccountMode = value;
+    unawaited(analytics.setUserProperty('account_mode', value));
+  }
 
   final SessionHolder session;
 
@@ -122,6 +163,9 @@ class AppServices extends ChangeNotifier {
 
   /// Where product-usage events go (`plan/firebase/README.md`).
   final AnalyticsPort analytics;
+
+  /// Optional FCM lifecycle for platforms that provide push messaging.
+  final PushLifecycleController? pushController;
 
   /// Every call to the tenant's API goes through this: the host and the bearer come from
   /// [session] on each request (`PosTransport`), never from the caller.
@@ -185,6 +229,7 @@ class AppServices extends ChangeNotifier {
     _linkSubscription?.cancel();
     login.dispose();
     queueSync.dispose();
+    pushController?.dispose();
     shiftClosed.dispose();
     activeShift.dispose();
     super.dispose();
@@ -316,6 +361,7 @@ Future<BootResult> bootstrap({
   required EnumPreference<AppLanguage> language,
   required EnumPreference<ThemeMode> theme,
   LinkPort? link,
+  PushMessagingPort? pushMessaging,
   Future<void> Function() delay = _pollEvery2Seconds,
   Duration pollTimeout = _pollFor,
   DateTime Function() now = DateTime.now,
@@ -371,6 +417,7 @@ Future<BootResult> bootstrap({
       language: language,
       theme: theme,
       link: link,
+      pushMessaging: pushMessaging,
     ),
   );
 }

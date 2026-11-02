@@ -25,7 +25,7 @@ import 'package:pos/checkout/checkout_service.dart';
 // an add-on: a send that leaves no record is the bug this whole step exists to remove.
 
 const saleJson = '''
-{"id":"x1","number":"POS-0001","shift_id":"s1","outlet_id":"o1","cashier_id":"u1",
+{"id":"x1","invoice_id":"inv_1","number":"POS-0001","shift_id":"s1","outlet_id":"o1","cashier_id":"u1",
  "transaction_date":"2026-09-20","subtotal":15000,"discount_amount":0,"tax_amount":0,
  "grand_total":15000,"tendered_amount":20000,"change_amount":5000,
  "status":"POSTED","created_at":"2026-09-20T03:00:00Z"}''';
@@ -587,22 +587,37 @@ void main() {
   // `plan/firebase/README.md` §2: no raw error text as a parameter, only the status code — it is
   // already a category, not free text.
   group('analytics', () {
-    test('logs sale_completed when the server records the sale', () async {
-      final r = rig();
-      r.transport.respond(json(200, '{"data":$saleJson}'));
+    test(
+      'logs tenant sale with server figures, not Finnesia revenue',
+      () async {
+        final r = rig();
+        final serverSale = saleJson.replaceFirst(
+          '"grand_total":15000',
+          '"grand_total":14750',
+        );
+        r.transport.respond(json(200, '{"data":$serverSale}'));
 
-      await send(r, draft);
+        await send(r, draft);
 
-      expect(r.analytics.logged.map((e) => e.$1), ['sale_completed']);
-    });
+        expect(r.analytics.logged.map((e) => e.$1), ['tenant_sale_completed']);
+        expect(r.analytics.logged.single.$2, {
+          'transaction_id': 'inv_1',
+          'value': 14750,
+          'currency': 'IDR',
+          'item_count': 1,
+          'payment_methods': 'CASH',
+          'offline': 0,
+        });
+      },
+    );
 
-    test('logs sale_queued_offline when nobody answered', () async {
+    test('does not count a sale while it is merely queued', () async {
       final r = rig();
       r.transport.fail(TransportException('timeout'));
 
       await send(r, draft);
 
-      expect(r.analytics.logged.map((e) => e.$1), ['sale_queued_offline']);
+      expect(r.analytics.logged, isEmpty);
     });
 
     test('logs sale_rejected with the status code, not the message', () async {
@@ -613,8 +628,44 @@ void main() {
 
       await send(r, draft);
 
-      expect(r.analytics.logged.map((e) => e.$1), ['sale_rejected']);
+      expect(r.analytics.logged.map((e) => e.$1), ['tenant_sale_rejected']);
       expect(r.analytics.logged.single.$2, {'status': 422});
+    });
+
+    test('does not count a server error or an unreadable success', () async {
+      for (final answer in [json(503, '{}'), json(200, '{"data":{}}')]) {
+        final r = rig();
+        r.transport.respond(answer);
+        await send(r, draft);
+        expect(r.analytics.logged, isEmpty);
+      }
+    });
+
+    test('does not count a timeout or its late response', () async {
+      final r = rig(answerWithin: const Duration(milliseconds: 20));
+      r.transport.hold();
+      await send(r, draft);
+      r.transport.release(json(200, '{"data":$saleJson}'));
+      await Future<void>.delayed(Duration.zero);
+      expect(r.analytics.logged, isEmpty);
+    });
+
+    test(
+      'defers completion when the row cannot be removed for replay',
+      () async {
+        final r = rig();
+        r.queue.failRemove = true;
+        r.transport.respond(json(200, '{"data":$saleJson}'));
+        expect(await send(r, draft), isA<CheckoutSynced>());
+        expect(r.analytics.logged, isEmpty);
+      },
+    );
+
+    test('a double tap reports only one confirmed sale', () async {
+      final r = rig();
+      r.transport.respond(json(200, '{"data":$saleJson}'));
+      await Future.wait([send(r), send(r)]);
+      expect(r.analytics.logged.map((e) => e.$1), ['tenant_sale_completed']);
     });
 
     test('logs nothing for a request a bug threw out of', () async {

@@ -287,7 +287,7 @@ void closing() {
 
       await controller.submit();
 
-      expect(analytics.logged.map((e) => e.$1), ['shift_closed']);
+      expect(analytics.logged.map((e) => e.$1), ['tenant_shift_close']);
     });
 
     test('logs nothing when the server refuses', () async {

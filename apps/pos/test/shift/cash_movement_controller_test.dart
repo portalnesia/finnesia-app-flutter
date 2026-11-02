@@ -337,7 +337,9 @@ void submitting() {
 
       await controller.submit();
 
-      expect(analytics.logged.map((e) => e.$1), ['cash_movement_recorded']);
+      expect(analytics.logged.map((e) => e.$1), [
+        'tenant_cash_movement_recorded',
+      ]);
       expect(analytics.logged.single.$2, {'type': 'cashOut'});
     });
 

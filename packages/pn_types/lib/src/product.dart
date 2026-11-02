@@ -53,6 +53,19 @@ enum ProductType {
   }
 }
 
+/// The tax relation the POS needs to price a product offline.
+///
+/// The catalogue API returns the linked tax with each product; only its identity and rate are
+/// needed here, so the rest of the tax master record stays in the web model.
+@freezed
+abstract class ProductTax with _$ProductTax {
+  const factory ProductTax({required String id, required num rate}) =
+      _ProductTax;
+
+  factory ProductTax.fromJson(Map<String, dynamic> json) =>
+      _$ProductTaxFromJson(json);
+}
+
 /// The product fields the POS actually reads.
 ///
 /// Ported from `finnesia-monorepo/packages/types/src/product.ts`, which declares the
@@ -106,6 +119,11 @@ abstract class Product with _$Product {
     /// The catalogue photo, as a file reference: the tile renders it only when
     /// [FileRef.renderableUrl] is non-null, and falls back to an icon otherwise.
     @JsonKey(name: 'image') FileRef? image,
+
+    /// The tax selected on the product. The tax id is posted on checkout; [tax]
+    /// supplies its rate while a sale is priced on-device.
+    @JsonKey(name: 'tax_id') String? taxId,
+    ProductTax? tax,
 
     /// Null on rows that predate the field, which the till reads as active
     /// (`p.is_active !== false`).

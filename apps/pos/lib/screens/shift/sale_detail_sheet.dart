@@ -112,7 +112,7 @@ class _SaleBody extends StatelessWidget {
       context,
       successMessage: l10n.receiptSent,
       loadFailedMessage: l10n.receiptLoadFailed,
-      analyticsEvent: 'receipt_printed',
+      analyticsEvent: 'tenant_receipt_printed',
       print: () => printReceipt(
         sale,
         client: services.client,

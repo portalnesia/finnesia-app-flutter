@@ -21,6 +21,8 @@ import 'package:pos/native/analytics/analytics_firebase.dart';
 /// `num`, `bool` — no custom Pigeon class appears in a `logEvent` call).
 const _logEventChannelName =
     'dev.flutter.pigeon.firebase_analytics_platform_interface.FirebaseAnalyticsHostApi.logEvent';
+const _setUserPropertyChannelName =
+    'dev.flutter.pigeon.firebase_analytics_platform_interface.FirebaseAnalyticsHostApi.setUserProperty';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -34,14 +36,27 @@ void main() {
     _logEventChannelName,
     StandardMessageCodec(),
   );
+  final userPropertyChannel = const BasicMessageChannel<Object?>(
+    _setUserPropertyChannelName,
+    StandardMessageCodec(),
+  );
 
   List<Object?>? lastEvent;
+  List<Object?>? lastUserProperty;
 
   setUp(() {
     lastEvent = null;
+    lastUserProperty = null;
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockDecodedMessageHandler<Object?>(channel, (message) async {
           lastEvent = message as List<Object?>?;
+          return <Object?>[null];
+        });
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockDecodedMessageHandler<Object?>(userPropertyChannel, (
+          message,
+        ) async {
+          lastUserProperty = message as List<Object?>?;
           return <Object?>[null];
         });
   });
@@ -49,9 +64,21 @@ void main() {
   tearDown(() {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockDecodedMessageHandler<Object?>(channel, null);
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockDecodedMessageHandler<Object?>(userPropertyChannel, null);
   });
 
   group('FirebaseAnalyticsPort', () {
+    test('sets and clears a user property', () async {
+      final analytics = FirebaseAnalyticsPort();
+
+      await analytics.setUserProperty('account_mode', 'managed');
+      expect(lastUserProperty, ['account_mode', 'managed']);
+
+      await analytics.setUserProperty('account_mode', null);
+      expect(lastUserProperty, ['account_mode', null]);
+    });
+
     test('logs the event name and parameters', () async {
       await FirebaseAnalyticsPort().logEvent(
         'checkout_completed',
@@ -69,6 +96,19 @@ void main() {
       final event = lastEvent!.single as Map;
       expect(event['parameters'], isNull);
     });
+
+    test(
+      'converts boolean parameters to Firebase-compatible numeric flags',
+      () async {
+        await FirebaseAnalyticsPort().logEvent(
+          'tenant_barcode_scanned',
+          parameters: {'offline': true},
+        );
+
+        final event = lastEvent!.single as Map;
+        expect(event['parameters'], {'offline': 1});
+      },
+    );
 
     // The failure path the port rules require (`.claude/rules/native-ports.md` §4): losing an
     // event must never take a sale down with it.

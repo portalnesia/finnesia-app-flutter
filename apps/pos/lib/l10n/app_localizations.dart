@@ -727,6 +727,144 @@ abstract class L10n {
   /// **'Kembali'**
   String get menuBack;
 
+  /// No description provided for @notificationMenuEntry.
+  ///
+  /// In id, this message translates to:
+  /// **'Notifikasi'**
+  String get notificationMenuEntry;
+
+  /// No description provided for @notificationUnreadBadge.
+  ///
+  /// In id, this message translates to:
+  /// **'{count} belum dibaca'**
+  String notificationUnreadBadge(int count);
+
+  /// No description provided for @notificationInboxTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Kotak Masuk Notifikasi'**
+  String get notificationInboxTitle;
+
+  /// No description provided for @notificationInboxEmpty.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum ada notifikasi.'**
+  String get notificationInboxEmpty;
+
+  /// No description provided for @notificationInboxLoadFailed.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum bisa memuat notifikasi. Periksa koneksi lalu coba lagi.'**
+  String get notificationInboxLoadFailed;
+
+  /// No description provided for @notificationInboxMoreFailed.
+  ///
+  /// In id, this message translates to:
+  /// **'Gagal memuat notifikasi berikutnya. Ketuk untuk mencoba lagi.'**
+  String get notificationInboxMoreFailed;
+
+  /// No description provided for @notificationMarkRead.
+  ///
+  /// In id, this message translates to:
+  /// **'Tandai sudah dibaca'**
+  String get notificationMarkRead;
+
+  /// No description provided for @notificationMarkReadFailed.
+  ///
+  /// In id, this message translates to:
+  /// **'Gagal menandai notifikasi sebagai dibaca. Coba lagi.'**
+  String get notificationMarkReadFailed;
+
+  /// No description provided for @notificationSelect.
+  ///
+  /// In id, this message translates to:
+  /// **'Pilih'**
+  String get notificationSelect;
+
+  /// No description provided for @notificationCancelSelection.
+  ///
+  /// In id, this message translates to:
+  /// **'Batal'**
+  String get notificationCancelSelection;
+
+  /// No description provided for @notificationSelectAll.
+  ///
+  /// In id, this message translates to:
+  /// **'Pilih semua'**
+  String get notificationSelectAll;
+
+  /// No description provided for @notificationMarkSelectedRead.
+  ///
+  /// In id, this message translates to:
+  /// **'Tandai pilihan dibaca'**
+  String get notificationMarkSelectedRead;
+
+  /// No description provided for @notificationMarkAllRead.
+  ///
+  /// In id, this message translates to:
+  /// **'Tandai semua sudah dibaca'**
+  String get notificationMarkAllRead;
+
+  /// No description provided for @notificationMarkAllConfirm.
+  ///
+  /// In id, this message translates to:
+  /// **'Tandai SEMUA notifikasi sebagai sudah dibaca?'**
+  String get notificationMarkAllConfirm;
+
+  /// No description provided for @notificationMarkSelectedConfirm.
+  ///
+  /// In id, this message translates to:
+  /// **'Tandai {count} notifikasi sebagai dibaca?'**
+  String notificationMarkSelectedConfirm(int count);
+
+  /// No description provided for @notificationConfirmMarkRead.
+  ///
+  /// In id, this message translates to:
+  /// **'Tandai dibaca'**
+  String get notificationConfirmMarkRead;
+
+  /// No description provided for @notificationMarkBulkReadFailed.
+  ///
+  /// In id, this message translates to:
+  /// **'Gagal menandai notifikasi sebagai dibaca. Coba lagi.'**
+  String get notificationMarkBulkReadFailed;
+
+  /// No description provided for @notificationSelectedCount.
+  ///
+  /// In id, this message translates to:
+  /// **'{count} dipilih'**
+  String notificationSelectedCount(int count);
+
+  /// No description provided for @notificationAnnouncementTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Pengumuman'**
+  String get notificationAnnouncementTitle;
+
+  /// No description provided for @notificationLinkUnavailable.
+  ///
+  /// In id, this message translates to:
+  /// **'Tautan notifikasi tidak aman atau tidak tersedia.'**
+  String get notificationLinkUnavailable;
+
+  /// No description provided for @notificationOpenFailed.
+  ///
+  /// In id, this message translates to:
+  /// **'Notifikasi belum bisa dibuka. Coba lagi.'**
+  String get notificationOpenFailed;
+
+  /// No description provided for @notificationEnablePush.
+  ///
+  /// In id, this message translates to:
+  /// **'Aktifkan notifikasi'**
+  String get notificationEnablePush;
+
+  /// No description provided for @notificationAnnouncementUnavailable.
+  ///
+  /// In id, this message translates to:
+  /// **'Pengumuman ini sudah tidak tersedia.'**
+  String get notificationAnnouncementUnavailable;
+
   /// No description provided for @menuAccountSection.
   ///
   /// In id, this message translates to:

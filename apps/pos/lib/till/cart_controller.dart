@@ -12,6 +12,7 @@ import 'package:flutter/foundation.dart';
 import 'package:pn_pos/src/pos_calculations.dart';
 import 'package:pn_pos/src/pos_cart.dart';
 import 'package:pn_types/src/native/analytics_port.dart';
+import 'package:pn_types/src/pos.dart';
 import 'package:pn_types/src/product.dart';
 
 /// The basket on the till.
@@ -21,9 +22,10 @@ import 'package:pn_types/src/product.dart';
 /// the line that was just removed, so a slipped thumb costs a tap and not a re-scan
 /// (`plan/ui/README.md` §3.5).
 class CartController extends ChangeNotifier {
-  CartController({required this._analytics});
+  CartController({required this._analytics, this._preferences});
 
   final AnalyticsPort _analytics;
+  final POSPreferences? _preferences;
 
   List<CartLine> _lines = const [];
 
@@ -40,7 +42,7 @@ class CartController extends ChangeNotifier {
 
   /// The lines are priced at `sell_price`, and a product with none counts as free, as
   /// `pos-page.tsx` does (`p.sell_price ?? 0`): the server is what refuses a sale it cannot price.
-  CartTotals get totals => totalsOfLines(_lines);
+  CartTotals get totals => totalsOfLines(_lines, preferences: _preferences);
 
   bool get canUndoRemove => _removed != null;
 
@@ -63,7 +65,7 @@ class CartController extends ChangeNotifier {
   void add(Product product) {
     _lines = addToCart(_lines, product);
     notifyListeners();
-    unawaited(_analytics.logEvent('item_added_to_cart'));
+    unawaited(_analytics.logEvent('tenant_item_added_to_cart'));
   }
 
   void setQty(String lineId, num qty) {
@@ -78,7 +80,7 @@ class CartController extends ChangeNotifier {
     _removed = (line: _lines[index], index: index);
     _lines = removeLine(_lines, lineId);
     notifyListeners();
-    unawaited(_analytics.logEvent('item_removed_from_cart'));
+    unawaited(_analytics.logEvent('tenant_item_removed_from_cart'));
   }
 
   /// Puts back the line that was removed last, where it was (or at the end, if the cart is
@@ -108,6 +110,6 @@ class CartController extends ChangeNotifier {
     _lines = const [];
     _removed = null;
     notifyListeners();
-    unawaited(_analytics.logEvent('cart_cleared'));
+    unawaited(_analytics.logEvent('tenant_cart_cleared'));
   }
 }

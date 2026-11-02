@@ -230,7 +230,9 @@ void main() {
 
       await r.controller.retry('REF-1');
 
-      expect(r.analytics.logged.map((e) => e.$1), ['queue_sale_retried']);
+      expect(r.analytics.logged.map((e) => e.$1), [
+        'tenant_queue_sale_retried',
+      ]);
     });
 
     test('logs queue_sale_discarded', () async {
@@ -240,7 +242,9 @@ void main() {
 
       await r.controller.discard('REF-1');
 
-      expect(r.analytics.logged.map((e) => e.$1), ['queue_sale_discarded']);
+      expect(r.analytics.logged.map((e) => e.$1), [
+        'tenant_queue_sale_discarded',
+      ]);
     });
 
     test('logs queue_send_now_triggered', () async {
@@ -250,7 +254,9 @@ void main() {
 
       await r.controller.sendNow();
 
-      expect(r.analytics.logged.map((e) => e.$1), ['queue_send_now_triggered']);
+      expect(r.analytics.logged.map((e) => e.$1), [
+        'tenant_queue_send_now_triggered',
+      ]);
     });
   });
 }

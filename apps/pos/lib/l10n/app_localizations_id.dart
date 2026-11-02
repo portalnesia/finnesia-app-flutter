@@ -399,6 +399,89 @@ class L10nId extends L10n {
   String get menuBack => 'Kembali';
 
   @override
+  String get notificationMenuEntry => 'Notifikasi';
+
+  @override
+  String notificationUnreadBadge(int count) {
+    return '$count belum dibaca';
+  }
+
+  @override
+  String get notificationInboxTitle => 'Kotak Masuk Notifikasi';
+
+  @override
+  String get notificationInboxEmpty => 'Belum ada notifikasi.';
+
+  @override
+  String get notificationInboxLoadFailed =>
+      'Belum bisa memuat notifikasi. Periksa koneksi lalu coba lagi.';
+
+  @override
+  String get notificationInboxMoreFailed =>
+      'Gagal memuat notifikasi berikutnya. Ketuk untuk mencoba lagi.';
+
+  @override
+  String get notificationMarkRead => 'Tandai sudah dibaca';
+
+  @override
+  String get notificationMarkReadFailed =>
+      'Gagal menandai notifikasi sebagai dibaca. Coba lagi.';
+
+  @override
+  String get notificationSelect => 'Pilih';
+
+  @override
+  String get notificationCancelSelection => 'Batal';
+
+  @override
+  String get notificationSelectAll => 'Pilih semua';
+
+  @override
+  String get notificationMarkSelectedRead => 'Tandai pilihan dibaca';
+
+  @override
+  String get notificationMarkAllRead => 'Tandai semua sudah dibaca';
+
+  @override
+  String get notificationMarkAllConfirm =>
+      'Tandai SEMUA notifikasi sebagai sudah dibaca?';
+
+  @override
+  String notificationMarkSelectedConfirm(int count) {
+    return 'Tandai $count notifikasi sebagai dibaca?';
+  }
+
+  @override
+  String get notificationConfirmMarkRead => 'Tandai dibaca';
+
+  @override
+  String get notificationMarkBulkReadFailed =>
+      'Gagal menandai notifikasi sebagai dibaca. Coba lagi.';
+
+  @override
+  String notificationSelectedCount(int count) {
+    return '$count dipilih';
+  }
+
+  @override
+  String get notificationAnnouncementTitle => 'Pengumuman';
+
+  @override
+  String get notificationLinkUnavailable =>
+      'Tautan notifikasi tidak aman atau tidak tersedia.';
+
+  @override
+  String get notificationOpenFailed =>
+      'Notifikasi belum bisa dibuka. Coba lagi.';
+
+  @override
+  String get notificationEnablePush => 'Aktifkan notifikasi';
+
+  @override
+  String get notificationAnnouncementUnavailable =>
+      'Pengumuman ini sudah tidak tersedia.';
+
+  @override
   String get menuAccountSection => 'Akun';
 
   @override

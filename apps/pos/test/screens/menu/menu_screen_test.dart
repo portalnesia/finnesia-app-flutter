@@ -57,12 +57,13 @@ PosApp appWith(Rig rig, PublicHttpPort http) => PosApp(
   ),
 );
 
-/// A backend for a signed-in device: the two reads the Menu makes.
+/// A backend for a signed-in device: the Menu reads and its notification unread count.
 class MenuHttp implements PublicHttpPort {
   MenuHttp({
     this.outletStatus = 200,
     this.shiftStatus = 200,
     this.shiftOpen = true,
+    this.notificationUnreadCount = 0,
   });
 
   final int outletStatus;
@@ -72,6 +73,7 @@ class MenuHttp implements PublicHttpPort {
   /// shut. A separate flag and not a nullable body: `null` there would mean both "not given" and
   /// "no shift", and the test that wants the second would silently get the first.
   final bool shiftOpen;
+  final int notificationUnreadCount;
 
   final calls = <TransportRequest>[];
 
@@ -126,6 +128,12 @@ class MenuHttp implements PublicHttpPort {
       return held != null ? held.future : _shiftAnswer();
     }
     final path = request.path.split('?').first;
+    if (path == '/api/v1/notifications/unread-count') {
+      return _answer(200, {'total': notificationUnreadCount});
+    }
+    if (path == '/api/v1/notifications') {
+      return _answer(200, {'items': <Object?>[], 'next_cursor': ''});
+    }
     // What the shift screen reads once it is opened from here.
     if (path == '/api/v1/pos/shifts/shift_1') {
       return _answer(200, {
@@ -333,6 +341,23 @@ void main() {
       await pumpMenu(tester);
 
       expect(find.byType(CompanyAvatar), findsOneWidget);
+    });
+
+    testWidgets('the inbox is a menu entry with a small unread badge', (
+      tester,
+    ) async {
+      await pumpMenu(tester, http: MenuHttp(notificationUnreadCount: 4));
+
+      expect(find.text('Notifikasi'), findsOneWidget);
+      expect(find.text('4'), findsOneWidget);
+      expect(find.byType(Badge), findsOneWidget);
+
+      await tester.tap(find.text('Notifikasi'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Kotak Masuk Notifikasi'), findsOneWidget);
+      expect(find.text('Belum ada notifikasi.'), findsOneWidget);
+      expect(find.text('Notifikasi'), findsNothing);
     });
   });
 

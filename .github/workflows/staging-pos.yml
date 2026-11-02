@@ -21,8 +21,8 @@
 # di dalam `buildTypes`.
 #
 # Trigger: tag `pos-vMAJOR.MINOR.PATCH-staging.N` (mis. `pos-v1.2.0-staging.3`). `N` untuk
-# penomoran manusia; yang dibaca workflow adalah base `1.2.0`. Keempat pattern tag di repo ini
-# saling eksklusif — lihat plan/staging/README.md §9.
+# penomoran manusia; yang dibaca workflow adalah base `1.2.0`. Kategori staging terpisah dari
+# tag release dan patch; Android/Windows berbagi tag hanya untuk release atau patch.
 #
 # Prefix `pos-` menandakan aplikasi (repo ini monorepo, akan ada aplikasi lain), bukan bagian
 # dari versinya.

@@ -5,6 +5,10 @@
          request. -->
     <uses-permission android:name="android.permission.INTERNET"/>
 
+    <!-- Android 13+ requires this runtime permission before FCM/local notification display. The
+         app requests it only after the cashier opts in from the notification inbox. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+
     <!-- Bluetooth, for the thermal receipt printer (plan/printer/README.md §9). The tablets are
          Android 12+ (minSdk 31), so these two are the whole list.
          BLUETOOTH_SCAN finds the printer; `neverForLocation` says the scan is never used to work

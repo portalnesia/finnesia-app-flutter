@@ -266,7 +266,7 @@ void main() {
       await tester.tap(printButton);
       await tester.pumpAndSettle();
 
-      expect(rig.analytics.logged.map((e) => e.$1), ['receipt_printed']);
+      expect(rig.analytics.logged.map((e) => e.$1), ['tenant_receipt_printed']);
     });
 
     testWidgets('logs pending_receipt_printed for a queued sale', (
@@ -278,7 +278,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(rig.analytics.logged.map((e) => e.$1), [
-        'pending_receipt_printed',
+        'tenant_pending_receipt_printed',
       ]);
     });
   });

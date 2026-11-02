@@ -1,5 +1,5 @@
 ---
-description: Windows rules — platform pengembangan harian, BINARY_NAME, ikon, jalur distribusi belum ada
+description: Aturan Windows — platform pengembangan, branding, distribusi Shorebird dan MSIX
 tools: "*"
 alwaysApply: true
 paths:
@@ -10,27 +10,28 @@ paths:
   - "**/*.xml"
 ---
 
-# Windows — Platform Pengembangan Harian, Distribusinya Belum Ada
+# Windows — Platform Pengembangan Harian dan Distribusi CI
 
 > **Windows dipakai untuk mengembangkan dan menguji aplikasi ini.** `FinnesiaPOS.exe` dibangun
 > dan dijalankan di mesin pengembangan.
 >
-> Yang **belum** ada adalah **jalur distribusinya**: tidak ada build rilis, tidak ada MSIX yang
-> dikirim ke siapa pun, dan tidak ada pemeriksaan tanda tangan.
+> Jalur CI sekarang membuat rilis Windows dengan Shorebird lalu mengemas MSIX ke draft GitHub
+> Release. Upload ke Partner Center tetap manual. Shorebird Windows masih beta dan mendukung x64.
 
 Konteks dan keputusan pemilik: `.claude/rules/architecture.md` §1.1.
 
 > [!IMPORTANT]
 > **Jangan tulis "Windows belum dijalankan" atau "belum di-build".** Itu **salah** — aplikasinya
-> jalan, dan dipakai setiap hari. Yang benar-benar belum ada hanya jalur distribusinya.
+> jalan, dan dipakai setiap hari. Workflow rilis kini terkonfigurasi, tetapi hasilnya harus tetap
+> diverifikasi melalui GitHub Actions; konfigurasi saja bukan bukti binary telah teruji.
 
 ---
 
 ## 1. Kenapa Folder Ini Disentuh Sama Sekali
 
 **Nama aplikasi dan branding diset lebih awal** supaya platform ini tidak jadi kejutan nanti.
-Alasan itu tepat: platformnya memang dipakai untuk pengembangan, dan jalur distribusinya sedang
-dirancang.
+Alasan itu tepat: platformnya dipakai untuk pengembangan, dan jalur rilis Shorebird + MSIX kini
+dikonfigurasi dalam GitHub Actions; upload Partner Center tetap manual.
 
 Branding yang sudah diset:
 
@@ -149,15 +150,15 @@ diperiksa di dalam `.exe` itu sendiri (string Windows disimpan UTF-16LE): `Finne
 `FinnesiaPOS.exe` 1×, `FinnesiaPOS` 2×, dan **nol** `pos` telanjang sebagai nama produk. Lokasi
 data: `.claude/rules/project.md` §5.1.
 
-**Belum dikerjakan** — dan ini daftar yang menentukan pekerjaan distribusi, jadi jangan
-diperlakukan sebagai "tidak ada":
+**Belum diverifikasi pada build release nyata** — konfigurasi CI sudah ada, tetapi job Windows
+belum dijalankan dalam tugas ini. Jangan menyamakan konfigurasi dengan bukti runtime:
 
 | Hal | Keadaan sebenarnya |
 | ---- | ----------------- |
-| Build **release** | Belum pernah. Hanya ada folder `Debug/` di bawah `build/windows/x64/runner/` |
-| MSIX sebagai artefak | Tidak ada `*.msix` / `*.msixupload` di pohon ini. Packaging pernah dicoba dan deeplink terbukti bekerja lewat sideload; hasilnya tidak disimpan |
+| Build **release** | Workflow `windows-pos.yml` memakai `shorebird release windows` pada runner Windows x64; hasil release belum diverifikasi sampai GitHub Actions menjalankannya |
+| MSIX sebagai artefak | Workflow mengemas output Shorebird menjadi MSIX dan melampirkannya ke draft GitHub Release; belum ada artifact release yang tersimpan di repo atau diuji pada mesin pengguna |
 | **Printer BLE dari aplikasi Windows** | **Belum terbukti.** `universal_ble_plugin.dll` ikut ter-build, tapi belum ada bukti printer pernah terhubung dari app Windows. Dukungan BLE Windows `universal_ble` belum dijalankan sama sekali. Ini fungsi inti POS — lihat `plan/printer/` |
-| `identity_name` untuk Microsoft Store | Sekarang `com.finnesia.pos` — nilai itu **dipakai untuk sideload**, bukan nilai Store. Untuk Store, `Package/Identity/Name` harus persis sama dengan yang diberikan Partner Center |
+| `identity_name` untuk Microsoft Store | Nilainya dikonfigurasi di `apps/pos/pubspec.yaml` dan harus cocok persis dengan `Package/Identity/Name` dari Partner Center; upload dan sertifikasi tetap manual |
 | SQLite di aplikasi yang berjalan | `sqflite` tidak punya implementasi Windows, jadi Windows memakai `sqflite_common_ffi` (`sqlite3.dll` ikut terbundel, diperiksa di folder `Debug`). Jalur file dan bukaan-ulang diuji dengan SQLite FFI sungguhan di `flutter test`; yang belum: aplikasinya sendiri membuka `%APPDATA%\Finnesia\Finnesia POS\finnesia_pos.db` |
 
 Semua pemeriksaan di repo ini untuk Windows bersifat **statis** (test membaca berkas). Itu

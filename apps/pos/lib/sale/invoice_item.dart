@@ -16,6 +16,8 @@ InvoiceItem toInvoiceItem(SalesInvoiceItem item) => (
   description: item.description,
   quantity: item.quantity,
   price: item.price,
+  discountPercent: item.discountPercent,
+  discountAmount: item.discountAmount,
   lineSubtotal: item.lineSubtotal,
   lineTotal: item.lineTotal,
   // The customer receipt ignores the category; only the kitchen ticket reads it, and that is not

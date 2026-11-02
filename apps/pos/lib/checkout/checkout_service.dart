@@ -16,6 +16,7 @@ import 'package:pn_types/src/api/endpoints/pos.dart';
 import 'package:pn_types/src/api/transport.dart';
 import 'package:pn_types/src/native/analytics_port.dart';
 import 'package:pn_types/src/pos.dart';
+import 'package:pos/analytics/tenant_analytics.dart';
 
 /// What happened to a checkout.
 ///
@@ -175,9 +176,18 @@ class CheckoutService {
         _client,
         basket.copyWith(clientRef: ref),
       ).timeout(_answerWithin);
-      await _clear(ref);
+      final consumed = await _clear(ref);
       _unconfirmed = null;
-      await _analytics.logEvent('sale_completed');
+      // A row left for replay is reported by the drain once it is consumed,
+      // rather than once here and again at reconnect.
+      if (consumed) {
+        await logTenantSaleCompleted(
+          _analytics,
+          sale: sale,
+          payload: basket,
+          offline: false,
+        );
+      }
       return CheckoutSynced(sale);
     } on ApiError catch (e) {
       // Only a 4xx is a refusal. A 5xx may have committed before it failed, and a 2xx that
@@ -189,20 +199,18 @@ class CheckoutService {
         // The status code only — never `e.message`, which is the server's sentence to the
         // cashier and may quote back whatever they typed (`plan/firebase/README.md` §2).
         await _analytics.logEvent(
-          'sale_rejected',
+          'tenant_sale_rejected',
           parameters: {'status': e.status},
         );
         return CheckoutRejected(e.message, e.status);
       }
-      await _analytics.logEvent('sale_queued_offline');
+      // Enqueue is not a completed sale; only a confirmed drain reports it.
       return CheckoutQueued(queued);
     } on TransportException {
-      await _analytics.logEvent('sale_queued_offline');
       return CheckoutQueued(queued);
     } on TimeoutException {
       // The request is still out there. It is not cancelled: its answer is ignored, and the
       // sale goes again under the same ref, which is answered with whatever the first one did.
-      await _analytics.logEvent('sale_queued_offline');
       return CheckoutQueued(queued);
     }
   }
@@ -220,11 +228,13 @@ class CheckoutService {
   ///   parked as `failed` for the cashier to discard.
   ///
   /// So the leftover costs a row in the panel, and never money.
-  Future<void> _clear(String ref) async {
+  Future<bool> _clear(String ref) async {
     try {
       await _queue.remove(ref);
+      return true;
     } on PendingSaleStoreException {
       // See above: the row is left for the drain loop, and the outcome stands.
+      return false;
     }
   }
 }

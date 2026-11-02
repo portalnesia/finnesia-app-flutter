@@ -13,8 +13,16 @@ import 'analytics_port.dart';
 /// (`.claude/rules/native-ports.md` §2.3). No failure path: the port's contract is that it never
 /// throws (§4 — a fake needs one only where the port can fail).
 class FakeAnalytics implements AnalyticsPort {
+  /// User-property changes, including `null` values that clear a property.
+  final userProperties = <(String, String?)>[];
+
   /// Every `(name, parameters)` pair received, in order.
   final logged = <(String, Map<String, Object>?)>[];
+
+  @override
+  Future<void> setUserProperty(String name, String? value) async {
+    userProperties.add((name, value));
+  }
 
   @override
   Future<void> logEvent(String name, {Map<String, Object>? parameters}) async {

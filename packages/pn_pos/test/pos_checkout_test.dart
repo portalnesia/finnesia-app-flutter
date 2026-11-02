@@ -49,6 +49,24 @@ POSCheckoutDTO build({
       payments: const [cash],
     );
 
+POSCheckoutDTO buildWithTaxSettings({
+  required Product product,
+  required POSPreferences preferences,
+}) =>
+    buildCheckoutPayload(
+      shiftId: 'shift_1',
+      outletId: 'out_1',
+      customerId: '',
+      notes: '',
+      tableNumber: '',
+      queueNumber: '',
+      discountAmount: 0,
+      transactionDate: '2026-09-18',
+      lines: [CartLine(id: 'tax_line', product: product, qty: 1)],
+      payments: const [cash],
+      preferences: preferences,
+    );
+
 void main() {
   group('buildCheckoutPayload', () {
     test('maps each cart line to an API item at the price on the product', () {
@@ -169,6 +187,30 @@ void main() {
       // basket, because the server returns whatever sale it already has under a ref
       // without comparing contents.
       expect(build().clientRef, isNull);
+    });
+
+    test('sends the product tax id only when tax is enabled', () {
+      const taxedProduct = Product(
+        id: 'p_tax',
+        name: 'Kopi',
+        unitId: 'u1',
+        sellPrice: 10000,
+        taxId: 'tax_1',
+        tax: ProductTax(id: 'tax_1', rate: 11),
+      );
+
+      final enabled = buildWithTaxSettings(
+        product: taxedProduct,
+        preferences:
+            const POSPreferences(requireShift: false, taxEnabled: true),
+      );
+      final disabled = buildWithTaxSettings(
+        product: taxedProduct,
+        preferences: const POSPreferences(requireShift: false),
+      );
+
+      expect(enabled.items.single.taxId, 'tax_1');
+      expect(disabled.items.single.taxId, isNull);
     });
 
     test('writes a payload with no null keys, ready to post as it is', () {

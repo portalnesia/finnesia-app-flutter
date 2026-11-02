@@ -114,6 +114,11 @@ class CartPane extends StatelessWidget {
                       label: l10n.tillDiscount,
                       value: '-${formatCurrency(totals.discount)}',
                     ),
+                  if (totals.tax > 0)
+                    LedgerRow(
+                      label: l10n.posTax,
+                      value: formatCurrency(totals.tax),
+                    ),
                   const SizedBox(height: 8),
                   Row(
                     children: [

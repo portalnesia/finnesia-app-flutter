@@ -10,6 +10,7 @@ add_executable(${BINARY_NAME} WIN32
   "flutter_window.cpp"
   "main.cpp"
   "utils.cpp"
+  "windows_wns_push_messaging.cpp"
   "win32_window.cpp"
   "${FLUTTER_MANAGED_DIR}/generated_plugin_registrant.cc"
   "Runner.rc"
@@ -35,6 +36,27 @@ target_compile_definitions(${BINARY_NAME} PRIVATE "NOMINMAX")
 target_link_libraries(${BINARY_NAME} PRIVATE flutter flutter_wrapper_app)
 target_link_libraries(${BINARY_NAME} PRIVATE "dwmapi.lib")
 target_include_directories(${BINARY_NAME} PRIVATE "${CMAKE_SOURCE_DIR}")
+
+# WNS is enabled only for a configured, packaged Windows App SDK build. The app ID and service
+# principal object ID are public identifiers supplied by the owner at build time, never secrets.
+set(FINNESIA_POS_WINDOWS_APP_SDK_INCLUDE_DIR "$ENV{FINNESIA_POS_WINDOWS_APP_SDK_INCLUDE_DIR}" CACHE PATH
+    "Directory containing Windows App SDK C++/WinRT include/winrt headers")
+set(FINNESIA_POS_WNS_APP_ID "$ENV{FINNESIA_POS_WNS_APP_ID}")
+set(FINNESIA_POS_WNS_OBJECT_ID "$ENV{FINNESIA_POS_WNS_OBJECT_ID}")
+if(FINNESIA_POS_WINDOWS_APP_SDK_INCLUDE_DIR AND
+   EXISTS "${FINNESIA_POS_WINDOWS_APP_SDK_INCLUDE_DIR}/winrt/Microsoft.Windows.PushNotifications.h" AND
+   EXISTS "${FINNESIA_POS_WINDOWS_APP_SDK_INCLUDE_DIR}/winrt/Microsoft.Windows.AppLifecycle.h" AND
+   FINNESIA_POS_WNS_APP_ID AND FINNESIA_POS_WNS_OBJECT_ID)
+  target_include_directories(${BINARY_NAME} PRIVATE "${FINNESIA_POS_WINDOWS_APP_SDK_INCLUDE_DIR}")
+  target_compile_definitions(${BINARY_NAME} PRIVATE
+    FINNESIA_POS_WINDOWS_APP_SDK_AVAILABLE
+    "FINNESIA_POS_WNS_APP_ID=\"${FINNESIA_POS_WNS_APP_ID}\""
+    "FINNESIA_POS_WNS_OBJECT_ID=\"${FINNESIA_POS_WNS_OBJECT_ID}\"")
+  target_link_libraries(${BINARY_NAME} PRIVATE "windowsapp.lib")
+  message(STATUS "Finnesia POS WNS bridge enabled for the configured packaged app")
+else()
+  message(STATUS "Finnesia POS WNS bridge disabled; app remains buildable without WNS identifiers/SDK")
+endif()
 
 # Run the Flutter tool portions of the build. This must not be removed.
 add_dependencies(${BINARY_NAME} flutter_assemble)

@@ -568,7 +568,7 @@ as String?,
 /// @nodoc
 mixin _$SalesInvoiceItem {
 
- String get id; num get quantity; num get price;@JsonKey(name: 'line_subtotal') num get lineSubtotal;@JsonKey(name: 'line_total') num get lineTotal; String? get description; NamedRef? get product;
+ String get id; num get quantity; num get price;@JsonKey(name: 'discount_percent', includeIfNull: false) num? get discountPercent;@JsonKey(name: 'discount_amount', includeIfNull: false) num? get discountAmount;@JsonKey(name: 'tax_id', includeIfNull: false) String? get taxId;@JsonKey(name: 'tax_rate') num get taxRate;@JsonKey(name: 'is_tax_inclusive') bool get isTaxInclusive;@JsonKey(name: 'line_subtotal') num get lineSubtotal;@JsonKey(name: 'line_tax') num get lineTax;@JsonKey(name: 'line_total') num get lineTotal; String? get description; NamedRef? get product;
 /// Create a copy of SalesInvoiceItem
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -582,20 +582,20 @@ $SalesInvoiceItemCopyWith<SalesInvoiceItem> get copyWith => _$SalesInvoiceItemCo
 @override
 bool operator ==(Object other) {
   final _this = this as SalesInvoiceItem;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SalesInvoiceItem&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.quantity, _this.quantity) || other.quantity == _this.quantity)&&(identical(other.price, _this.price) || other.price == _this.price)&&(identical(other.lineSubtotal, _this.lineSubtotal) || other.lineSubtotal == _this.lineSubtotal)&&(identical(other.lineTotal, _this.lineTotal) || other.lineTotal == _this.lineTotal)&&(identical(other.description, _this.description) || other.description == _this.description)&&(identical(other.product, _this.product) || other.product == _this.product));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SalesInvoiceItem&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.quantity, _this.quantity) || other.quantity == _this.quantity)&&(identical(other.price, _this.price) || other.price == _this.price)&&(identical(other.discountPercent, _this.discountPercent) || other.discountPercent == _this.discountPercent)&&(identical(other.discountAmount, _this.discountAmount) || other.discountAmount == _this.discountAmount)&&(identical(other.taxId, _this.taxId) || other.taxId == _this.taxId)&&(identical(other.taxRate, _this.taxRate) || other.taxRate == _this.taxRate)&&(identical(other.isTaxInclusive, _this.isTaxInclusive) || other.isTaxInclusive == _this.isTaxInclusive)&&(identical(other.lineSubtotal, _this.lineSubtotal) || other.lineSubtotal == _this.lineSubtotal)&&(identical(other.lineTax, _this.lineTax) || other.lineTax == _this.lineTax)&&(identical(other.lineTotal, _this.lineTotal) || other.lineTotal == _this.lineTotal)&&(identical(other.description, _this.description) || other.description == _this.description)&&(identical(other.product, _this.product) || other.product == _this.product));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as SalesInvoiceItem;
-  return Object.hash(runtimeType,_this.id,_this.quantity,_this.price,_this.lineSubtotal,_this.lineTotal,_this.description,_this.product);
+  return Object.hash(runtimeType,_this.id,_this.quantity,_this.price,_this.discountPercent,_this.discountAmount,_this.taxId,_this.taxRate,_this.isTaxInclusive,_this.lineSubtotal,_this.lineTax,_this.lineTotal,_this.description,_this.product);
 }
 
 @override
 String toString() {
   final _this = this as SalesInvoiceItem;
-  return 'SalesInvoiceItem(id: ${_this.id}, quantity: ${_this.quantity}, price: ${_this.price}, lineSubtotal: ${_this.lineSubtotal}, lineTotal: ${_this.lineTotal}, description: ${_this.description}, product: ${_this.product})';
+  return 'SalesInvoiceItem(id: ${_this.id}, quantity: ${_this.quantity}, price: ${_this.price}, discountPercent: ${_this.discountPercent}, discountAmount: ${_this.discountAmount}, taxId: ${_this.taxId}, taxRate: ${_this.taxRate}, isTaxInclusive: ${_this.isTaxInclusive}, lineSubtotal: ${_this.lineSubtotal}, lineTax: ${_this.lineTax}, lineTotal: ${_this.lineTotal}, description: ${_this.description}, product: ${_this.product})';
 }
 
 
@@ -606,7 +606,7 @@ abstract mixin class $SalesInvoiceItemCopyWith<$Res>  {
   factory $SalesInvoiceItemCopyWith(SalesInvoiceItem value, $Res Function(SalesInvoiceItem) _then) = _$SalesInvoiceItemCopyWithImpl;
 @useResult
 $Res call({
- String id, num quantity, num price,@JsonKey(name: 'line_subtotal') num lineSubtotal,@JsonKey(name: 'line_total') num lineTotal, String? description, NamedRef? product
+ String id, num quantity, num price,@JsonKey(name: 'discount_percent', includeIfNull: false) num? discountPercent,@JsonKey(name: 'discount_amount', includeIfNull: false) num? discountAmount,@JsonKey(name: 'tax_id', includeIfNull: false) String? taxId,@JsonKey(name: 'tax_rate') num taxRate,@JsonKey(name: 'is_tax_inclusive') bool isTaxInclusive,@JsonKey(name: 'line_subtotal') num lineSubtotal,@JsonKey(name: 'line_tax') num lineTax,@JsonKey(name: 'line_total') num lineTotal, String? description, NamedRef? product
 });
 
 
@@ -623,12 +623,18 @@ class _$SalesInvoiceItemCopyWithImpl<$Res>
 
 /// Create a copy of SalesInvoiceItem
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? quantity = null,Object? price = null,Object? lineSubtotal = null,Object? lineTotal = null,Object? description = freezed,Object? product = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? quantity = null,Object? price = null,Object? discountPercent = freezed,Object? discountAmount = freezed,Object? taxId = freezed,Object? taxRate = null,Object? isTaxInclusive = null,Object? lineSubtotal = null,Object? lineTax = null,Object? lineTotal = null,Object? description = freezed,Object? product = freezed,}) {
   return _then(SalesInvoiceItem(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,quantity: null == quantity ? _self.quantity : quantity // ignore: cast_nullable_to_non_nullable
 as num,price: null == price ? _self.price : price // ignore: cast_nullable_to_non_nullable
-as num,lineSubtotal: null == lineSubtotal ? _self.lineSubtotal : lineSubtotal // ignore: cast_nullable_to_non_nullable
+as num,discountPercent: freezed == discountPercent ? _self.discountPercent : discountPercent // ignore: cast_nullable_to_non_nullable
+as num?,discountAmount: freezed == discountAmount ? _self.discountAmount : discountAmount // ignore: cast_nullable_to_non_nullable
+as num?,taxId: freezed == taxId ? _self.taxId : taxId // ignore: cast_nullable_to_non_nullable
+as String?,taxRate: null == taxRate ? _self.taxRate : taxRate // ignore: cast_nullable_to_non_nullable
+as num,isTaxInclusive: null == isTaxInclusive ? _self.isTaxInclusive : isTaxInclusive // ignore: cast_nullable_to_non_nullable
+as bool,lineSubtotal: null == lineSubtotal ? _self.lineSubtotal : lineSubtotal // ignore: cast_nullable_to_non_nullable
+as num,lineTax: null == lineTax ? _self.lineTax : lineTax // ignore: cast_nullable_to_non_nullable
 as num,lineTotal: null == lineTotal ? _self.lineTotal : lineTotal // ignore: cast_nullable_to_non_nullable
 as num,description: freezed == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
 as String?,product: freezed == product ? _self.product : product // ignore: cast_nullable_to_non_nullable
@@ -729,10 +735,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  num quantity,  num price, @JsonKey(name: 'line_subtotal')  num lineSubtotal, @JsonKey(name: 'line_total')  num lineTotal,  String? description,  NamedRef? product)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  num quantity,  num price, @JsonKey(name: 'discount_percent', includeIfNull: false)  num? discountPercent, @JsonKey(name: 'discount_amount', includeIfNull: false)  num? discountAmount, @JsonKey(name: 'tax_id', includeIfNull: false)  String? taxId, @JsonKey(name: 'tax_rate')  num taxRate, @JsonKey(name: 'is_tax_inclusive')  bool isTaxInclusive, @JsonKey(name: 'line_subtotal')  num lineSubtotal, @JsonKey(name: 'line_tax')  num lineTax, @JsonKey(name: 'line_total')  num lineTotal,  String? description,  NamedRef? product)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _SalesInvoiceItem() when $default != null:
-return $default(_that.id,_that.quantity,_that.price,_that.lineSubtotal,_that.lineTotal,_that.description,_that.product);case _:
+return $default(_that.id,_that.quantity,_that.price,_that.discountPercent,_that.discountAmount,_that.taxId,_that.taxRate,_that.isTaxInclusive,_that.lineSubtotal,_that.lineTax,_that.lineTotal,_that.description,_that.product);case _:
   return orElse();
 
 }
@@ -750,10 +756,10 @@ return $default(_that.id,_that.quantity,_that.price,_that.lineSubtotal,_that.lin
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  num quantity,  num price, @JsonKey(name: 'line_subtotal')  num lineSubtotal, @JsonKey(name: 'line_total')  num lineTotal,  String? description,  NamedRef? product)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  num quantity,  num price, @JsonKey(name: 'discount_percent', includeIfNull: false)  num? discountPercent, @JsonKey(name: 'discount_amount', includeIfNull: false)  num? discountAmount, @JsonKey(name: 'tax_id', includeIfNull: false)  String? taxId, @JsonKey(name: 'tax_rate')  num taxRate, @JsonKey(name: 'is_tax_inclusive')  bool isTaxInclusive, @JsonKey(name: 'line_subtotal')  num lineSubtotal, @JsonKey(name: 'line_tax')  num lineTax, @JsonKey(name: 'line_total')  num lineTotal,  String? description,  NamedRef? product)  $default,) {final _that = this;
 switch (_that) {
 case _SalesInvoiceItem():
-return $default(_that.id,_that.quantity,_that.price,_that.lineSubtotal,_that.lineTotal,_that.description,_that.product);case _:
+return $default(_that.id,_that.quantity,_that.price,_that.discountPercent,_that.discountAmount,_that.taxId,_that.taxRate,_that.isTaxInclusive,_that.lineSubtotal,_that.lineTax,_that.lineTotal,_that.description,_that.product);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -770,10 +776,10 @@ return $default(_that.id,_that.quantity,_that.price,_that.lineSubtotal,_that.lin
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  num quantity,  num price, @JsonKey(name: 'line_subtotal')  num lineSubtotal, @JsonKey(name: 'line_total')  num lineTotal,  String? description,  NamedRef? product)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  num quantity,  num price, @JsonKey(name: 'discount_percent', includeIfNull: false)  num? discountPercent, @JsonKey(name: 'discount_amount', includeIfNull: false)  num? discountAmount, @JsonKey(name: 'tax_id', includeIfNull: false)  String? taxId, @JsonKey(name: 'tax_rate')  num taxRate, @JsonKey(name: 'is_tax_inclusive')  bool isTaxInclusive, @JsonKey(name: 'line_subtotal')  num lineSubtotal, @JsonKey(name: 'line_tax')  num lineTax, @JsonKey(name: 'line_total')  num lineTotal,  String? description,  NamedRef? product)?  $default,) {final _that = this;
 switch (_that) {
 case _SalesInvoiceItem() when $default != null:
-return $default(_that.id,_that.quantity,_that.price,_that.lineSubtotal,_that.lineTotal,_that.description,_that.product);case _:
+return $default(_that.id,_that.quantity,_that.price,_that.discountPercent,_that.discountAmount,_that.taxId,_that.taxRate,_that.isTaxInclusive,_that.lineSubtotal,_that.lineTax,_that.lineTotal,_that.description,_that.product);case _:
   return null;
 
 }
@@ -785,13 +791,19 @@ return $default(_that.id,_that.quantity,_that.price,_that.lineSubtotal,_that.lin
 
 @JsonSerializable(explicitToJson: true)
 class _SalesInvoiceItem implements SalesInvoiceItem {
-  const _SalesInvoiceItem({required this.id, required this.quantity, required this.price, @JsonKey(name: 'line_subtotal') required this.lineSubtotal, @JsonKey(name: 'line_total') required this.lineTotal, this.description, this.product});
+  const _SalesInvoiceItem({required this.id, required this.quantity, required this.price, @JsonKey(name: 'discount_percent', includeIfNull: false) this.discountPercent, @JsonKey(name: 'discount_amount', includeIfNull: false) this.discountAmount, @JsonKey(name: 'tax_id', includeIfNull: false) this.taxId, @JsonKey(name: 'tax_rate') this.taxRate = 0, @JsonKey(name: 'is_tax_inclusive') this.isTaxInclusive = false, @JsonKey(name: 'line_subtotal') required this.lineSubtotal, @JsonKey(name: 'line_tax') this.lineTax = 0, @JsonKey(name: 'line_total') required this.lineTotal, this.description, this.product});
   factory _SalesInvoiceItem.fromJson(Map<String, dynamic> json) => _$SalesInvoiceItemFromJson(json);
 
 @override final  String id;
 @override final  num quantity;
 @override final  num price;
+@override@JsonKey(name: 'discount_percent', includeIfNull: false) final  num? discountPercent;
+@override@JsonKey(name: 'discount_amount', includeIfNull: false) final  num? discountAmount;
+@override@JsonKey(name: 'tax_id', includeIfNull: false) final  String? taxId;
+@override@JsonKey(name: 'tax_rate') final  num taxRate;
+@override@JsonKey(name: 'is_tax_inclusive') final  bool isTaxInclusive;
 @override@JsonKey(name: 'line_subtotal') final  num lineSubtotal;
+@override@JsonKey(name: 'line_tax') final  num lineTax;
 @override@JsonKey(name: 'line_total') final  num lineTotal;
 @override final  String? description;
 @override final  NamedRef? product;
@@ -809,18 +821,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _SalesInvoiceItem&&(identical(other.id, id) || other.id == id)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.price, price) || other.price == price)&&(identical(other.lineSubtotal, lineSubtotal) || other.lineSubtotal == lineSubtotal)&&(identical(other.lineTotal, lineTotal) || other.lineTotal == lineTotal)&&(identical(other.description, description) || other.description == description)&&(identical(other.product, product) || other.product == product));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _SalesInvoiceItem&&(identical(other.id, id) || other.id == id)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.price, price) || other.price == price)&&(identical(other.discountPercent, discountPercent) || other.discountPercent == discountPercent)&&(identical(other.discountAmount, discountAmount) || other.discountAmount == discountAmount)&&(identical(other.taxId, taxId) || other.taxId == taxId)&&(identical(other.taxRate, taxRate) || other.taxRate == taxRate)&&(identical(other.isTaxInclusive, isTaxInclusive) || other.isTaxInclusive == isTaxInclusive)&&(identical(other.lineSubtotal, lineSubtotal) || other.lineSubtotal == lineSubtotal)&&(identical(other.lineTax, lineTax) || other.lineTax == lineTax)&&(identical(other.lineTotal, lineTotal) || other.lineTotal == lineTotal)&&(identical(other.description, description) || other.description == description)&&(identical(other.product, product) || other.product == product));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,id,quantity,price,lineSubtotal,lineTotal,description,product);
+    return Object.hash(runtimeType,id,quantity,price,discountPercent,discountAmount,taxId,taxRate,isTaxInclusive,lineSubtotal,lineTax,lineTotal,description,product);
 }
 
 @override
 String toString() {
-    return 'SalesInvoiceItem(id: $id, quantity: $quantity, price: $price, lineSubtotal: $lineSubtotal, lineTotal: $lineTotal, description: $description, product: $product)';
+    return 'SalesInvoiceItem(id: $id, quantity: $quantity, price: $price, discountPercent: $discountPercent, discountAmount: $discountAmount, taxId: $taxId, taxRate: $taxRate, isTaxInclusive: $isTaxInclusive, lineSubtotal: $lineSubtotal, lineTax: $lineTax, lineTotal: $lineTotal, description: $description, product: $product)';
 }
 
 
@@ -831,7 +843,7 @@ abstract mixin class _$SalesInvoiceItemCopyWith<$Res> implements $SalesInvoiceIt
   factory _$SalesInvoiceItemCopyWith(_SalesInvoiceItem value, $Res Function(_SalesInvoiceItem) _then) = __$SalesInvoiceItemCopyWithImpl;
 @override @useResult
 $Res call({
- String id, num quantity, num price,@JsonKey(name: 'line_subtotal') num lineSubtotal,@JsonKey(name: 'line_total') num lineTotal, String? description, NamedRef? product
+ String id, num quantity, num price,@JsonKey(name: 'discount_percent', includeIfNull: false) num? discountPercent,@JsonKey(name: 'discount_amount', includeIfNull: false) num? discountAmount,@JsonKey(name: 'tax_id', includeIfNull: false) String? taxId,@JsonKey(name: 'tax_rate') num taxRate,@JsonKey(name: 'is_tax_inclusive') bool isTaxInclusive,@JsonKey(name: 'line_subtotal') num lineSubtotal,@JsonKey(name: 'line_tax') num lineTax,@JsonKey(name: 'line_total') num lineTotal, String? description, NamedRef? product
 });
 
 
@@ -848,12 +860,18 @@ class __$SalesInvoiceItemCopyWithImpl<$Res>
 
 /// Create a copy of SalesInvoiceItem
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? quantity = null,Object? price = null,Object? lineSubtotal = null,Object? lineTotal = null,Object? description = freezed,Object? product = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? quantity = null,Object? price = null,Object? discountPercent = freezed,Object? discountAmount = freezed,Object? taxId = freezed,Object? taxRate = null,Object? isTaxInclusive = null,Object? lineSubtotal = null,Object? lineTax = null,Object? lineTotal = null,Object? description = freezed,Object? product = freezed,}) {
   return _then(_SalesInvoiceItem(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,quantity: null == quantity ? _self.quantity : quantity // ignore: cast_nullable_to_non_nullable
 as num,price: null == price ? _self.price : price // ignore: cast_nullable_to_non_nullable
-as num,lineSubtotal: null == lineSubtotal ? _self.lineSubtotal : lineSubtotal // ignore: cast_nullable_to_non_nullable
+as num,discountPercent: freezed == discountPercent ? _self.discountPercent : discountPercent // ignore: cast_nullable_to_non_nullable
+as num?,discountAmount: freezed == discountAmount ? _self.discountAmount : discountAmount // ignore: cast_nullable_to_non_nullable
+as num?,taxId: freezed == taxId ? _self.taxId : taxId // ignore: cast_nullable_to_non_nullable
+as String?,taxRate: null == taxRate ? _self.taxRate : taxRate // ignore: cast_nullable_to_non_nullable
+as num,isTaxInclusive: null == isTaxInclusive ? _self.isTaxInclusive : isTaxInclusive // ignore: cast_nullable_to_non_nullable
+as bool,lineSubtotal: null == lineSubtotal ? _self.lineSubtotal : lineSubtotal // ignore: cast_nullable_to_non_nullable
+as num,lineTax: null == lineTax ? _self.lineTax : lineTax // ignore: cast_nullable_to_non_nullable
 as num,lineTotal: null == lineTotal ? _self.lineTotal : lineTotal // ignore: cast_nullable_to_non_nullable
 as num,description: freezed == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
 as String?,product: freezed == product ? _self.product : product // ignore: cast_nullable_to_non_nullable
@@ -1158,7 +1176,8 @@ mixin _$POSSale {
 
  String get id; String get number;@JsonKey(name: 'shift_id') String get shiftId;@JsonKey(name: 'outlet_id') String get outletId;@JsonKey(name: 'cashier_id') String get cashierId;@JsonKey(name: 'transaction_date') String get transactionDate; num get subtotal;@JsonKey(name: 'discount_amount') num get discountAmount;@JsonKey(name: 'tax_amount') num get taxAmount;@JsonKey(name: 'grand_total') num get grandTotal;@JsonKey(name: 'tendered_amount') num get tenderedAmount;@JsonKey(name: 'change_amount') num get changeAmount;/// A status this build does not know reads as `null`, like `ProductType`: a newer API
 /// must not take the transaction list down over one row.
-@JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue) POSSaleStatus? get status;@JsonKey(name: 'created_at') String get createdAt;@JsonKey(name: 'client_ref') String? get clientRef;@JsonKey(name: 'paid_at') String? get paidAt; String? get notes;@JsonKey(name: 'table_number') String? get tableNumber;@JsonKey(name: 'queue_number') String? get queueNumber; List<POSSalePayment>? get payments; SalesInvoice? get invoice; NamedRef? get cashier;
+@JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue) POSSaleStatus? get status;@JsonKey(name: 'created_at') String get createdAt;/// Shared transaction identity with web analytics; absent in older cached rows.
+@JsonKey(name: 'invoice_id') String? get invoiceId;@JsonKey(name: 'client_ref') String? get clientRef;@JsonKey(name: 'paid_at') String? get paidAt; String? get notes;@JsonKey(name: 'table_number') String? get tableNumber;@JsonKey(name: 'queue_number') String? get queueNumber; List<POSSalePayment>? get payments; SalesInvoice? get invoice; NamedRef? get cashier;
 /// Create a copy of POSSale
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1172,20 +1191,20 @@ $POSSaleCopyWith<POSSale> get copyWith => _$POSSaleCopyWithImpl<POSSale>(this as
 @override
 bool operator ==(Object other) {
   final _this = this as POSSale;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is POSSale&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.number, _this.number) || other.number == _this.number)&&(identical(other.shiftId, _this.shiftId) || other.shiftId == _this.shiftId)&&(identical(other.outletId, _this.outletId) || other.outletId == _this.outletId)&&(identical(other.cashierId, _this.cashierId) || other.cashierId == _this.cashierId)&&(identical(other.transactionDate, _this.transactionDate) || other.transactionDate == _this.transactionDate)&&(identical(other.subtotal, _this.subtotal) || other.subtotal == _this.subtotal)&&(identical(other.discountAmount, _this.discountAmount) || other.discountAmount == _this.discountAmount)&&(identical(other.taxAmount, _this.taxAmount) || other.taxAmount == _this.taxAmount)&&(identical(other.grandTotal, _this.grandTotal) || other.grandTotal == _this.grandTotal)&&(identical(other.tenderedAmount, _this.tenderedAmount) || other.tenderedAmount == _this.tenderedAmount)&&(identical(other.changeAmount, _this.changeAmount) || other.changeAmount == _this.changeAmount)&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.createdAt, _this.createdAt) || other.createdAt == _this.createdAt)&&(identical(other.clientRef, _this.clientRef) || other.clientRef == _this.clientRef)&&(identical(other.paidAt, _this.paidAt) || other.paidAt == _this.paidAt)&&(identical(other.notes, _this.notes) || other.notes == _this.notes)&&(identical(other.tableNumber, _this.tableNumber) || other.tableNumber == _this.tableNumber)&&(identical(other.queueNumber, _this.queueNumber) || other.queueNumber == _this.queueNumber)&&const DeepCollectionEquality().equals(other.payments, _this.payments)&&(identical(other.invoice, _this.invoice) || other.invoice == _this.invoice)&&(identical(other.cashier, _this.cashier) || other.cashier == _this.cashier));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is POSSale&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.number, _this.number) || other.number == _this.number)&&(identical(other.shiftId, _this.shiftId) || other.shiftId == _this.shiftId)&&(identical(other.outletId, _this.outletId) || other.outletId == _this.outletId)&&(identical(other.cashierId, _this.cashierId) || other.cashierId == _this.cashierId)&&(identical(other.transactionDate, _this.transactionDate) || other.transactionDate == _this.transactionDate)&&(identical(other.subtotal, _this.subtotal) || other.subtotal == _this.subtotal)&&(identical(other.discountAmount, _this.discountAmount) || other.discountAmount == _this.discountAmount)&&(identical(other.taxAmount, _this.taxAmount) || other.taxAmount == _this.taxAmount)&&(identical(other.grandTotal, _this.grandTotal) || other.grandTotal == _this.grandTotal)&&(identical(other.tenderedAmount, _this.tenderedAmount) || other.tenderedAmount == _this.tenderedAmount)&&(identical(other.changeAmount, _this.changeAmount) || other.changeAmount == _this.changeAmount)&&(identical(other.status, _this.status) || other.status == _this.status)&&(identical(other.createdAt, _this.createdAt) || other.createdAt == _this.createdAt)&&(identical(other.invoiceId, _this.invoiceId) || other.invoiceId == _this.invoiceId)&&(identical(other.clientRef, _this.clientRef) || other.clientRef == _this.clientRef)&&(identical(other.paidAt, _this.paidAt) || other.paidAt == _this.paidAt)&&(identical(other.notes, _this.notes) || other.notes == _this.notes)&&(identical(other.tableNumber, _this.tableNumber) || other.tableNumber == _this.tableNumber)&&(identical(other.queueNumber, _this.queueNumber) || other.queueNumber == _this.queueNumber)&&const DeepCollectionEquality().equals(other.payments, _this.payments)&&(identical(other.invoice, _this.invoice) || other.invoice == _this.invoice)&&(identical(other.cashier, _this.cashier) || other.cashier == _this.cashier));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as POSSale;
-  return Object.hashAll([runtimeType,_this.id,_this.number,_this.shiftId,_this.outletId,_this.cashierId,_this.transactionDate,_this.subtotal,_this.discountAmount,_this.taxAmount,_this.grandTotal,_this.tenderedAmount,_this.changeAmount,_this.status,_this.createdAt,_this.clientRef,_this.paidAt,_this.notes,_this.tableNumber,_this.queueNumber,const DeepCollectionEquality().hash(_this.payments),_this.invoice,_this.cashier]);
+  return Object.hashAll([runtimeType,_this.id,_this.number,_this.shiftId,_this.outletId,_this.cashierId,_this.transactionDate,_this.subtotal,_this.discountAmount,_this.taxAmount,_this.grandTotal,_this.tenderedAmount,_this.changeAmount,_this.status,_this.createdAt,_this.invoiceId,_this.clientRef,_this.paidAt,_this.notes,_this.tableNumber,_this.queueNumber,const DeepCollectionEquality().hash(_this.payments),_this.invoice,_this.cashier]);
 }
 
 @override
 String toString() {
   final _this = this as POSSale;
-  return 'POSSale(id: ${_this.id}, number: ${_this.number}, shiftId: ${_this.shiftId}, outletId: ${_this.outletId}, cashierId: ${_this.cashierId}, transactionDate: ${_this.transactionDate}, subtotal: ${_this.subtotal}, discountAmount: ${_this.discountAmount}, taxAmount: ${_this.taxAmount}, grandTotal: ${_this.grandTotal}, tenderedAmount: ${_this.tenderedAmount}, changeAmount: ${_this.changeAmount}, status: ${_this.status}, createdAt: ${_this.createdAt}, clientRef: ${_this.clientRef}, paidAt: ${_this.paidAt}, notes: ${_this.notes}, tableNumber: ${_this.tableNumber}, queueNumber: ${_this.queueNumber}, payments: ${_this.payments}, invoice: ${_this.invoice}, cashier: ${_this.cashier})';
+  return 'POSSale(id: ${_this.id}, number: ${_this.number}, shiftId: ${_this.shiftId}, outletId: ${_this.outletId}, cashierId: ${_this.cashierId}, transactionDate: ${_this.transactionDate}, subtotal: ${_this.subtotal}, discountAmount: ${_this.discountAmount}, taxAmount: ${_this.taxAmount}, grandTotal: ${_this.grandTotal}, tenderedAmount: ${_this.tenderedAmount}, changeAmount: ${_this.changeAmount}, status: ${_this.status}, createdAt: ${_this.createdAt}, invoiceId: ${_this.invoiceId}, clientRef: ${_this.clientRef}, paidAt: ${_this.paidAt}, notes: ${_this.notes}, tableNumber: ${_this.tableNumber}, queueNumber: ${_this.queueNumber}, payments: ${_this.payments}, invoice: ${_this.invoice}, cashier: ${_this.cashier})';
 }
 
 
@@ -1196,7 +1215,7 @@ abstract mixin class $POSSaleCopyWith<$Res>  {
   factory $POSSaleCopyWith(POSSale value, $Res Function(POSSale) _then) = _$POSSaleCopyWithImpl;
 @useResult
 $Res call({
- String id, String number,@JsonKey(name: 'shift_id') String shiftId,@JsonKey(name: 'outlet_id') String outletId,@JsonKey(name: 'cashier_id') String cashierId,@JsonKey(name: 'transaction_date') String transactionDate, num subtotal,@JsonKey(name: 'discount_amount') num discountAmount,@JsonKey(name: 'tax_amount') num taxAmount,@JsonKey(name: 'grand_total') num grandTotal,@JsonKey(name: 'tendered_amount') num tenderedAmount,@JsonKey(name: 'change_amount') num changeAmount,@JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue) POSSaleStatus? status,@JsonKey(name: 'created_at') String createdAt,@JsonKey(name: 'client_ref') String? clientRef,@JsonKey(name: 'paid_at') String? paidAt, String? notes,@JsonKey(name: 'table_number') String? tableNumber,@JsonKey(name: 'queue_number') String? queueNumber, List<POSSalePayment>? payments, SalesInvoice? invoice, NamedRef? cashier
+ String id, String number,@JsonKey(name: 'shift_id') String shiftId,@JsonKey(name: 'outlet_id') String outletId,@JsonKey(name: 'cashier_id') String cashierId,@JsonKey(name: 'transaction_date') String transactionDate, num subtotal,@JsonKey(name: 'discount_amount') num discountAmount,@JsonKey(name: 'tax_amount') num taxAmount,@JsonKey(name: 'grand_total') num grandTotal,@JsonKey(name: 'tendered_amount') num tenderedAmount,@JsonKey(name: 'change_amount') num changeAmount,@JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue) POSSaleStatus? status,@JsonKey(name: 'created_at') String createdAt,@JsonKey(name: 'invoice_id') String? invoiceId,@JsonKey(name: 'client_ref') String? clientRef,@JsonKey(name: 'paid_at') String? paidAt, String? notes,@JsonKey(name: 'table_number') String? tableNumber,@JsonKey(name: 'queue_number') String? queueNumber, List<POSSalePayment>? payments, SalesInvoice? invoice, NamedRef? cashier
 });
 
 
@@ -1213,7 +1232,7 @@ class _$POSSaleCopyWithImpl<$Res>
 
 /// Create a copy of POSSale
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? number = null,Object? shiftId = null,Object? outletId = null,Object? cashierId = null,Object? transactionDate = null,Object? subtotal = null,Object? discountAmount = null,Object? taxAmount = null,Object? grandTotal = null,Object? tenderedAmount = null,Object? changeAmount = null,Object? status = freezed,Object? createdAt = null,Object? clientRef = freezed,Object? paidAt = freezed,Object? notes = freezed,Object? tableNumber = freezed,Object? queueNumber = freezed,Object? payments = freezed,Object? invoice = freezed,Object? cashier = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? number = null,Object? shiftId = null,Object? outletId = null,Object? cashierId = null,Object? transactionDate = null,Object? subtotal = null,Object? discountAmount = null,Object? taxAmount = null,Object? grandTotal = null,Object? tenderedAmount = null,Object? changeAmount = null,Object? status = freezed,Object? createdAt = null,Object? invoiceId = freezed,Object? clientRef = freezed,Object? paidAt = freezed,Object? notes = freezed,Object? tableNumber = freezed,Object? queueNumber = freezed,Object? payments = freezed,Object? invoice = freezed,Object? cashier = freezed,}) {
   return _then(POSSale(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,number: null == number ? _self.number : number // ignore: cast_nullable_to_non_nullable
@@ -1229,7 +1248,8 @@ as num,tenderedAmount: null == tenderedAmount ? _self.tenderedAmount : tenderedA
 as num,changeAmount: null == changeAmount ? _self.changeAmount : changeAmount // ignore: cast_nullable_to_non_nullable
 as num,status: freezed == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as POSSaleStatus?,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
-as String,clientRef: freezed == clientRef ? _self.clientRef : clientRef // ignore: cast_nullable_to_non_nullable
+as String,invoiceId: freezed == invoiceId ? _self.invoiceId : invoiceId // ignore: cast_nullable_to_non_nullable
+as String?,clientRef: freezed == clientRef ? _self.clientRef : clientRef // ignore: cast_nullable_to_non_nullable
 as String?,paidAt: freezed == paidAt ? _self.paidAt : paidAt // ignore: cast_nullable_to_non_nullable
 as String?,notes: freezed == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable
 as String?,tableNumber: freezed == tableNumber ? _self.tableNumber : tableNumber // ignore: cast_nullable_to_non_nullable
@@ -1346,10 +1366,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String number, @JsonKey(name: 'shift_id')  String shiftId, @JsonKey(name: 'outlet_id')  String outletId, @JsonKey(name: 'cashier_id')  String cashierId, @JsonKey(name: 'transaction_date')  String transactionDate,  num subtotal, @JsonKey(name: 'discount_amount')  num discountAmount, @JsonKey(name: 'tax_amount')  num taxAmount, @JsonKey(name: 'grand_total')  num grandTotal, @JsonKey(name: 'tendered_amount')  num tenderedAmount, @JsonKey(name: 'change_amount')  num changeAmount, @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue)  POSSaleStatus? status, @JsonKey(name: 'created_at')  String createdAt, @JsonKey(name: 'client_ref')  String? clientRef, @JsonKey(name: 'paid_at')  String? paidAt,  String? notes, @JsonKey(name: 'table_number')  String? tableNumber, @JsonKey(name: 'queue_number')  String? queueNumber,  List<POSSalePayment>? payments,  SalesInvoice? invoice,  NamedRef? cashier)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String number, @JsonKey(name: 'shift_id')  String shiftId, @JsonKey(name: 'outlet_id')  String outletId, @JsonKey(name: 'cashier_id')  String cashierId, @JsonKey(name: 'transaction_date')  String transactionDate,  num subtotal, @JsonKey(name: 'discount_amount')  num discountAmount, @JsonKey(name: 'tax_amount')  num taxAmount, @JsonKey(name: 'grand_total')  num grandTotal, @JsonKey(name: 'tendered_amount')  num tenderedAmount, @JsonKey(name: 'change_amount')  num changeAmount, @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue)  POSSaleStatus? status, @JsonKey(name: 'created_at')  String createdAt, @JsonKey(name: 'invoice_id')  String? invoiceId, @JsonKey(name: 'client_ref')  String? clientRef, @JsonKey(name: 'paid_at')  String? paidAt,  String? notes, @JsonKey(name: 'table_number')  String? tableNumber, @JsonKey(name: 'queue_number')  String? queueNumber,  List<POSSalePayment>? payments,  SalesInvoice? invoice,  NamedRef? cashier)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _POSSale() when $default != null:
-return $default(_that.id,_that.number,_that.shiftId,_that.outletId,_that.cashierId,_that.transactionDate,_that.subtotal,_that.discountAmount,_that.taxAmount,_that.grandTotal,_that.tenderedAmount,_that.changeAmount,_that.status,_that.createdAt,_that.clientRef,_that.paidAt,_that.notes,_that.tableNumber,_that.queueNumber,_that.payments,_that.invoice,_that.cashier);case _:
+return $default(_that.id,_that.number,_that.shiftId,_that.outletId,_that.cashierId,_that.transactionDate,_that.subtotal,_that.discountAmount,_that.taxAmount,_that.grandTotal,_that.tenderedAmount,_that.changeAmount,_that.status,_that.createdAt,_that.invoiceId,_that.clientRef,_that.paidAt,_that.notes,_that.tableNumber,_that.queueNumber,_that.payments,_that.invoice,_that.cashier);case _:
   return orElse();
 
 }
@@ -1367,10 +1387,10 @@ return $default(_that.id,_that.number,_that.shiftId,_that.outletId,_that.cashier
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String number, @JsonKey(name: 'shift_id')  String shiftId, @JsonKey(name: 'outlet_id')  String outletId, @JsonKey(name: 'cashier_id')  String cashierId, @JsonKey(name: 'transaction_date')  String transactionDate,  num subtotal, @JsonKey(name: 'discount_amount')  num discountAmount, @JsonKey(name: 'tax_amount')  num taxAmount, @JsonKey(name: 'grand_total')  num grandTotal, @JsonKey(name: 'tendered_amount')  num tenderedAmount, @JsonKey(name: 'change_amount')  num changeAmount, @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue)  POSSaleStatus? status, @JsonKey(name: 'created_at')  String createdAt, @JsonKey(name: 'client_ref')  String? clientRef, @JsonKey(name: 'paid_at')  String? paidAt,  String? notes, @JsonKey(name: 'table_number')  String? tableNumber, @JsonKey(name: 'queue_number')  String? queueNumber,  List<POSSalePayment>? payments,  SalesInvoice? invoice,  NamedRef? cashier)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String number, @JsonKey(name: 'shift_id')  String shiftId, @JsonKey(name: 'outlet_id')  String outletId, @JsonKey(name: 'cashier_id')  String cashierId, @JsonKey(name: 'transaction_date')  String transactionDate,  num subtotal, @JsonKey(name: 'discount_amount')  num discountAmount, @JsonKey(name: 'tax_amount')  num taxAmount, @JsonKey(name: 'grand_total')  num grandTotal, @JsonKey(name: 'tendered_amount')  num tenderedAmount, @JsonKey(name: 'change_amount')  num changeAmount, @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue)  POSSaleStatus? status, @JsonKey(name: 'created_at')  String createdAt, @JsonKey(name: 'invoice_id')  String? invoiceId, @JsonKey(name: 'client_ref')  String? clientRef, @JsonKey(name: 'paid_at')  String? paidAt,  String? notes, @JsonKey(name: 'table_number')  String? tableNumber, @JsonKey(name: 'queue_number')  String? queueNumber,  List<POSSalePayment>? payments,  SalesInvoice? invoice,  NamedRef? cashier)  $default,) {final _that = this;
 switch (_that) {
 case _POSSale():
-return $default(_that.id,_that.number,_that.shiftId,_that.outletId,_that.cashierId,_that.transactionDate,_that.subtotal,_that.discountAmount,_that.taxAmount,_that.grandTotal,_that.tenderedAmount,_that.changeAmount,_that.status,_that.createdAt,_that.clientRef,_that.paidAt,_that.notes,_that.tableNumber,_that.queueNumber,_that.payments,_that.invoice,_that.cashier);case _:
+return $default(_that.id,_that.number,_that.shiftId,_that.outletId,_that.cashierId,_that.transactionDate,_that.subtotal,_that.discountAmount,_that.taxAmount,_that.grandTotal,_that.tenderedAmount,_that.changeAmount,_that.status,_that.createdAt,_that.invoiceId,_that.clientRef,_that.paidAt,_that.notes,_that.tableNumber,_that.queueNumber,_that.payments,_that.invoice,_that.cashier);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -1387,10 +1407,10 @@ return $default(_that.id,_that.number,_that.shiftId,_that.outletId,_that.cashier
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String number, @JsonKey(name: 'shift_id')  String shiftId, @JsonKey(name: 'outlet_id')  String outletId, @JsonKey(name: 'cashier_id')  String cashierId, @JsonKey(name: 'transaction_date')  String transactionDate,  num subtotal, @JsonKey(name: 'discount_amount')  num discountAmount, @JsonKey(name: 'tax_amount')  num taxAmount, @JsonKey(name: 'grand_total')  num grandTotal, @JsonKey(name: 'tendered_amount')  num tenderedAmount, @JsonKey(name: 'change_amount')  num changeAmount, @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue)  POSSaleStatus? status, @JsonKey(name: 'created_at')  String createdAt, @JsonKey(name: 'client_ref')  String? clientRef, @JsonKey(name: 'paid_at')  String? paidAt,  String? notes, @JsonKey(name: 'table_number')  String? tableNumber, @JsonKey(name: 'queue_number')  String? queueNumber,  List<POSSalePayment>? payments,  SalesInvoice? invoice,  NamedRef? cashier)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String number, @JsonKey(name: 'shift_id')  String shiftId, @JsonKey(name: 'outlet_id')  String outletId, @JsonKey(name: 'cashier_id')  String cashierId, @JsonKey(name: 'transaction_date')  String transactionDate,  num subtotal, @JsonKey(name: 'discount_amount')  num discountAmount, @JsonKey(name: 'tax_amount')  num taxAmount, @JsonKey(name: 'grand_total')  num grandTotal, @JsonKey(name: 'tendered_amount')  num tenderedAmount, @JsonKey(name: 'change_amount')  num changeAmount, @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue)  POSSaleStatus? status, @JsonKey(name: 'created_at')  String createdAt, @JsonKey(name: 'invoice_id')  String? invoiceId, @JsonKey(name: 'client_ref')  String? clientRef, @JsonKey(name: 'paid_at')  String? paidAt,  String? notes, @JsonKey(name: 'table_number')  String? tableNumber, @JsonKey(name: 'queue_number')  String? queueNumber,  List<POSSalePayment>? payments,  SalesInvoice? invoice,  NamedRef? cashier)?  $default,) {final _that = this;
 switch (_that) {
 case _POSSale() when $default != null:
-return $default(_that.id,_that.number,_that.shiftId,_that.outletId,_that.cashierId,_that.transactionDate,_that.subtotal,_that.discountAmount,_that.taxAmount,_that.grandTotal,_that.tenderedAmount,_that.changeAmount,_that.status,_that.createdAt,_that.clientRef,_that.paidAt,_that.notes,_that.tableNumber,_that.queueNumber,_that.payments,_that.invoice,_that.cashier);case _:
+return $default(_that.id,_that.number,_that.shiftId,_that.outletId,_that.cashierId,_that.transactionDate,_that.subtotal,_that.discountAmount,_that.taxAmount,_that.grandTotal,_that.tenderedAmount,_that.changeAmount,_that.status,_that.createdAt,_that.invoiceId,_that.clientRef,_that.paidAt,_that.notes,_that.tableNumber,_that.queueNumber,_that.payments,_that.invoice,_that.cashier);case _:
   return null;
 
 }
@@ -1402,7 +1422,7 @@ return $default(_that.id,_that.number,_that.shiftId,_that.outletId,_that.cashier
 @JsonSerializable()
 
 class _POSSale implements POSSale {
-  const _POSSale({required this.id, required this.number, @JsonKey(name: 'shift_id') required this.shiftId, @JsonKey(name: 'outlet_id') required this.outletId, @JsonKey(name: 'cashier_id') required this.cashierId, @JsonKey(name: 'transaction_date') required this.transactionDate, required this.subtotal, @JsonKey(name: 'discount_amount') required this.discountAmount, @JsonKey(name: 'tax_amount') required this.taxAmount, @JsonKey(name: 'grand_total') required this.grandTotal, @JsonKey(name: 'tendered_amount') required this.tenderedAmount, @JsonKey(name: 'change_amount') required this.changeAmount, @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue) this.status, @JsonKey(name: 'created_at') required this.createdAt, @JsonKey(name: 'client_ref') this.clientRef, @JsonKey(name: 'paid_at') this.paidAt, this.notes, @JsonKey(name: 'table_number') this.tableNumber, @JsonKey(name: 'queue_number') this.queueNumber,  List<POSSalePayment>? payments, this.invoice, this.cashier}): _payments = payments;
+  const _POSSale({required this.id, required this.number, @JsonKey(name: 'shift_id') required this.shiftId, @JsonKey(name: 'outlet_id') required this.outletId, @JsonKey(name: 'cashier_id') required this.cashierId, @JsonKey(name: 'transaction_date') required this.transactionDate, required this.subtotal, @JsonKey(name: 'discount_amount') required this.discountAmount, @JsonKey(name: 'tax_amount') required this.taxAmount, @JsonKey(name: 'grand_total') required this.grandTotal, @JsonKey(name: 'tendered_amount') required this.tenderedAmount, @JsonKey(name: 'change_amount') required this.changeAmount, @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue) this.status, @JsonKey(name: 'created_at') required this.createdAt, @JsonKey(name: 'invoice_id') this.invoiceId, @JsonKey(name: 'client_ref') this.clientRef, @JsonKey(name: 'paid_at') this.paidAt, this.notes, @JsonKey(name: 'table_number') this.tableNumber, @JsonKey(name: 'queue_number') this.queueNumber,  List<POSSalePayment>? payments, this.invoice, this.cashier}): _payments = payments;
   factory _POSSale.fromJson(Map<String, dynamic> json) => _$POSSaleFromJson(json);
 
 @override final  String id;
@@ -1421,6 +1441,8 @@ class _POSSale implements POSSale {
 /// must not take the transaction list down over one row.
 @override@JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue) final  POSSaleStatus? status;
 @override@JsonKey(name: 'created_at') final  String createdAt;
+/// Shared transaction identity with web analytics; absent in older cached rows.
+@override@JsonKey(name: 'invoice_id') final  String? invoiceId;
 @override@JsonKey(name: 'client_ref') final  String? clientRef;
 @override@JsonKey(name: 'paid_at') final  String? paidAt;
 @override final  String? notes;
@@ -1451,18 +1473,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _POSSale&&(identical(other.id, id) || other.id == id)&&(identical(other.number, number) || other.number == number)&&(identical(other.shiftId, shiftId) || other.shiftId == shiftId)&&(identical(other.outletId, outletId) || other.outletId == outletId)&&(identical(other.cashierId, cashierId) || other.cashierId == cashierId)&&(identical(other.transactionDate, transactionDate) || other.transactionDate == transactionDate)&&(identical(other.subtotal, subtotal) || other.subtotal == subtotal)&&(identical(other.discountAmount, discountAmount) || other.discountAmount == discountAmount)&&(identical(other.taxAmount, taxAmount) || other.taxAmount == taxAmount)&&(identical(other.grandTotal, grandTotal) || other.grandTotal == grandTotal)&&(identical(other.tenderedAmount, tenderedAmount) || other.tenderedAmount == tenderedAmount)&&(identical(other.changeAmount, changeAmount) || other.changeAmount == changeAmount)&&(identical(other.status, status) || other.status == status)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.clientRef, clientRef) || other.clientRef == clientRef)&&(identical(other.paidAt, paidAt) || other.paidAt == paidAt)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.tableNumber, tableNumber) || other.tableNumber == tableNumber)&&(identical(other.queueNumber, queueNumber) || other.queueNumber == queueNumber)&&const DeepCollectionEquality().equals(other.payments, _payments)&&(identical(other.invoice, invoice) || other.invoice == invoice)&&(identical(other.cashier, cashier) || other.cashier == cashier));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _POSSale&&(identical(other.id, id) || other.id == id)&&(identical(other.number, number) || other.number == number)&&(identical(other.shiftId, shiftId) || other.shiftId == shiftId)&&(identical(other.outletId, outletId) || other.outletId == outletId)&&(identical(other.cashierId, cashierId) || other.cashierId == cashierId)&&(identical(other.transactionDate, transactionDate) || other.transactionDate == transactionDate)&&(identical(other.subtotal, subtotal) || other.subtotal == subtotal)&&(identical(other.discountAmount, discountAmount) || other.discountAmount == discountAmount)&&(identical(other.taxAmount, taxAmount) || other.taxAmount == taxAmount)&&(identical(other.grandTotal, grandTotal) || other.grandTotal == grandTotal)&&(identical(other.tenderedAmount, tenderedAmount) || other.tenderedAmount == tenderedAmount)&&(identical(other.changeAmount, changeAmount) || other.changeAmount == changeAmount)&&(identical(other.status, status) || other.status == status)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.invoiceId, invoiceId) || other.invoiceId == invoiceId)&&(identical(other.clientRef, clientRef) || other.clientRef == clientRef)&&(identical(other.paidAt, paidAt) || other.paidAt == paidAt)&&(identical(other.notes, notes) || other.notes == notes)&&(identical(other.tableNumber, tableNumber) || other.tableNumber == tableNumber)&&(identical(other.queueNumber, queueNumber) || other.queueNumber == queueNumber)&&const DeepCollectionEquality().equals(other.payments, _payments)&&(identical(other.invoice, invoice) || other.invoice == invoice)&&(identical(other.cashier, cashier) || other.cashier == cashier));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hashAll([runtimeType,id,number,shiftId,outletId,cashierId,transactionDate,subtotal,discountAmount,taxAmount,grandTotal,tenderedAmount,changeAmount,status,createdAt,clientRef,paidAt,notes,tableNumber,queueNumber,const DeepCollectionEquality().hash(_payments),invoice,cashier]);
+    return Object.hashAll([runtimeType,id,number,shiftId,outletId,cashierId,transactionDate,subtotal,discountAmount,taxAmount,grandTotal,tenderedAmount,changeAmount,status,createdAt,invoiceId,clientRef,paidAt,notes,tableNumber,queueNumber,const DeepCollectionEquality().hash(_payments),invoice,cashier]);
 }
 
 @override
 String toString() {
-    return 'POSSale(id: $id, number: $number, shiftId: $shiftId, outletId: $outletId, cashierId: $cashierId, transactionDate: $transactionDate, subtotal: $subtotal, discountAmount: $discountAmount, taxAmount: $taxAmount, grandTotal: $grandTotal, tenderedAmount: $tenderedAmount, changeAmount: $changeAmount, status: $status, createdAt: $createdAt, clientRef: $clientRef, paidAt: $paidAt, notes: $notes, tableNumber: $tableNumber, queueNumber: $queueNumber, payments: $payments, invoice: $invoice, cashier: $cashier)';
+    return 'POSSale(id: $id, number: $number, shiftId: $shiftId, outletId: $outletId, cashierId: $cashierId, transactionDate: $transactionDate, subtotal: $subtotal, discountAmount: $discountAmount, taxAmount: $taxAmount, grandTotal: $grandTotal, tenderedAmount: $tenderedAmount, changeAmount: $changeAmount, status: $status, createdAt: $createdAt, invoiceId: $invoiceId, clientRef: $clientRef, paidAt: $paidAt, notes: $notes, tableNumber: $tableNumber, queueNumber: $queueNumber, payments: $payments, invoice: $invoice, cashier: $cashier)';
 }
 
 
@@ -1473,7 +1495,7 @@ abstract mixin class _$POSSaleCopyWith<$Res> implements $POSSaleCopyWith<$Res> {
   factory _$POSSaleCopyWith(_POSSale value, $Res Function(_POSSale) _then) = __$POSSaleCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String number,@JsonKey(name: 'shift_id') String shiftId,@JsonKey(name: 'outlet_id') String outletId,@JsonKey(name: 'cashier_id') String cashierId,@JsonKey(name: 'transaction_date') String transactionDate, num subtotal,@JsonKey(name: 'discount_amount') num discountAmount,@JsonKey(name: 'tax_amount') num taxAmount,@JsonKey(name: 'grand_total') num grandTotal,@JsonKey(name: 'tendered_amount') num tenderedAmount,@JsonKey(name: 'change_amount') num changeAmount,@JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue) POSSaleStatus? status,@JsonKey(name: 'created_at') String createdAt,@JsonKey(name: 'client_ref') String? clientRef,@JsonKey(name: 'paid_at') String? paidAt, String? notes,@JsonKey(name: 'table_number') String? tableNumber,@JsonKey(name: 'queue_number') String? queueNumber, List<POSSalePayment>? payments, SalesInvoice? invoice, NamedRef? cashier
+ String id, String number,@JsonKey(name: 'shift_id') String shiftId,@JsonKey(name: 'outlet_id') String outletId,@JsonKey(name: 'cashier_id') String cashierId,@JsonKey(name: 'transaction_date') String transactionDate, num subtotal,@JsonKey(name: 'discount_amount') num discountAmount,@JsonKey(name: 'tax_amount') num taxAmount,@JsonKey(name: 'grand_total') num grandTotal,@JsonKey(name: 'tendered_amount') num tenderedAmount,@JsonKey(name: 'change_amount') num changeAmount,@JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue) POSSaleStatus? status,@JsonKey(name: 'created_at') String createdAt,@JsonKey(name: 'invoice_id') String? invoiceId,@JsonKey(name: 'client_ref') String? clientRef,@JsonKey(name: 'paid_at') String? paidAt, String? notes,@JsonKey(name: 'table_number') String? tableNumber,@JsonKey(name: 'queue_number') String? queueNumber, List<POSSalePayment>? payments, SalesInvoice? invoice, NamedRef? cashier
 });
 
 
@@ -1490,7 +1512,7 @@ class __$POSSaleCopyWithImpl<$Res>
 
 /// Create a copy of POSSale
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? number = null,Object? shiftId = null,Object? outletId = null,Object? cashierId = null,Object? transactionDate = null,Object? subtotal = null,Object? discountAmount = null,Object? taxAmount = null,Object? grandTotal = null,Object? tenderedAmount = null,Object? changeAmount = null,Object? status = freezed,Object? createdAt = null,Object? clientRef = freezed,Object? paidAt = freezed,Object? notes = freezed,Object? tableNumber = freezed,Object? queueNumber = freezed,Object? payments = freezed,Object? invoice = freezed,Object? cashier = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? number = null,Object? shiftId = null,Object? outletId = null,Object? cashierId = null,Object? transactionDate = null,Object? subtotal = null,Object? discountAmount = null,Object? taxAmount = null,Object? grandTotal = null,Object? tenderedAmount = null,Object? changeAmount = null,Object? status = freezed,Object? createdAt = null,Object? invoiceId = freezed,Object? clientRef = freezed,Object? paidAt = freezed,Object? notes = freezed,Object? tableNumber = freezed,Object? queueNumber = freezed,Object? payments = freezed,Object? invoice = freezed,Object? cashier = freezed,}) {
   return _then(_POSSale(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,number: null == number ? _self.number : number // ignore: cast_nullable_to_non_nullable
@@ -1506,7 +1528,8 @@ as num,tenderedAmount: null == tenderedAmount ? _self.tenderedAmount : tenderedA
 as num,changeAmount: null == changeAmount ? _self.changeAmount : changeAmount // ignore: cast_nullable_to_non_nullable
 as num,status: freezed == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as POSSaleStatus?,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
-as String,clientRef: freezed == clientRef ? _self.clientRef : clientRef // ignore: cast_nullable_to_non_nullable
+as String,invoiceId: freezed == invoiceId ? _self.invoiceId : invoiceId // ignore: cast_nullable_to_non_nullable
+as String?,clientRef: freezed == clientRef ? _self.clientRef : clientRef // ignore: cast_nullable_to_non_nullable
 as String?,paidAt: freezed == paidAt ? _self.paidAt : paidAt // ignore: cast_nullable_to_non_nullable
 as String?,notes: freezed == notes ? _self.notes : notes // ignore: cast_nullable_to_non_nullable
 as String?,tableNumber: freezed == tableNumber ? _self.tableNumber : tableNumber // ignore: cast_nullable_to_non_nullable
@@ -1549,7 +1572,7 @@ $NamedRefCopyWith<$Res>? get cashier {
 /// @nodoc
 mixin _$POSCheckoutItemDTO {
 
-@JsonKey(name: 'product_id') String get productId;@JsonKey(name: 'unit_id') String get unitId; num get quantity; num get price;@JsonKey(name: 'discount_percent') num? get discountPercent;@JsonKey(name: 'discount_amount') num? get discountAmount;
+@JsonKey(name: 'product_id') String get productId;@JsonKey(name: 'unit_id') String get unitId; num get quantity; num get price;@JsonKey(name: 'tax_id') String? get taxId;@JsonKey(name: 'discount_percent') num? get discountPercent;@JsonKey(name: 'discount_amount') num? get discountAmount;
 /// Create a copy of POSCheckoutItemDTO
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1563,20 +1586,20 @@ $POSCheckoutItemDTOCopyWith<POSCheckoutItemDTO> get copyWith => _$POSCheckoutIte
 @override
 bool operator ==(Object other) {
   final _this = this as POSCheckoutItemDTO;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is POSCheckoutItemDTO&&(identical(other.productId, _this.productId) || other.productId == _this.productId)&&(identical(other.unitId, _this.unitId) || other.unitId == _this.unitId)&&(identical(other.quantity, _this.quantity) || other.quantity == _this.quantity)&&(identical(other.price, _this.price) || other.price == _this.price)&&(identical(other.discountPercent, _this.discountPercent) || other.discountPercent == _this.discountPercent)&&(identical(other.discountAmount, _this.discountAmount) || other.discountAmount == _this.discountAmount));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is POSCheckoutItemDTO&&(identical(other.productId, _this.productId) || other.productId == _this.productId)&&(identical(other.unitId, _this.unitId) || other.unitId == _this.unitId)&&(identical(other.quantity, _this.quantity) || other.quantity == _this.quantity)&&(identical(other.price, _this.price) || other.price == _this.price)&&(identical(other.taxId, _this.taxId) || other.taxId == _this.taxId)&&(identical(other.discountPercent, _this.discountPercent) || other.discountPercent == _this.discountPercent)&&(identical(other.discountAmount, _this.discountAmount) || other.discountAmount == _this.discountAmount));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as POSCheckoutItemDTO;
-  return Object.hash(runtimeType,_this.productId,_this.unitId,_this.quantity,_this.price,_this.discountPercent,_this.discountAmount);
+  return Object.hash(runtimeType,_this.productId,_this.unitId,_this.quantity,_this.price,_this.taxId,_this.discountPercent,_this.discountAmount);
 }
 
 @override
 String toString() {
   final _this = this as POSCheckoutItemDTO;
-  return 'POSCheckoutItemDTO(productId: ${_this.productId}, unitId: ${_this.unitId}, quantity: ${_this.quantity}, price: ${_this.price}, discountPercent: ${_this.discountPercent}, discountAmount: ${_this.discountAmount})';
+  return 'POSCheckoutItemDTO(productId: ${_this.productId}, unitId: ${_this.unitId}, quantity: ${_this.quantity}, price: ${_this.price}, taxId: ${_this.taxId}, discountPercent: ${_this.discountPercent}, discountAmount: ${_this.discountAmount})';
 }
 
 
@@ -1587,7 +1610,7 @@ abstract mixin class $POSCheckoutItemDTOCopyWith<$Res>  {
   factory $POSCheckoutItemDTOCopyWith(POSCheckoutItemDTO value, $Res Function(POSCheckoutItemDTO) _then) = _$POSCheckoutItemDTOCopyWithImpl;
 @useResult
 $Res call({
-@JsonKey(name: 'product_id') String productId,@JsonKey(name: 'unit_id') String unitId, num quantity, num price,@JsonKey(name: 'discount_percent') num? discountPercent,@JsonKey(name: 'discount_amount') num? discountAmount
+@JsonKey(name: 'product_id') String productId,@JsonKey(name: 'unit_id') String unitId, num quantity, num price,@JsonKey(name: 'tax_id') String? taxId,@JsonKey(name: 'discount_percent') num? discountPercent,@JsonKey(name: 'discount_amount') num? discountAmount
 });
 
 
@@ -1604,13 +1627,14 @@ class _$POSCheckoutItemDTOCopyWithImpl<$Res>
 
 /// Create a copy of POSCheckoutItemDTO
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? productId = null,Object? unitId = null,Object? quantity = null,Object? price = null,Object? discountPercent = freezed,Object? discountAmount = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? productId = null,Object? unitId = null,Object? quantity = null,Object? price = null,Object? taxId = freezed,Object? discountPercent = freezed,Object? discountAmount = freezed,}) {
   return _then(POSCheckoutItemDTO(
 productId: null == productId ? _self.productId : productId // ignore: cast_nullable_to_non_nullable
 as String,unitId: null == unitId ? _self.unitId : unitId // ignore: cast_nullable_to_non_nullable
 as String,quantity: null == quantity ? _self.quantity : quantity // ignore: cast_nullable_to_non_nullable
 as num,price: null == price ? _self.price : price // ignore: cast_nullable_to_non_nullable
-as num,discountPercent: freezed == discountPercent ? _self.discountPercent : discountPercent // ignore: cast_nullable_to_non_nullable
+as num,taxId: freezed == taxId ? _self.taxId : taxId // ignore: cast_nullable_to_non_nullable
+as String?,discountPercent: freezed == discountPercent ? _self.discountPercent : discountPercent // ignore: cast_nullable_to_non_nullable
 as num?,discountAmount: freezed == discountAmount ? _self.discountAmount : discountAmount // ignore: cast_nullable_to_non_nullable
 as num?,
   ));
@@ -1697,10 +1721,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'product_id')  String productId, @JsonKey(name: 'unit_id')  String unitId,  num quantity,  num price, @JsonKey(name: 'discount_percent')  num? discountPercent, @JsonKey(name: 'discount_amount')  num? discountAmount)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'product_id')  String productId, @JsonKey(name: 'unit_id')  String unitId,  num quantity,  num price, @JsonKey(name: 'tax_id')  String? taxId, @JsonKey(name: 'discount_percent')  num? discountPercent, @JsonKey(name: 'discount_amount')  num? discountAmount)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _POSCheckoutItemDTO() when $default != null:
-return $default(_that.productId,_that.unitId,_that.quantity,_that.price,_that.discountPercent,_that.discountAmount);case _:
+return $default(_that.productId,_that.unitId,_that.quantity,_that.price,_that.taxId,_that.discountPercent,_that.discountAmount);case _:
   return orElse();
 
 }
@@ -1718,10 +1742,10 @@ return $default(_that.productId,_that.unitId,_that.quantity,_that.price,_that.di
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'product_id')  String productId, @JsonKey(name: 'unit_id')  String unitId,  num quantity,  num price, @JsonKey(name: 'discount_percent')  num? discountPercent, @JsonKey(name: 'discount_amount')  num? discountAmount)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'product_id')  String productId, @JsonKey(name: 'unit_id')  String unitId,  num quantity,  num price, @JsonKey(name: 'tax_id')  String? taxId, @JsonKey(name: 'discount_percent')  num? discountPercent, @JsonKey(name: 'discount_amount')  num? discountAmount)  $default,) {final _that = this;
 switch (_that) {
 case _POSCheckoutItemDTO():
-return $default(_that.productId,_that.unitId,_that.quantity,_that.price,_that.discountPercent,_that.discountAmount);case _:
+return $default(_that.productId,_that.unitId,_that.quantity,_that.price,_that.taxId,_that.discountPercent,_that.discountAmount);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -1738,10 +1762,10 @@ return $default(_that.productId,_that.unitId,_that.quantity,_that.price,_that.di
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'product_id')  String productId, @JsonKey(name: 'unit_id')  String unitId,  num quantity,  num price, @JsonKey(name: 'discount_percent')  num? discountPercent, @JsonKey(name: 'discount_amount')  num? discountAmount)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'product_id')  String productId, @JsonKey(name: 'unit_id')  String unitId,  num quantity,  num price, @JsonKey(name: 'tax_id')  String? taxId, @JsonKey(name: 'discount_percent')  num? discountPercent, @JsonKey(name: 'discount_amount')  num? discountAmount)?  $default,) {final _that = this;
 switch (_that) {
 case _POSCheckoutItemDTO() when $default != null:
-return $default(_that.productId,_that.unitId,_that.quantity,_that.price,_that.discountPercent,_that.discountAmount);case _:
+return $default(_that.productId,_that.unitId,_that.quantity,_that.price,_that.taxId,_that.discountPercent,_that.discountAmount);case _:
   return null;
 
 }
@@ -1753,13 +1777,14 @@ return $default(_that.productId,_that.unitId,_that.quantity,_that.price,_that.di
 
 @JsonSerializable(includeIfNull: false)
 class _POSCheckoutItemDTO implements POSCheckoutItemDTO {
-  const _POSCheckoutItemDTO({@JsonKey(name: 'product_id') required this.productId, @JsonKey(name: 'unit_id') required this.unitId, required this.quantity, required this.price, @JsonKey(name: 'discount_percent') this.discountPercent, @JsonKey(name: 'discount_amount') this.discountAmount});
+  const _POSCheckoutItemDTO({@JsonKey(name: 'product_id') required this.productId, @JsonKey(name: 'unit_id') required this.unitId, required this.quantity, required this.price, @JsonKey(name: 'tax_id') this.taxId, @JsonKey(name: 'discount_percent') this.discountPercent, @JsonKey(name: 'discount_amount') this.discountAmount});
   factory _POSCheckoutItemDTO.fromJson(Map<String, dynamic> json) => _$POSCheckoutItemDTOFromJson(json);
 
 @override@JsonKey(name: 'product_id') final  String productId;
 @override@JsonKey(name: 'unit_id') final  String unitId;
 @override final  num quantity;
 @override final  num price;
+@override@JsonKey(name: 'tax_id') final  String? taxId;
 @override@JsonKey(name: 'discount_percent') final  num? discountPercent;
 @override@JsonKey(name: 'discount_amount') final  num? discountAmount;
 
@@ -1776,18 +1801,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _POSCheckoutItemDTO&&(identical(other.productId, productId) || other.productId == productId)&&(identical(other.unitId, unitId) || other.unitId == unitId)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.price, price) || other.price == price)&&(identical(other.discountPercent, discountPercent) || other.discountPercent == discountPercent)&&(identical(other.discountAmount, discountAmount) || other.discountAmount == discountAmount));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _POSCheckoutItemDTO&&(identical(other.productId, productId) || other.productId == productId)&&(identical(other.unitId, unitId) || other.unitId == unitId)&&(identical(other.quantity, quantity) || other.quantity == quantity)&&(identical(other.price, price) || other.price == price)&&(identical(other.taxId, taxId) || other.taxId == taxId)&&(identical(other.discountPercent, discountPercent) || other.discountPercent == discountPercent)&&(identical(other.discountAmount, discountAmount) || other.discountAmount == discountAmount));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,productId,unitId,quantity,price,discountPercent,discountAmount);
+    return Object.hash(runtimeType,productId,unitId,quantity,price,taxId,discountPercent,discountAmount);
 }
 
 @override
 String toString() {
-    return 'POSCheckoutItemDTO(productId: $productId, unitId: $unitId, quantity: $quantity, price: $price, discountPercent: $discountPercent, discountAmount: $discountAmount)';
+    return 'POSCheckoutItemDTO(productId: $productId, unitId: $unitId, quantity: $quantity, price: $price, taxId: $taxId, discountPercent: $discountPercent, discountAmount: $discountAmount)';
 }
 
 
@@ -1798,7 +1823,7 @@ abstract mixin class _$POSCheckoutItemDTOCopyWith<$Res> implements $POSCheckoutI
   factory _$POSCheckoutItemDTOCopyWith(_POSCheckoutItemDTO value, $Res Function(_POSCheckoutItemDTO) _then) = __$POSCheckoutItemDTOCopyWithImpl;
 @override @useResult
 $Res call({
-@JsonKey(name: 'product_id') String productId,@JsonKey(name: 'unit_id') String unitId, num quantity, num price,@JsonKey(name: 'discount_percent') num? discountPercent,@JsonKey(name: 'discount_amount') num? discountAmount
+@JsonKey(name: 'product_id') String productId,@JsonKey(name: 'unit_id') String unitId, num quantity, num price,@JsonKey(name: 'tax_id') String? taxId,@JsonKey(name: 'discount_percent') num? discountPercent,@JsonKey(name: 'discount_amount') num? discountAmount
 });
 
 
@@ -1815,13 +1840,14 @@ class __$POSCheckoutItemDTOCopyWithImpl<$Res>
 
 /// Create a copy of POSCheckoutItemDTO
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? productId = null,Object? unitId = null,Object? quantity = null,Object? price = null,Object? discountPercent = freezed,Object? discountAmount = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? productId = null,Object? unitId = null,Object? quantity = null,Object? price = null,Object? taxId = freezed,Object? discountPercent = freezed,Object? discountAmount = freezed,}) {
   return _then(_POSCheckoutItemDTO(
 productId: null == productId ? _self.productId : productId // ignore: cast_nullable_to_non_nullable
 as String,unitId: null == unitId ? _self.unitId : unitId // ignore: cast_nullable_to_non_nullable
 as String,quantity: null == quantity ? _self.quantity : quantity // ignore: cast_nullable_to_non_nullable
 as num,price: null == price ? _self.price : price // ignore: cast_nullable_to_non_nullable
-as num,discountPercent: freezed == discountPercent ? _self.discountPercent : discountPercent // ignore: cast_nullable_to_non_nullable
+as num,taxId: freezed == taxId ? _self.taxId : taxId // ignore: cast_nullable_to_non_nullable
+as String?,discountPercent: freezed == discountPercent ? _self.discountPercent : discountPercent // ignore: cast_nullable_to_non_nullable
 as num?,discountAmount: freezed == discountAmount ? _self.discountAmount : discountAmount // ignore: cast_nullable_to_non_nullable
 as num?,
   ));
@@ -2153,7 +2179,7 @@ as String?,
 /// @nodoc
 mixin _$POSPreferences {
 
-@JsonKey(name: 'require_shift') bool get requireShift;@JsonKey(name: 'show_table_number') bool get showTableNumber;@JsonKey(name: 'show_queue_number') bool get showQueueNumber;@JsonKey(name: 'queue_number_auto') bool get queueNumberAuto;@JsonKey(name: 'show_product_sales_summary') bool get showProductSalesSummary;/// Set once the company has a drawer account: a cash movement then has to name the
+@JsonKey(name: 'require_shift') bool get requireShift;@JsonKey(name: 'tax_enabled') bool get taxEnabled;@JsonKey(name: 'price_includes_tax') bool get priceIncludesTax;@JsonKey(name: 'show_table_number') bool get showTableNumber;@JsonKey(name: 'show_queue_number') bool get showQueueNumber;@JsonKey(name: 'queue_number_auto') bool get queueNumberAuto;@JsonKey(name: 'show_product_sales_summary') bool get showProductSalesSummary;/// Set once the company has a drawer account: a cash movement then has to name the
 /// other side of its journal (`cash-movement-dialog.tsx`).
 @JsonKey(name: 'cash_account_id') String? get cashAccountId;/// The walk-in customer the company nominates, or null when it has none.
 ///
@@ -2175,20 +2201,20 @@ $POSPreferencesCopyWith<POSPreferences> get copyWith => _$POSPreferencesCopyWith
 @override
 bool operator ==(Object other) {
   final _this = this as POSPreferences;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is POSPreferences&&(identical(other.requireShift, _this.requireShift) || other.requireShift == _this.requireShift)&&(identical(other.showTableNumber, _this.showTableNumber) || other.showTableNumber == _this.showTableNumber)&&(identical(other.showQueueNumber, _this.showQueueNumber) || other.showQueueNumber == _this.showQueueNumber)&&(identical(other.queueNumberAuto, _this.queueNumberAuto) || other.queueNumberAuto == _this.queueNumberAuto)&&(identical(other.showProductSalesSummary, _this.showProductSalesSummary) || other.showProductSalesSummary == _this.showProductSalesSummary)&&(identical(other.cashAccountId, _this.cashAccountId) || other.cashAccountId == _this.cashAccountId)&&(identical(other.defaultCustomerId, _this.defaultCustomerId) || other.defaultCustomerId == _this.defaultCustomerId)&&(identical(other.receiptFooterText, _this.receiptFooterText) || other.receiptFooterText == _this.receiptFooterText));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is POSPreferences&&(identical(other.requireShift, _this.requireShift) || other.requireShift == _this.requireShift)&&(identical(other.taxEnabled, _this.taxEnabled) || other.taxEnabled == _this.taxEnabled)&&(identical(other.priceIncludesTax, _this.priceIncludesTax) || other.priceIncludesTax == _this.priceIncludesTax)&&(identical(other.showTableNumber, _this.showTableNumber) || other.showTableNumber == _this.showTableNumber)&&(identical(other.showQueueNumber, _this.showQueueNumber) || other.showQueueNumber == _this.showQueueNumber)&&(identical(other.queueNumberAuto, _this.queueNumberAuto) || other.queueNumberAuto == _this.queueNumberAuto)&&(identical(other.showProductSalesSummary, _this.showProductSalesSummary) || other.showProductSalesSummary == _this.showProductSalesSummary)&&(identical(other.cashAccountId, _this.cashAccountId) || other.cashAccountId == _this.cashAccountId)&&(identical(other.defaultCustomerId, _this.defaultCustomerId) || other.defaultCustomerId == _this.defaultCustomerId)&&(identical(other.receiptFooterText, _this.receiptFooterText) || other.receiptFooterText == _this.receiptFooterText));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as POSPreferences;
-  return Object.hash(runtimeType,_this.requireShift,_this.showTableNumber,_this.showQueueNumber,_this.queueNumberAuto,_this.showProductSalesSummary,_this.cashAccountId,_this.defaultCustomerId,_this.receiptFooterText);
+  return Object.hash(runtimeType,_this.requireShift,_this.taxEnabled,_this.priceIncludesTax,_this.showTableNumber,_this.showQueueNumber,_this.queueNumberAuto,_this.showProductSalesSummary,_this.cashAccountId,_this.defaultCustomerId,_this.receiptFooterText);
 }
 
 @override
 String toString() {
   final _this = this as POSPreferences;
-  return 'POSPreferences(requireShift: ${_this.requireShift}, showTableNumber: ${_this.showTableNumber}, showQueueNumber: ${_this.showQueueNumber}, queueNumberAuto: ${_this.queueNumberAuto}, showProductSalesSummary: ${_this.showProductSalesSummary}, cashAccountId: ${_this.cashAccountId}, defaultCustomerId: ${_this.defaultCustomerId}, receiptFooterText: ${_this.receiptFooterText})';
+  return 'POSPreferences(requireShift: ${_this.requireShift}, taxEnabled: ${_this.taxEnabled}, priceIncludesTax: ${_this.priceIncludesTax}, showTableNumber: ${_this.showTableNumber}, showQueueNumber: ${_this.showQueueNumber}, queueNumberAuto: ${_this.queueNumberAuto}, showProductSalesSummary: ${_this.showProductSalesSummary}, cashAccountId: ${_this.cashAccountId}, defaultCustomerId: ${_this.defaultCustomerId}, receiptFooterText: ${_this.receiptFooterText})';
 }
 
 
@@ -2199,7 +2225,7 @@ abstract mixin class $POSPreferencesCopyWith<$Res>  {
   factory $POSPreferencesCopyWith(POSPreferences value, $Res Function(POSPreferences) _then) = _$POSPreferencesCopyWithImpl;
 @useResult
 $Res call({
-@JsonKey(name: 'require_shift') bool requireShift,@JsonKey(name: 'show_table_number') bool showTableNumber,@JsonKey(name: 'show_queue_number') bool showQueueNumber,@JsonKey(name: 'queue_number_auto') bool queueNumberAuto,@JsonKey(name: 'show_product_sales_summary') bool showProductSalesSummary,@JsonKey(name: 'cash_account_id') String? cashAccountId,@JsonKey(name: 'default_customer_id') String? defaultCustomerId,@JsonKey(name: 'receipt_footer_text') String? receiptFooterText
+@JsonKey(name: 'require_shift') bool requireShift,@JsonKey(name: 'tax_enabled') bool taxEnabled,@JsonKey(name: 'price_includes_tax') bool priceIncludesTax,@JsonKey(name: 'show_table_number') bool showTableNumber,@JsonKey(name: 'show_queue_number') bool showQueueNumber,@JsonKey(name: 'queue_number_auto') bool queueNumberAuto,@JsonKey(name: 'show_product_sales_summary') bool showProductSalesSummary,@JsonKey(name: 'cash_account_id') String? cashAccountId,@JsonKey(name: 'default_customer_id') String? defaultCustomerId,@JsonKey(name: 'receipt_footer_text') String? receiptFooterText
 });
 
 
@@ -2216,9 +2242,11 @@ class _$POSPreferencesCopyWithImpl<$Res>
 
 /// Create a copy of POSPreferences
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? requireShift = null,Object? showTableNumber = null,Object? showQueueNumber = null,Object? queueNumberAuto = null,Object? showProductSalesSummary = null,Object? cashAccountId = freezed,Object? defaultCustomerId = freezed,Object? receiptFooterText = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? requireShift = null,Object? taxEnabled = null,Object? priceIncludesTax = null,Object? showTableNumber = null,Object? showQueueNumber = null,Object? queueNumberAuto = null,Object? showProductSalesSummary = null,Object? cashAccountId = freezed,Object? defaultCustomerId = freezed,Object? receiptFooterText = freezed,}) {
   return _then(POSPreferences(
 requireShift: null == requireShift ? _self.requireShift : requireShift // ignore: cast_nullable_to_non_nullable
+as bool,taxEnabled: null == taxEnabled ? _self.taxEnabled : taxEnabled // ignore: cast_nullable_to_non_nullable
+as bool,priceIncludesTax: null == priceIncludesTax ? _self.priceIncludesTax : priceIncludesTax // ignore: cast_nullable_to_non_nullable
 as bool,showTableNumber: null == showTableNumber ? _self.showTableNumber : showTableNumber // ignore: cast_nullable_to_non_nullable
 as bool,showQueueNumber: null == showQueueNumber ? _self.showQueueNumber : showQueueNumber // ignore: cast_nullable_to_non_nullable
 as bool,queueNumberAuto: null == queueNumberAuto ? _self.queueNumberAuto : queueNumberAuto // ignore: cast_nullable_to_non_nullable
@@ -2311,10 +2339,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'require_shift')  bool requireShift, @JsonKey(name: 'show_table_number')  bool showTableNumber, @JsonKey(name: 'show_queue_number')  bool showQueueNumber, @JsonKey(name: 'queue_number_auto')  bool queueNumberAuto, @JsonKey(name: 'show_product_sales_summary')  bool showProductSalesSummary, @JsonKey(name: 'cash_account_id')  String? cashAccountId, @JsonKey(name: 'default_customer_id')  String? defaultCustomerId, @JsonKey(name: 'receipt_footer_text')  String? receiptFooterText)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(name: 'require_shift')  bool requireShift, @JsonKey(name: 'tax_enabled')  bool taxEnabled, @JsonKey(name: 'price_includes_tax')  bool priceIncludesTax, @JsonKey(name: 'show_table_number')  bool showTableNumber, @JsonKey(name: 'show_queue_number')  bool showQueueNumber, @JsonKey(name: 'queue_number_auto')  bool queueNumberAuto, @JsonKey(name: 'show_product_sales_summary')  bool showProductSalesSummary, @JsonKey(name: 'cash_account_id')  String? cashAccountId, @JsonKey(name: 'default_customer_id')  String? defaultCustomerId, @JsonKey(name: 'receipt_footer_text')  String? receiptFooterText)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _POSPreferences() when $default != null:
-return $default(_that.requireShift,_that.showTableNumber,_that.showQueueNumber,_that.queueNumberAuto,_that.showProductSalesSummary,_that.cashAccountId,_that.defaultCustomerId,_that.receiptFooterText);case _:
+return $default(_that.requireShift,_that.taxEnabled,_that.priceIncludesTax,_that.showTableNumber,_that.showQueueNumber,_that.queueNumberAuto,_that.showProductSalesSummary,_that.cashAccountId,_that.defaultCustomerId,_that.receiptFooterText);case _:
   return orElse();
 
 }
@@ -2332,10 +2360,10 @@ return $default(_that.requireShift,_that.showTableNumber,_that.showQueueNumber,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'require_shift')  bool requireShift, @JsonKey(name: 'show_table_number')  bool showTableNumber, @JsonKey(name: 'show_queue_number')  bool showQueueNumber, @JsonKey(name: 'queue_number_auto')  bool queueNumberAuto, @JsonKey(name: 'show_product_sales_summary')  bool showProductSalesSummary, @JsonKey(name: 'cash_account_id')  String? cashAccountId, @JsonKey(name: 'default_customer_id')  String? defaultCustomerId, @JsonKey(name: 'receipt_footer_text')  String? receiptFooterText)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(name: 'require_shift')  bool requireShift, @JsonKey(name: 'tax_enabled')  bool taxEnabled, @JsonKey(name: 'price_includes_tax')  bool priceIncludesTax, @JsonKey(name: 'show_table_number')  bool showTableNumber, @JsonKey(name: 'show_queue_number')  bool showQueueNumber, @JsonKey(name: 'queue_number_auto')  bool queueNumberAuto, @JsonKey(name: 'show_product_sales_summary')  bool showProductSalesSummary, @JsonKey(name: 'cash_account_id')  String? cashAccountId, @JsonKey(name: 'default_customer_id')  String? defaultCustomerId, @JsonKey(name: 'receipt_footer_text')  String? receiptFooterText)  $default,) {final _that = this;
 switch (_that) {
 case _POSPreferences():
-return $default(_that.requireShift,_that.showTableNumber,_that.showQueueNumber,_that.queueNumberAuto,_that.showProductSalesSummary,_that.cashAccountId,_that.defaultCustomerId,_that.receiptFooterText);case _:
+return $default(_that.requireShift,_that.taxEnabled,_that.priceIncludesTax,_that.showTableNumber,_that.showQueueNumber,_that.queueNumberAuto,_that.showProductSalesSummary,_that.cashAccountId,_that.defaultCustomerId,_that.receiptFooterText);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -2352,10 +2380,10 @@ return $default(_that.requireShift,_that.showTableNumber,_that.showQueueNumber,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'require_shift')  bool requireShift, @JsonKey(name: 'show_table_number')  bool showTableNumber, @JsonKey(name: 'show_queue_number')  bool showQueueNumber, @JsonKey(name: 'queue_number_auto')  bool queueNumberAuto, @JsonKey(name: 'show_product_sales_summary')  bool showProductSalesSummary, @JsonKey(name: 'cash_account_id')  String? cashAccountId, @JsonKey(name: 'default_customer_id')  String? defaultCustomerId, @JsonKey(name: 'receipt_footer_text')  String? receiptFooterText)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(name: 'require_shift')  bool requireShift, @JsonKey(name: 'tax_enabled')  bool taxEnabled, @JsonKey(name: 'price_includes_tax')  bool priceIncludesTax, @JsonKey(name: 'show_table_number')  bool showTableNumber, @JsonKey(name: 'show_queue_number')  bool showQueueNumber, @JsonKey(name: 'queue_number_auto')  bool queueNumberAuto, @JsonKey(name: 'show_product_sales_summary')  bool showProductSalesSummary, @JsonKey(name: 'cash_account_id')  String? cashAccountId, @JsonKey(name: 'default_customer_id')  String? defaultCustomerId, @JsonKey(name: 'receipt_footer_text')  String? receiptFooterText)?  $default,) {final _that = this;
 switch (_that) {
 case _POSPreferences() when $default != null:
-return $default(_that.requireShift,_that.showTableNumber,_that.showQueueNumber,_that.queueNumberAuto,_that.showProductSalesSummary,_that.cashAccountId,_that.defaultCustomerId,_that.receiptFooterText);case _:
+return $default(_that.requireShift,_that.taxEnabled,_that.priceIncludesTax,_that.showTableNumber,_that.showQueueNumber,_that.queueNumberAuto,_that.showProductSalesSummary,_that.cashAccountId,_that.defaultCustomerId,_that.receiptFooterText);case _:
   return null;
 
 }
@@ -2367,10 +2395,12 @@ return $default(_that.requireShift,_that.showTableNumber,_that.showQueueNumber,_
 @JsonSerializable()
 
 class _POSPreferences implements POSPreferences {
-  const _POSPreferences({@JsonKey(name: 'require_shift') required this.requireShift, @JsonKey(name: 'show_table_number') this.showTableNumber = false, @JsonKey(name: 'show_queue_number') this.showQueueNumber = false, @JsonKey(name: 'queue_number_auto') this.queueNumberAuto = false, @JsonKey(name: 'show_product_sales_summary') this.showProductSalesSummary = false, @JsonKey(name: 'cash_account_id') this.cashAccountId, @JsonKey(name: 'default_customer_id') this.defaultCustomerId, @JsonKey(name: 'receipt_footer_text') this.receiptFooterText});
+  const _POSPreferences({@JsonKey(name: 'require_shift') required this.requireShift, @JsonKey(name: 'tax_enabled') this.taxEnabled = false, @JsonKey(name: 'price_includes_tax') this.priceIncludesTax = false, @JsonKey(name: 'show_table_number') this.showTableNumber = false, @JsonKey(name: 'show_queue_number') this.showQueueNumber = false, @JsonKey(name: 'queue_number_auto') this.queueNumberAuto = false, @JsonKey(name: 'show_product_sales_summary') this.showProductSalesSummary = false, @JsonKey(name: 'cash_account_id') this.cashAccountId, @JsonKey(name: 'default_customer_id') this.defaultCustomerId, @JsonKey(name: 'receipt_footer_text') this.receiptFooterText});
   factory _POSPreferences.fromJson(Map<String, dynamic> json) => _$POSPreferencesFromJson(json);
 
 @override@JsonKey(name: 'require_shift') final  bool requireShift;
+@override@JsonKey(name: 'tax_enabled') final  bool taxEnabled;
+@override@JsonKey(name: 'price_includes_tax') final  bool priceIncludesTax;
 @override@JsonKey(name: 'show_table_number') final  bool showTableNumber;
 @override@JsonKey(name: 'show_queue_number') final  bool showQueueNumber;
 @override@JsonKey(name: 'queue_number_auto') final  bool queueNumberAuto;
@@ -2400,18 +2430,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _POSPreferences&&(identical(other.requireShift, requireShift) || other.requireShift == requireShift)&&(identical(other.showTableNumber, showTableNumber) || other.showTableNumber == showTableNumber)&&(identical(other.showQueueNumber, showQueueNumber) || other.showQueueNumber == showQueueNumber)&&(identical(other.queueNumberAuto, queueNumberAuto) || other.queueNumberAuto == queueNumberAuto)&&(identical(other.showProductSalesSummary, showProductSalesSummary) || other.showProductSalesSummary == showProductSalesSummary)&&(identical(other.cashAccountId, cashAccountId) || other.cashAccountId == cashAccountId)&&(identical(other.defaultCustomerId, defaultCustomerId) || other.defaultCustomerId == defaultCustomerId)&&(identical(other.receiptFooterText, receiptFooterText) || other.receiptFooterText == receiptFooterText));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _POSPreferences&&(identical(other.requireShift, requireShift) || other.requireShift == requireShift)&&(identical(other.taxEnabled, taxEnabled) || other.taxEnabled == taxEnabled)&&(identical(other.priceIncludesTax, priceIncludesTax) || other.priceIncludesTax == priceIncludesTax)&&(identical(other.showTableNumber, showTableNumber) || other.showTableNumber == showTableNumber)&&(identical(other.showQueueNumber, showQueueNumber) || other.showQueueNumber == showQueueNumber)&&(identical(other.queueNumberAuto, queueNumberAuto) || other.queueNumberAuto == queueNumberAuto)&&(identical(other.showProductSalesSummary, showProductSalesSummary) || other.showProductSalesSummary == showProductSalesSummary)&&(identical(other.cashAccountId, cashAccountId) || other.cashAccountId == cashAccountId)&&(identical(other.defaultCustomerId, defaultCustomerId) || other.defaultCustomerId == defaultCustomerId)&&(identical(other.receiptFooterText, receiptFooterText) || other.receiptFooterText == receiptFooterText));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,requireShift,showTableNumber,showQueueNumber,queueNumberAuto,showProductSalesSummary,cashAccountId,defaultCustomerId,receiptFooterText);
+    return Object.hash(runtimeType,requireShift,taxEnabled,priceIncludesTax,showTableNumber,showQueueNumber,queueNumberAuto,showProductSalesSummary,cashAccountId,defaultCustomerId,receiptFooterText);
 }
 
 @override
 String toString() {
-    return 'POSPreferences(requireShift: $requireShift, showTableNumber: $showTableNumber, showQueueNumber: $showQueueNumber, queueNumberAuto: $queueNumberAuto, showProductSalesSummary: $showProductSalesSummary, cashAccountId: $cashAccountId, defaultCustomerId: $defaultCustomerId, receiptFooterText: $receiptFooterText)';
+    return 'POSPreferences(requireShift: $requireShift, taxEnabled: $taxEnabled, priceIncludesTax: $priceIncludesTax, showTableNumber: $showTableNumber, showQueueNumber: $showQueueNumber, queueNumberAuto: $queueNumberAuto, showProductSalesSummary: $showProductSalesSummary, cashAccountId: $cashAccountId, defaultCustomerId: $defaultCustomerId, receiptFooterText: $receiptFooterText)';
 }
 
 
@@ -2422,7 +2452,7 @@ abstract mixin class _$POSPreferencesCopyWith<$Res> implements $POSPreferencesCo
   factory _$POSPreferencesCopyWith(_POSPreferences value, $Res Function(_POSPreferences) _then) = __$POSPreferencesCopyWithImpl;
 @override @useResult
 $Res call({
-@JsonKey(name: 'require_shift') bool requireShift,@JsonKey(name: 'show_table_number') bool showTableNumber,@JsonKey(name: 'show_queue_number') bool showQueueNumber,@JsonKey(name: 'queue_number_auto') bool queueNumberAuto,@JsonKey(name: 'show_product_sales_summary') bool showProductSalesSummary,@JsonKey(name: 'cash_account_id') String? cashAccountId,@JsonKey(name: 'default_customer_id') String? defaultCustomerId,@JsonKey(name: 'receipt_footer_text') String? receiptFooterText
+@JsonKey(name: 'require_shift') bool requireShift,@JsonKey(name: 'tax_enabled') bool taxEnabled,@JsonKey(name: 'price_includes_tax') bool priceIncludesTax,@JsonKey(name: 'show_table_number') bool showTableNumber,@JsonKey(name: 'show_queue_number') bool showQueueNumber,@JsonKey(name: 'queue_number_auto') bool queueNumberAuto,@JsonKey(name: 'show_product_sales_summary') bool showProductSalesSummary,@JsonKey(name: 'cash_account_id') String? cashAccountId,@JsonKey(name: 'default_customer_id') String? defaultCustomerId,@JsonKey(name: 'receipt_footer_text') String? receiptFooterText
 });
 
 
@@ -2439,9 +2469,11 @@ class __$POSPreferencesCopyWithImpl<$Res>
 
 /// Create a copy of POSPreferences
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? requireShift = null,Object? showTableNumber = null,Object? showQueueNumber = null,Object? queueNumberAuto = null,Object? showProductSalesSummary = null,Object? cashAccountId = freezed,Object? defaultCustomerId = freezed,Object? receiptFooterText = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? requireShift = null,Object? taxEnabled = null,Object? priceIncludesTax = null,Object? showTableNumber = null,Object? showQueueNumber = null,Object? queueNumberAuto = null,Object? showProductSalesSummary = null,Object? cashAccountId = freezed,Object? defaultCustomerId = freezed,Object? receiptFooterText = freezed,}) {
   return _then(_POSPreferences(
 requireShift: null == requireShift ? _self.requireShift : requireShift // ignore: cast_nullable_to_non_nullable
+as bool,taxEnabled: null == taxEnabled ? _self.taxEnabled : taxEnabled // ignore: cast_nullable_to_non_nullable
+as bool,priceIncludesTax: null == priceIncludesTax ? _self.priceIncludesTax : priceIncludesTax // ignore: cast_nullable_to_non_nullable
 as bool,showTableNumber: null == showTableNumber ? _self.showTableNumber : showTableNumber // ignore: cast_nullable_to_non_nullable
 as bool,showQueueNumber: null == showQueueNumber ? _self.showQueueNumber : showQueueNumber // ignore: cast_nullable_to_non_nullable
 as bool,queueNumberAuto: null == queueNumberAuto ? _self.queueNumberAuto : queueNumberAuto // ignore: cast_nullable_to_non_nullable

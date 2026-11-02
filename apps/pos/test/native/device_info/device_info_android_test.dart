@@ -127,6 +127,7 @@ void main() {
           'board': 'b',
           'bootloader': 'b',
           'brand': 'samsung',
+          'time': 1788562900,
           'device': 'd',
           'display': 'd',
           'fingerprint': 'f',

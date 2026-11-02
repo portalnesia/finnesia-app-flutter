@@ -144,6 +144,12 @@ void main() {
       expect(s.cashier?.name, 'Sari');
     });
 
+    test('preserves invoice_id for the analytics transaction identity', () {
+      final parsed = POSSale.fromJson(sale()..['invoice_id'] = 'inv_1');
+      expect(parsed.toJson()['invoice_id'], 'inv_1');
+      expect(POSSale.fromJson(sale()).toJson()['invoice_id'], isNull);
+    });
+
     test('leaves the optional fields null when the API omits them', () {
       final s = POSSale.fromJson(sale());
 
@@ -341,7 +347,10 @@ void main() {
           'id',
           'quantity',
           'price',
+          'tax_rate',
+          'is_tax_inclusive',
           'line_subtotal',
+          'line_tax',
           'line_total',
           'description',
           'product',
@@ -394,6 +403,67 @@ void main() {
       expect(p.cashAccountId, isNull);
       expect(p.receiptFooterText, isNull);
       expect(p.defaultCustomerId, isNull);
+    });
+  });
+
+  group('POS tax wire fields', () {
+    test('reads the company-wide tax settings', () {
+      final p = POSPreferences.fromJson(
+        jsonDecode('''
+          {"require_shift":true,"tax_enabled":true,"price_includes_tax":true}''')
+            as Map<String, dynamic>,
+      );
+
+      final wire = p.toJson();
+      expect(wire['tax_enabled'], isTrue);
+      expect(wire['price_includes_tax'], isTrue);
+    });
+
+    test('defaults both tax settings off when absent', () {
+      final p = POSPreferences.fromJson(
+        jsonDecode('{"require_shift":true}') as Map<String, dynamic>,
+      );
+
+      expect(p.taxEnabled, isFalse);
+      expect(p.priceIncludesTax, isFalse);
+    });
+
+    test('round-trips a checkout item tax id', () {
+      final item = POSCheckoutItemDTO.fromJson(
+        jsonDecode('''
+          {"product_id":"p1","unit_id":"u1","quantity":1,"price":10000,
+           "tax_id":"tax_1"}''')
+            as Map<String, dynamic>,
+      );
+
+      expect(item.toJson()['tax_id'], 'tax_1');
+    });
+
+    test('keeps invoice line discounts available to the receipt', () {
+      final item = SalesInvoiceItem.fromJson(
+        jsonDecode('''
+          {"id":"i1","quantity":1,"price":10000,"line_subtotal":9000,
+           "line_total":9990,"discount_percent":10}''')
+            as Map<String, dynamic>,
+      );
+
+      expect(item.toJson()['discount_percent'], 10);
+    });
+
+    test('round-trips tax details on an invoice item', () {
+      final item = SalesInvoiceItem.fromJson(
+        jsonDecode('''
+          {"id":"i1","quantity":1,"price":10000,"line_subtotal":9009.01,
+           "line_tax":990.99,"line_total":10000,"tax_id":"tax_1",
+           "tax_rate":11,"is_tax_inclusive":true}''')
+            as Map<String, dynamic>,
+      );
+
+      final wire = item.toJson();
+      expect(wire['tax_id'], 'tax_1');
+      expect(wire['tax_rate'], 11);
+      expect(wire['is_tax_inclusive'], isTrue);
+      expect(wire['line_tax'], 990.99);
     });
   });
 }

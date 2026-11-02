@@ -189,6 +189,7 @@ const _workflowFiles = [
   'release-dispatch.yml',
   'release-pos.yml',
   'shorebird-patch.yml',
+  'shorebird-patch-windows.yml',
   'staging-pos.yml',
   'windows-pos.yml',
 ];
@@ -379,7 +380,13 @@ void main() {
     });
 
     test('every workflow matches the pos- prefix', () {
-      for (final patterns in [release, patch, staging, windows]) {
+      for (final patterns in [
+        release,
+        patch,
+        staging,
+        windows,
+        tagPatterns(readWorkflow('shorebird-patch-windows.yml')),
+      ]) {
         expect(patterns.join(' '), contains('pos-v'));
       }
     });
@@ -418,6 +425,7 @@ void main() {
       for (final name in [
         'release-pos.yml',
         'shorebird-patch.yml',
+        'shorebird-patch-windows.yml',
         'staging-pos.yml',
         'windows-pos.yml',
       ]) {
@@ -440,43 +448,37 @@ void main() {
       expect(() => versionFromTag('web-v1.2.0'), throwsArgumentError);
     });
 
-    test('routes each tag shape to exactly one workflow', () {
-      // The four tag shapes in docs/distribution.md §4.1, plus the shapes that must trigger
-      // nothing. Overlap here means one `git push --tags` starts two workflows that fight over
-      // the same GitHub Release.
-      final cases = <String, String?>{
-        'pos-v1.2.0': 'release-pos.yml',
-        'pos-v1.2.0-5': 'shorebird-patch.yml',
-        'pos-v1.2.0-staging.3': 'staging-pos.yml',
+    test('routes each tag shape to the intended independent workflows', () {
+      // Native releases and Shorebird patches intentionally fan out per platform.
+      final patchWindows = tagPatterns(
+        readWorkflow('shorebird-patch-windows.yml'),
+      );
+      final cases = <String, List<String>>{
+        'pos-v1.2.0': ['release-pos.yml', 'windows-pos.yml'],
+        'pos-v1.2.0-5': ['shorebird-patch.yml', 'shorebird-patch-windows.yml'],
+        'pos-v1.2.0-staging.3': ['staging-pos.yml'],
         // A bare version, or another application's tag, must start nothing.
-        'v1.2.0': null,
-        'web-v1.2.0': null,
+        'v1.2.0': [],
+        'web-v1.2.0': [],
         // An unclassified suffix is not a POS release: better ignored than published.
-        'pos-v1.2.0-rc.1': null,
+        'pos-v1.2.0-rc.1': [],
       };
 
       cases.forEach((ref, expected) {
         final ran = <String>[
           if (tagRuns(release, ref)) 'release-pos.yml',
           if (tagRuns(patch, ref)) 'shorebird-patch.yml',
+          if (tagRuns(patchWindows, ref)) 'shorebird-patch-windows.yml',
           if (tagRuns(staging, ref)) 'staging-pos.yml',
           if (tagRuns(windows, ref)) 'windows-pos.yml',
         ];
 
-        if (expected == null) {
-          expect(
-            ran,
-            isEmpty,
-            reason: 'tag "$ref" must trigger no POS workflow',
-          );
-        } else {
-          expect(
-            ran,
-            contains(expected),
-            reason: 'tag "$ref" must run $expected',
-          );
-        }
+        expect(ran, expected, reason: 'tag "$ref" must route as specified');
       });
+    });
+
+    test('Android and Windows patch workflows accept the same patch tags', () {
+      expect(tagPatterns(readWorkflow('shorebird-patch-windows.yml')), patch);
     });
 
     test(
@@ -716,6 +718,45 @@ void main() {
         expect(workflow, contains('CN=FD977251-3866-4FF0-ABD2-D71AAABF5137'));
       },
     );
+
+    test('builds the Shorebird release before MSIX and prevents a stock rebuild', () {
+      final pubspec = File('${repoRoot().path}/apps/pos/pubspec.yaml')
+          .readAsStringSync();
+      expect(workflow, contains('shorebirdtech/shorebird-release@v1'));
+      expect(workflow, contains('platform: windows'));
+      expect(workflow, contains('SHOREBIRD_TOKEN'));
+      expect(workflow, contains("if: inputs.draft_release != 'no'"));
+      expect(workflow, contains("if: inputs.draft_release == 'no'"));
+      expect(
+        RegExp(
+          r'^\s+build_windows:\s*false\s*$',
+          multiLine: true,
+        ).hasMatch(pubspec),
+        isTrue,
+        reason:
+            'package:msix must package Shorebird output rather than rebuild it',
+      );
+    });
+  });
+
+  group('the Windows Shorebird patch workflow', () {
+    test('uses the Android patch tag and calls the Windows platform', () {
+      final workflow = readWorkflow('shorebird-patch-windows.yml');
+      expect(
+        tagPatterns(workflow),
+        tagPatterns(readWorkflow('shorebird-patch.yml')),
+      );
+      expect(workflow, contains('shorebirdtech/shorebird-patch@v1'));
+      expect(workflow, contains('platform: windows'));
+      expect(workflow, contains('release-version'));
+    });
+
+    test('runs on a Windows runner and guards native Windows changes', () {
+      final workflow = readWorkflow('shorebird-patch-windows.yml');
+      expect(workflow, contains('runs-on: windows-latest'));
+      expect(workflow, contains(r'^apps/pos/windows/|^pubspec\.lock$'));
+      expect(workflow, contains('fetch-depth: 0'));
+    });
   });
 
   group('the Windows trial artifact', () {
@@ -851,13 +892,14 @@ void main() {
           'draft_release',
           'version',
         ]);
-        // The owner decision that one `git push --tags` starts exactly one workflow is guarded by the
-        // routing test above. The dispatcher ADDS a door; it must not edit a pattern to make room.
+        // Release and patch tags intentionally route to separate platform workflows, as guarded above.
+        // The dispatcher ADDS a door; it must not replace tag triggers.
         for (final name in const [
           'release-pos.yml',
           'staging-pos.yml',
           'windows-pos.yml',
           'shorebird-patch.yml',
+          'shorebird-patch-windows.yml',
         ]) {
           expect(childKeys(readWorkflow(name), 'workflow_call', 'inputs'), [
             'version',
@@ -887,6 +929,7 @@ void main() {
         'production-android',
         'production-windows',
         'patch-android',
+        'patch-windows',
       ]) {
         final block = jobBlock(workflow, name).join('\n');
         expect(
@@ -914,8 +957,8 @@ void main() {
         'staging-pos.yml': signing,
         'release-pos.yml': [...signing, 'SHOREBIRD_TOKEN'],
         'shorebird-patch.yml': [...signing, 'SHOREBIRD_TOKEN'],
-        // Zero. `windows-pos.yml` needs no secret, so it must receive none.
-        'windows-pos.yml': const [],
+        'shorebird-patch-windows.yml': ['SHOREBIRD_TOKEN'],
+        'windows-pos.yml': ['SHOREBIRD_TOKEN'],
       };
       expect(calls.map((c) => c.callee).toSet(), expected.keys.toSet());
 
@@ -1021,8 +1064,8 @@ void main() {
 
     test('the scan reaches every workflow file', () {
       // A scan that quietly skipped files would pass the test above for the wrong reason, so the
-      // list itself is asserted: all six workflow files, all of them present.
-      expect(_workflowFiles, hasLength(6));
+      // list itself is asserted: all seven workflow files, all of them present.
+      expect(_workflowFiles, hasLength(7));
       for (final name in _workflowFiles) {
         expect(
           File('${repoRoot().path}/.github/workflows/$name').existsSync(),
@@ -1246,6 +1289,7 @@ void main() {
         'release-dispatch.yml',
         'release-pos.yml',
         'shorebird-patch.yml',
+        'shorebird-patch-windows.yml',
         'staging-pos.yml',
         'windows-pos.yml',
       ]) {
@@ -1275,6 +1319,7 @@ void main() {
         'release-dispatch.yml',
         'release-pos.yml',
         'shorebird-patch.yml',
+        'shorebird-patch-windows.yml',
         'staging-pos.yml',
         'windows-pos.yml',
       ]) {

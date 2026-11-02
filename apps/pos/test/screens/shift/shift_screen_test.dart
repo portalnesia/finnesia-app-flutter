@@ -1149,7 +1149,9 @@ void actions() {
       );
       await tester.pumpAndSettle();
 
-      expect(rig.analytics.logged.map((e) => e.$1), ['shift_report_printed']);
+      expect(rig.analytics.logged.map((e) => e.$1), [
+        'tenant_shift_report_printed',
+      ]);
     });
   });
 

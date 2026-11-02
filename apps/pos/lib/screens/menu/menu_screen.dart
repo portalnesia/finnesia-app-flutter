@@ -21,12 +21,14 @@ import 'package:pos/bootstrap.dart';
 import 'package:pos/branding/company_avatar.dart';
 import 'package:pos/l10n/app_localizations.dart';
 import 'package:pos/menu/menu_controller.dart';
+import 'package:pos/notifications/notification_inbox_controller.dart';
 import 'package:pos/native/http/active.dart';
 import 'package:pos/screens/common/pickers.dart';
 import 'package:pos/screens/common/screen_header.dart';
 import 'package:pos/screens/menu/inspector_screen.dart';
 import 'package:pos/queue/queue_sync.dart';
 import 'package:pos/screens/menu/printer_card.dart';
+import 'package:pos/screens/notifications/notification_inbox_screen.dart';
 import 'package:pos/screens/queue/pending_sales_screen.dart';
 import 'package:pos/screens/shift/shift_history_screen.dart';
 import 'package:pos/screens/shift/shift_screen.dart';
@@ -51,6 +53,7 @@ class MenuScreen extends StatefulWidget {
 
 class _MenuScreenState extends State<MenuScreen> {
   MenuScreenController? _controller;
+  NotificationInboxController? _notificationController;
   void Function()? _unsubscribe;
   Future<AppVersion?>? _version;
 
@@ -67,6 +70,9 @@ class _MenuScreenState extends State<MenuScreen> {
     // The profile is completed from the server when the session cannot name the cashier, which is
     // what a browser login leaves behind (see `MenuScreenController.profile`).
     _controller!.loadProfile(services.session.current?.user);
+    _notificationController ??= NotificationInboxController(
+      client: services.client,
+    )..loadUnreadCount();
 
     // Subscribed, not read once: this screen is a pushed route, and the gate rebuilds *underneath*
     // it. Without this, signing out clears the session and swaps `home` to the login screen while
@@ -99,12 +105,14 @@ class _MenuScreenState extends State<MenuScreen> {
   void dispose() {
     _unsubscribe?.call();
     _controller?.dispose();
+    _notificationController?.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final controller = _controller!;
+    final notificationController = _notificationController!;
     final l10n = L10n.of(context);
     final services = AppScope.of(context);
 
@@ -130,6 +138,11 @@ class _MenuScreenState extends State<MenuScreen> {
                     children: [
                       _AccountCard(
                         controller: controller,
+                        session: services.session.current,
+                      ),
+                      const SizedBox(height: 12),
+                      _NotificationInboxCard(
+                        controller: notificationController,
                         session: services.session.current,
                       ),
                       const SizedBox(height: 12),
@@ -180,6 +193,60 @@ class _Card extends StatelessWidget {
         border: Border.all(color: pn.border),
       ),
       child: Padding(padding: const EdgeInsets.all(16), child: child),
+    );
+  }
+}
+
+/// A menu-only way into the inbox; the badge is intentionally compact.
+class _NotificationInboxCard extends StatelessWidget {
+  const _NotificationInboxCard({
+    required this.controller,
+    required this.session,
+  });
+
+  final NotificationInboxController controller;
+  final PosSession? session;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = L10n.of(context);
+    return _Card(
+      child: ListenableBuilder(
+        listenable: controller.unreadCount,
+        builder: (context, _) {
+          final count = switch (controller.unreadCount.state) {
+            Ready(:final data) => data,
+            _ => 0,
+          };
+          final hasUnread = count > 0;
+          final badgeText = count > 99 ? '99+' : '$count';
+          return Semantics(
+            label: hasUnread
+                ? l10n.notificationUnreadBadge(count)
+                : l10n.notificationMenuEntry,
+            child: SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => Navigator.of(context).push<void>(
+                  MaterialPageRoute<void>(
+                    builder: (_) => NotificationInboxScreen(
+                      controller: controller,
+                      session: session,
+                      pushController: AppScope.of(context).pushController,
+                    ),
+                  ),
+                ),
+                icon: Badge(
+                  isLabelVisible: hasUnread,
+                  label: Text(badgeText),
+                  child: const Icon(Icons.notifications_outlined),
+                ),
+                label: Text(l10n.notificationMenuEntry),
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 }
@@ -484,6 +551,10 @@ class _SignOutButton extends StatelessWidget {
 
     try {
       // The pairing stays: only the credential goes.
+      final pushController = services.pushController;
+      if (pushController != null) {
+        await pushController.unregisterCurrentToken();
+      }
       await services.session.clearToken();
       // The gate has already moved to the login screen by now — it reads the session, and this
       // screen is subscribed to the same holder, so it takes itself off the top. Nothing to do

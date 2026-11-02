@@ -138,7 +138,14 @@ abstract class SalesInvoiceItem with _$SalesInvoiceItem {
     required String id,
     required num quantity,
     required num price,
+    @JsonKey(name: 'discount_percent', includeIfNull: false)
+    num? discountPercent,
+    @JsonKey(name: 'discount_amount', includeIfNull: false) num? discountAmount,
+    @JsonKey(name: 'tax_id', includeIfNull: false) String? taxId,
+    @JsonKey(name: 'tax_rate') @Default(0) num taxRate,
+    @JsonKey(name: 'is_tax_inclusive') @Default(false) bool isTaxInclusive,
     @JsonKey(name: 'line_subtotal') required num lineSubtotal,
+    @JsonKey(name: 'line_tax') @Default(0) num lineTax,
     @JsonKey(name: 'line_total') required num lineTotal,
     String? description,
     NamedRef? product,
@@ -170,7 +177,7 @@ abstract class SalesInvoice with _$SalesInvoice {
 ///
 /// Ported from `POSSale` in `pos.ts`, partially: what the change screen, the shift's
 /// transaction list, the sale detail and a receipt read. Not carried yet: `outlet`, and the
-/// company/branch/warehouse/invoice ids.
+/// company/branch/warehouse ids.
 ///
 /// [payments] is `null` when the endpoint did not preload them, which is not the same
 /// answer as "no payments". So is [invoice]: only the single-sale endpoint loads it, and a
@@ -196,6 +203,9 @@ abstract class POSSale with _$POSSale {
     @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue)
     POSSaleStatus? status,
     @JsonKey(name: 'created_at') required String createdAt,
+
+    /// Shared transaction identity with web analytics; absent in older cached rows.
+    @JsonKey(name: 'invoice_id') String? invoiceId,
     @JsonKey(name: 'client_ref') String? clientRef,
     @JsonKey(name: 'paid_at') String? paidAt,
     String? notes,
@@ -223,6 +233,7 @@ abstract class POSCheckoutItemDTO with _$POSCheckoutItemDTO {
     @JsonKey(name: 'unit_id') required String unitId,
     required num quantity,
     required num price,
+    @JsonKey(name: 'tax_id') String? taxId,
     @JsonKey(name: 'discount_percent') num? discountPercent,
     @JsonKey(name: 'discount_amount') num? discountAmount,
   }) = _POSCheckoutItemDTO;
@@ -278,6 +289,8 @@ abstract class POSCheckoutDTO with _$POSCheckoutDTO {
 abstract class POSPreferences with _$POSPreferences {
   const factory POSPreferences({
     @JsonKey(name: 'require_shift') required bool requireShift,
+    @JsonKey(name: 'tax_enabled') @Default(false) bool taxEnabled,
+    @JsonKey(name: 'price_includes_tax') @Default(false) bool priceIncludesTax,
     @JsonKey(name: 'show_table_number') @Default(false) bool showTableNumber,
     @JsonKey(name: 'show_queue_number') @Default(false) bool showQueueNumber,
     @JsonKey(name: 'queue_number_auto') @Default(false) bool queueNumberAuto,

@@ -104,17 +104,22 @@ const shift = POSShift(
   totalTransactions: 0,
 );
 
-Widget appWith(Rig rig, RoutedHttp http, {Duration Function()? clock}) =>
-    PosApp(
-      boot: () => rig.bootWith(http: http),
-      language: rig.language,
-      theme: rig.theme,
-      screens: (
-        pairing: (_) => const Text('pairing'),
-        login: (_) => const Text('login'),
-        till: (_) => TillScreen(shift: shift, clock: clock),
-      ),
-    );
+Widget appWith(
+  Rig rig,
+  RoutedHttp http, {
+  Duration Function()? clock,
+  POSPreferences? preferences,
+}) => PosApp(
+  boot: () => rig.bootWith(http: http),
+  language: rig.language,
+  theme: rig.theme,
+  screens: (
+    pairing: (_) => const Text('pairing'),
+    login: (_) => const Text('login'),
+    till: (_) =>
+        TillScreen(shift: shift, preferences: preferences, clock: clock),
+  ),
+);
 
 void useSize(WidgetTester tester, Size size, double textScale) {
   tester.view.physicalSize = size;
@@ -131,10 +136,16 @@ Future<void> pumpTill(
   Size size = const Size(1280, 800),
   double textScale = 1,
   Duration Function()? clock,
+  POSPreferences? preferences,
 }) async {
   useSize(tester, size, textScale);
   await tester.pumpWidget(
-    appWith(rig ?? Rig(storedSession(signedIn)), http, clock: clock),
+    appWith(
+      rig ?? Rig(storedSession(signedIn)),
+      http,
+      clock: clock,
+      preferences: preferences,
+    ),
   );
   await tester.pumpAndSettle();
 }
@@ -376,6 +387,66 @@ void main() {
       expect(find.text('1 item'), findsOneWidget);
       expect(tester.widget<Text>(cartTotal).data, 'Rp 15.000');
       expect(find.text('Keranjang kosong'), findsNothing);
+    });
+
+    testWidgets('shows exclusive tax separately and adds it to the total', (
+      tester,
+    ) async {
+      final http = RoutedHttp();
+      catalog(
+        http,
+        products: [
+          {
+            ...kopi,
+            'tax_id': 'tax_1',
+            'tax': {'id': 'tax_1', 'name': 'PPN', 'rate': 11},
+          },
+        ],
+      );
+      await pumpTill(
+        tester,
+        http,
+        preferences: const POSPreferences(
+          requireShift: false,
+          taxEnabled: true,
+        ),
+      );
+
+      await tapProduct(tester, 'Kopi');
+
+      expect(find.text(l10n.posTax), findsOneWidget);
+      expect(find.text('Rp 1.650'), findsOneWidget);
+      expect(tester.widget<Text>(cartTotal).data, 'Rp 16.650');
+    });
+
+    testWidgets('keeps an inclusive product price as the amount due', (
+      tester,
+    ) async {
+      final http = RoutedHttp();
+      catalog(
+        http,
+        products: [
+          {
+            ...kopi,
+            'tax_id': 'tax_1',
+            'tax': {'id': 'tax_1', 'name': 'PPN', 'rate': 11},
+          },
+        ],
+      );
+      await pumpTill(
+        tester,
+        http,
+        preferences: const POSPreferences(
+          requireShift: false,
+          taxEnabled: true,
+          priceIncludesTax: true,
+        ),
+      );
+
+      await tapProduct(tester, 'Kopi');
+
+      expect(find.text(l10n.posTax), findsOneWidget);
+      expect(tester.widget<Text>(cartTotal).data, 'Rp 15.000');
     });
 
     testWidgets('the same product again is one more, on one line', (
@@ -731,7 +802,7 @@ void main() {
       // A found scan also rings the product up, which logs its own event
       // (`cart_controller_test.dart`) — this only checks the scan's own.
       final scanned = rig.analytics.logged.where(
-        (e) => e.$1 == 'barcode_scanned',
+        (e) => e.$1 == 'tenant_barcode_scanned',
       );
       expect(scanned.single.$2, {'found': true});
     });
@@ -765,7 +836,7 @@ void main() {
 
       // Rings the product up (`item_added_to_cart`) but is not a scan.
       expect(
-        rig.analytics.logged.where((e) => e.$1 == 'barcode_scanned'),
+        rig.analytics.logged.where((e) => e.$1 == 'tenant_barcode_scanned'),
         isEmpty,
       );
     });
@@ -844,6 +915,38 @@ void main() {
       expect(find.byType(PaymentScreen), findsOneWidget);
       // The total it is asking for is the cart's, not something it worked out itself.
       expect(find.byKey(const Key('grand-total')), findsOneWidget);
+    });
+
+    testWidgets('uses the taxed cart total as the amount due', (tester) async {
+      final http = RoutedHttp();
+      catalog(
+        http,
+        products: [
+          {
+            ...kopi,
+            'tax_id': 'tax_1',
+            'tax': {'id': 'tax_1', 'name': 'PPN', 'rate': 11},
+          },
+        ],
+      );
+      await pumpTill(
+        tester,
+        http,
+        preferences: const POSPreferences(
+          requireShift: false,
+          taxEnabled: true,
+        ),
+      );
+      await tapProduct(tester, 'Kopi');
+
+      await tester.tap(find.byKey(const Key('pay')));
+      await tester.pumpAndSettle();
+
+      final grandTotal = find.descendant(
+        of: find.byKey(const Key('grand-total')),
+        matching: find.byType(Text),
+      );
+      expect(tester.widget<Text>(grandTotal).data, 'Rp 16.650');
     });
 
     testWidgets('a recorded sale shows the change and empties the basket', (
@@ -928,6 +1031,47 @@ void main() {
         expect(find.text('Keranjang kosong'), findsOneWidget);
       },
     );
+
+    testWidgets('keeps tax in checkout and the queued receipt', (tester) async {
+      final http = RoutedHttp();
+      catalog(
+        http,
+        products: [
+          {
+            ...kopi,
+            'tax_id': 'tax_1',
+            'tax': {'id': 'tax_1', 'name': 'PPN', 'rate': 11},
+          },
+        ],
+      );
+      http.fail(checkoutPath);
+      final rig = Rig(storedSession(signedIn));
+      await pumpTill(
+        tester,
+        http,
+        rig: rig,
+        preferences: const POSPreferences(
+          requireShift: false,
+          taxEnabled: true,
+        ),
+      );
+      await tapProduct(tester, 'Kopi');
+
+      await tester.tap(find.byKey(const Key('pay')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('confirm-payment')));
+      await tester.pumpAndSettle();
+
+      final request = jsonDecode(http.calls.last.body!) as Map<String, dynamic>;
+      final requestItem =
+          (request['items'] as List<dynamic>).single as Map<String, dynamic>;
+      final queued = (await rig.pendingSaleStore.readAll()).single;
+      expect(requestItem['tax_id'], 'tax_1');
+      expect(queued.payload.items.single.taxId, 'tax_1');
+      expect(queued.receipt.taxAmount, 1650);
+      expect(queued.receipt.grandTotal, 16650);
+      expect(queued.receipt.items.single.lineTax, 1650);
+    });
 
     testWidgets(
       'the checkout carries the shift, the outlet and one client_ref',
@@ -1184,6 +1328,8 @@ void main() {
       unitId: 'unit_1',
       sellPrice: 15000,
       type: model.ProductType.inventory,
+      taxId: 'tax_1',
+      tax: const model.ProductTax(id: 'tax_1', rate: 11),
     );
 
     HeldOrder held(
@@ -1204,12 +1350,19 @@ void main() {
       WidgetTester tester, {
       List<HeldOrder> seed = const [],
       Size size = const Size(1280, 800),
+      POSPreferences? preferences,
     }) async {
       final http = RoutedHttp();
       catalog(http);
       final rig = Rig(storedSession(signedIn));
       await rig.holdStore.writeAll(seed);
-      await pumpTill(tester, http, rig: rig, size: size);
+      await pumpTill(
+        tester,
+        http,
+        rig: rig,
+        size: size,
+        preferences: preferences,
+      );
       return rig;
     }
 
@@ -1248,6 +1401,29 @@ void main() {
       expect(
         find.textContaining(
           '${l10n.tillItemCount(2)} · ${formatCurrency(30000)}',
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('includes company tax when showing a held basket total', (
+      tester,
+    ) async {
+      await pumpHeld(
+        tester,
+        seed: [held('taxed', 'Meja 1')],
+        preferences: const POSPreferences(
+          requireShift: false,
+          taxEnabled: true,
+        ),
+      );
+
+      await tester.tap(heldButton);
+      await tester.pumpAndSettle();
+
+      expect(
+        find.textContaining(
+          '${l10n.tillItemCount(2)} · ${formatCurrency(33300)}',
         ),
         findsOneWidget,
       );

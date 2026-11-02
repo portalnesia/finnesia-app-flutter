@@ -11,13 +11,13 @@ import 'package:test/test.dart';
 
 // Oracle port of `finnesia-monorepo/apps/web/src/lib/pos-receipt.test.ts`.
 // Inputs and expectations are copied unchanged; only the syntax changed
-// (describe/it -> group/test, toBe -> equals). 6 cases, plus 1 added below.
+// (describe/it -> group/test, toBe -> equals). 6 cases, plus local edge cases below.
 
 /// Mirrors the source test's `item(over)` builder: every field the receipt reads, with the
 /// oracle's own defaults (quantity 1, price 10.000, no discount).
 ///
 /// The source test casts with `as SalesInvoiceItem` because the real type has twenty-odd
-/// fields the receipt never touches. The Dart `InvoiceItem` record declares only the seven
+/// fields the receipt never touches. The Dart `InvoiceItem` record declares only the fields
 /// that are read, so no cast is needed and a caller cannot pass a field this module ignores.
 InvoiceItem invoiceItem({
   String id = 'itm_1',
@@ -25,6 +25,8 @@ InvoiceItem invoiceItem({
   String? description,
   num quantity = 1,
   num price = 10000,
+  num? discountPercent,
+  num? discountAmount,
   num lineSubtotal = 10000,
   num lineTotal = 10000,
   Category? category,
@@ -35,6 +37,8 @@ InvoiceItem invoiceItem({
       description: description,
       quantity: quantity,
       price: price,
+      discountPercent: discountPercent,
+      discountAmount: discountAmount,
       lineSubtotal: lineSubtotal,
       lineTotal: lineTotal,
       category: category,
@@ -78,7 +82,12 @@ void main() {
         () {
       final byAmount = posReceiptLines(
         invoiceItems: [
-          invoiceItem(quantity: 2, price: 10000, lineSubtotal: 17000),
+          invoiceItem(
+            quantity: 2,
+            price: 10000,
+            discountAmount: 3000,
+            lineSubtotal: 17000,
+          ),
         ],
         fallbackName: 'Barang',
       );
@@ -86,11 +95,42 @@ void main() {
 
       final byPercent = posReceiptLines(
         invoiceItems: [
-          invoiceItem(quantity: 2, price: 10000, lineSubtotal: 18000),
+          invoiceItem(
+            quantity: 2,
+            price: 10000,
+            discountPercent: 10,
+            lineSubtotal: 18000,
+          ),
         ],
         fallbackName: 'Barang',
       );
       expect(byPercent[0].discount, equals(2000));
+    });
+
+    test('percentage wins over amount when both discounts are set', () {
+      final lines = posReceiptLines(
+        invoiceItems: [
+          invoiceItem(
+            discountPercent: 10,
+            discountAmount: 500,
+            lineSubtotal: 8500,
+          ),
+        ],
+        fallbackName: 'Barang',
+      );
+
+      expect(lines.single.discount, 1000);
+    });
+
+    test('does not treat inclusive tax carved from the line as a discount', () {
+      final lines = posReceiptLines(
+        invoiceItems: [
+          invoiceItem(lineSubtotal: 10000 / 1.11, lineTotal: 10000),
+        ],
+        fallbackName: 'Barang',
+      );
+
+      expect(lines.single.discount, 0);
     });
 
     test(
