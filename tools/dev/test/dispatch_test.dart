@@ -265,9 +265,9 @@ void main() {
       );
     });
 
-    // `all` is one version number written by two workflows into one draft, so they queue behind
-    // the same concurrency group (SPEC §1.1, §3.4).
-    test('production all runs both, android first', () {
+    // `all` writes one version to a shared draft. The list order is stable output only: production
+    // builds run in parallel, and the reusable workflows serialize only their publish jobs.
+    test('production all runs both platform workflows', () {
       expect(
         actionFor(DispatchEnv.production, DispatchDevice.all, DispatchDraft.yes)
             .workflows,

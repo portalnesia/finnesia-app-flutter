@@ -63,15 +63,8 @@ on:
       SHOREBIRD_TOKEN:
         required: true
 
-# Satu build per tag. Tag tidak bisa dipush ulang, jadi run yang berjalan tidak dibatalkan.
-#
-# Group-nya SENGAJA sama dengan `release-pos.yml`: kedua workflow memicu di tag polos yang
-# sama dan menulis GitHub Release yang sama. Dengan group yang sama, GitHub hanya menjalankan
-# satu di antaranya pada satu waktu, sehingga langkah "update release" di kedua sisi tidak
-# berpacu. `cancel-in-progress: false` supaya rilis yang sedang berjalan tidak dibatalkan.
-concurrency:
-  group: release-pos-${{ github.ref }}
-  cancel-in-progress: false
+# Build berjalan paralel dengan Android. Hanya job `publish` yang memakai concurrency group bersama
+# `release-pos.yml`, agar update ke draft release yang sama tidak berpacu.
 
 env:
   FLUTTER_VERSION: "3.47.4"
@@ -82,11 +75,13 @@ env:
   STORE_IDENTITY_NAME: "PutuAditya.FinnesiaPOS"
 
 jobs:
-  windows:
+  build:
     runs-on: windows-latest
-    # Untuk menulis asset ke draft GitHub Release di step terakhir.
     permissions:
-      contents: write
+      contents: read
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
     env:
       SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
       FINNESIA_POS_WNS_APP_ID: ${{ vars.FINNESIA_POS_WNS_APP_ID }}
@@ -422,27 +417,31 @@ jobs:
           name: finnesia-pos-windows-${{ steps.version.outputs.version }}
           path: ${{ steps.msix.outputs.path }}
           retention-days: 30
+          overwrite: true
 
-      # Draft GitHub Release, BUKAN unggahan Store. Paketnya diunduh dari sini oleh pemilik
-      # lalu diunggah manual ke Partner Center.
-      #
-      # Satu release per tag, dan tag polos juga dipakai `release-pos.yml` — jadi dua workflow
-      # menulis release yang SAMA untuk tag yang sama. Dua hal yang membuat itu aman:
-      #
-      #   1. `concurrency` di atas memakai group yang sama dengan `release-pos.yml`, supaya
-      #      keduanya berbaris, bukan berpacu.
-      #   2. `name:` SENGAJA tidak diisi di sini. Action-nya memakai `input_name ||
-      #      existingRelease.name || tag`, jadi membiarkannya kosong MEMPERTAHANKAN nama yang
-      #      #      `release-pos.yml` pasang ("Finnesia POS vX.Y.Z"). Kalau diisi, judul release akan
-      #      berubah jadi "... Windows ..." setiap kali job ini selesai belakangan, padahal
-      #      release-nya juga memuat APK Android.
-      #   3. `tag_name` bukan `github.ref_name`: pintu dispatcher tidak punya tag, dan
-      #      `github.ref_name` di sana berisi nama branch.
+      # Draft GitHub Release, BUKAN unggahan Store. Publish terpisah dari build sehingga MSIX bisa
+      # dibangun bersamaan dengan Android; concurrency hanya menahan update draft sampai aman.
+      # `name:` sengaja tidak diisi agar judul yang dipasang publisher Android tetap dipertahankan.
+  publish:
+    needs: build
+    if: inputs.draft_release != 'no'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: release-pos-${{ github.ref }}
+      cancel-in-progress: false
+    steps:
+      - name: Download Windows release asset
+        uses: actions/download-artifact@v4
+        with:
+          name: finnesia-pos-windows-${{ needs.build.outputs.version }}
+          path: release-assets
+
       - name: Create draft release
-        if: inputs.draft_release != 'no'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.version.outputs.tag }}
+          tag_name: ${{ needs.build.outputs.tag }}
           draft: true
           generate_release_notes: true
-          files: ${{ steps.msix.outputs.path }}
+          files: release-assets/*.msix

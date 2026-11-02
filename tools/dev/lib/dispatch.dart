@@ -92,8 +92,8 @@ class DispatchAction {
     required this.shorebirdRelease,
   });
 
-  /// The reusable workflows to call, android before windows: both write one draft, so the order
-  /// decides who writes the title (SPEC §3.3).
+  /// The reusable workflows to call. Android is listed before Windows for a stable plan; their
+  /// production builds run in parallel, and only their draft-publication jobs are serialized.
   final List<String> workflows;
 
   /// Whether the dispatcher makes the tag itself, before calling the workflow (SPEC §1.4). False
