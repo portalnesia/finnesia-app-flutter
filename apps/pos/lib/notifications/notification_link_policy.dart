@@ -11,8 +11,7 @@ import 'package:pn_types/src/session.dart';
 ///
 /// The server resolves notification links. This is a second boundary in the POS client: only the
 /// paired origin, a server-provided custom domain, and the product's two HTTPS web origins may be
-/// initial destinations. The identity provider is allowed only as an in-WebView navigation target
-/// so an ordinary private page can request a web login; it is never a notification destination.
+/// initial destinations. After launch, navigation is handled by the user's external browser.
 class NotificationLinkPolicy {
   NotificationLinkPolicy(PosSession? session)
     : _pairedOrigin = _trustedOrigin(session?.baseUrl),
@@ -25,10 +24,6 @@ class NotificationLinkPolicy {
   static final _canonicalOriginKeys = <String>{
     for (final origin in _canonicalOrigins) _originKey(Uri.parse(origin)),
   };
-  static final _identityProviderOriginKey = _originKey(
-    Uri.parse('https://accounts.portalnesia.com'),
-  );
-
   final Uri? _pairedOrigin;
   final Set<String> _companyOriginKeys;
 
@@ -62,14 +57,6 @@ class NotificationLinkPolicy {
       return null;
     }
     return candidate;
-  }
-
-  /// Whether the WebView may continue to a navigation. It shares the company allowlist and adds
-  /// only the single configured OIDC origin to support normal web authentication redirects.
-  bool allowsNavigation(Uri uri) {
-    if (!_isHttpsOrigin(uri) || uri.userInfo.isNotEmpty) return false;
-    return _companyOriginKeys.contains(_originKey(uri)) ||
-        _originKey(uri) == _identityProviderOriginKey;
   }
 
   static Set<String> _collectCompanyOriginKeys(PosSession? session) {

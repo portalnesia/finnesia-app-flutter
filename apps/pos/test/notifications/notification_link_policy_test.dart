@@ -65,18 +65,15 @@ void main() {
     );
 
     test(
-      'permits the configured OIDC origin for normal login navigation only',
+      'rejects the identity provider as an initial notification destination',
       () {
         final policy = NotificationLinkPolicy(_session());
-        final login = Uri.parse('https://accounts.portalnesia.com/authorize');
 
-        expect(policy.resolveDestination(login.toString()), isNull);
-        expect(policy.allowsNavigation(login), isTrue);
         expect(
-          policy.allowsNavigation(
-            Uri.parse('https://accounts.portalnesia.com.evil.test/authorize'),
+          policy.resolveDestination(
+            'https://accounts.portalnesia.com/authorize',
           ),
-          isFalse,
+          isNull,
         );
       },
     );
