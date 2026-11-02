@@ -151,6 +151,21 @@ List<String> jobBlock(String workflow, String jobName) {
   return lines.sublist(starts[at], end);
 }
 
+/// The named step and its configuration, stopping before the next step.
+String workflowStepBlock(String workflow, String stepName) {
+  final lines = workflow.split(RegExp(r'\r?\n'));
+  final at = lines.indexWhere(
+    (line) => line.trimRight() == '      - name: $stepName',
+  );
+  if (at == -1) return '';
+  final end = lines.indexWhere(
+    (line) =>
+        line.startsWith('      - name:') || line.startsWith('      - uses:'),
+    at + 1,
+  );
+  return lines.sublist(at, end == -1 ? lines.length : end).join('\n');
+}
+
 /// Every reusable `uses:` call in [workflow], with the block that configures it.
 ///
 /// Paired with its callee so a test can ask "does THIS call pass its secrets" instead of "does the
@@ -876,6 +891,37 @@ void main() {
       expect(workflow, isNot(contains('track: internal')));
       expect(workflow, isNot(contains('PLAY_SERVICE_ACCOUNT_JSON')));
     });
+
+    test('checks the production AOT endpoint and APK before consuming a Shorebird version', () {
+      final endpointCheck = workflow.indexOf(
+        'packages/pn_types/tool/verify_release_environment.dart',
+      );
+      final artifactCheck = workflow.indexOf(
+        '- name: Release APK must be the production build',
+      );
+      final shorebirdRelease = workflow.indexOf(
+        '- name: Build release AAB (shorebird release android)',
+      );
+      expect(endpointCheck, greaterThan(-1));
+      expect(artifactCheck, greaterThan(-1));
+      expect(shorebirdRelease, greaterThan(-1));
+      expect(endpointCheck, lessThan(shorebirdRelease));
+      expect(artifactCheck, lessThan(shorebirdRelease));
+
+      final payloadStart = workflow.indexOf(
+        r'''grep -aq 'apps.finnesia.com' "$SO"''',
+      );
+      final manifestStart = workflow.indexOf('# ── 2. Manifest', payloadStart);
+      expect(payloadStart, greaterThan(-1));
+      expect(manifestStart, greaterThan(payloadStart));
+      final payloadCheck = workflow.substring(payloadStart, manifestStart);
+      expect(payloadCheck, contains("! grep -aq 'localhost:4000'"));
+      expect(payloadCheck, isNot(contains('apps-dev.finnesia.com')));
+      expect(
+        workflow,
+        contains("! grep -q 'apps-dev.finnesia.com' /tmp/manifest.txt"),
+      );
+    });
   });
 
   group('the dispatcher', () {
@@ -923,20 +969,22 @@ void main() {
       expect(workflow, contains(r'--version "${{ inputs.version }}"'));
     });
 
-    test('every reusable call waits for the validation job', () {
-      for (final name in const [
-        'staging-android',
-        'production-android',
-        'production-windows',
-        'patch-android',
-        'patch-windows',
-      ]) {
+    test('every reusable call waits for its validation and release gates', () {
+      const needsByJob = {
+        'production-android-preflight': 'needs: validate',
+        'staging-android': 'needs: [validate, tag]',
+        'production-android': 'needs: [validate, tag]',
+        'production-windows': 'needs: [validate, tag]',
+        'patch-android': 'needs: [validate, tag]',
+        'patch-windows': 'needs: [validate, tag]',
+      };
+      for (final entry in needsByJob.entries) {
+        final name = entry.key;
         final block = jobBlock(workflow, name).join('\n');
         expect(
           block,
-          contains('needs: [validate, tag]'),
-          reason:
-              '$name must not start a build before the combination is accepted',
+          contains(entry.value),
+          reason: '$name must wait for its required validation/release gates',
         );
         expect(
           block,
@@ -961,9 +1009,17 @@ void main() {
         'windows-pos.yml': ['SHOREBIRD_TOKEN'],
       };
       expect(calls.map((c) => c.callee).toSet(), expected.keys.toSet());
+      expect(
+        calls.where((call) => call.callee == 'release-pos.yml'),
+        hasLength(2),
+      );
 
       for (final call in calls) {
-        final needed = expected[call.callee]!;
+        final needed = switch (call.callee) {
+          'release-pos.yml' when call.block.contains('draft_release: "no"') =>
+            signing,
+          _ => expected[call.callee]!,
+        };
         if (needed.isEmpty) {
           expect(
             call.block,
@@ -997,6 +1053,101 @@ void main() {
       expect(workflow, contains('createRef'));
       expect(workflow, contains('context.sha'));
       expect(workflow, contains("if: inputs.draft_release == 'yes'"));
+    });
+
+    test('production Android preflight completes before tag creation', () {
+      final preflight = jobBlock(
+        workflow,
+        'production-android-preflight',
+      ).join('\n');
+      expect(preflight, contains('needs: validate'));
+      expect(
+        preflight,
+        contains(
+          "if: inputs.env == 'production' && (inputs.device == 'android' || inputs.device == 'all')",
+        ),
+      );
+      expect(preflight, contains('uses: ./.github/workflows/release-pos.yml'));
+      expect(preflight, contains('draft_release: "no"'));
+      expect(preflight, contains(r'version: ${{ inputs.version }}'));
+      expect(preflight, isNot(contains('SHOREBIRD_TOKEN')));
+
+      final tag = jobBlock(workflow, 'tag').join('\n');
+      expect(tag, contains('needs: [validate, production-android-preflight]'));
+      expect(
+        tag,
+        contains(
+          "if: always() && needs.validate.result == 'success' && (needs.production-android-preflight.result == 'success' || needs.production-android-preflight.result == 'skipped')",
+        ),
+      );
+      expect(tag, contains("if: inputs.draft_release == 'yes'"));
+    });
+
+    test(
+      'failed preflight cannot create a tag or start the final Android release',
+      () {
+        final tag = jobBlock(workflow, 'tag').join('\n');
+        expect(
+          tag,
+          contains("needs.production-android-preflight.result == 'success'"),
+        );
+        expect(
+          tag,
+          contains("needs.production-android-preflight.result == 'skipped'"),
+        );
+        expect(
+          tag,
+          isNot(
+            contains("needs.production-android-preflight.result == 'failure'"),
+          ),
+        );
+
+        final android = jobBlock(workflow, 'production-android').join('\n');
+        expect(android, contains('needs: [validate, tag]'));
+        expect(android, contains("inputs.draft_release == 'yes'"));
+      },
+    );
+
+    test('the no-release preflight checks the APK and suppresses release side effects', () {
+      final preflight = jobBlock(
+        workflow,
+        'production-android-preflight',
+      ).join('\n');
+      expect(preflight, contains('draft_release: "no"'));
+
+      final release = readWorkflow('release-pos.yml');
+      for (final stepName in const [
+        'Build release APK',
+        'Verify production API endpoint in AOT mode',
+        'Release APK must be the production build',
+        'Upload artifact',
+      ]) {
+        final step = workflowStepBlock(release, stepName);
+        expect(step, isNotEmpty, reason: 'release-pos.yml must keep $stepName');
+        expect(
+          RegExp(r'^\s+if:', multiLine: true).hasMatch(step),
+          isFalse,
+          reason: '$stepName must run during the draft_release=no preflight',
+        );
+      }
+
+      for (final stepName in const [
+        'Setup Shorebird',
+        'Build release AAB (shorebird release android)',
+        'Create draft release',
+      ]) {
+        expect(
+          workflowStepBlock(release, stepName),
+          contains("if: inputs.draft_release != 'no'"),
+          reason: '$stepName must not execute in the no-release preflight',
+        );
+      }
+
+      expect(
+        jobBlock(workflow, 'tag').join('\n'),
+        contains("if: inputs.draft_release == 'yes'"),
+        reason: 'draft_release=no must not create the dispatch tag',
+      );
     });
   });
 

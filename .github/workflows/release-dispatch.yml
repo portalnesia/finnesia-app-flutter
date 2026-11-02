@@ -1,10 +1,10 @@
 # Satu layar untuk menjalankan rilis, dengan gerbang sebelum build dan gerbang manusia sebelum
 # store.
 #
-# File ini tidak membangun apa pun. Ia memvalidasi kombinasi empat input, membuat tag kalau diminta,
-# lalu memanggil workflow yang sudah ada sebagai reusable workflow — logika build tidak digabung di
-# sini, karena tiap workflow sudah benar dan satu refactor jalur rilis uang tidak sepadan dengan
-# orang yang harus menanganinya.
+# File ini memvalidasi kombinasi input, menjalankan preflight Android production lewat workflow yang
+# sudah ada, lalu membuat tag kalau diminta dan memanggil workflow platform. Logika build tetap di
+# reusable workflow; preflight hanya memanggil `release-pos.yml` dalam mode `draft_release: no` agar
+# APK dan pengamannya lolos sebelum tag rilis dibuat.
 #
 # Matriks kombinasi: plan/release-dispatch/SPEC.md §2a. Validasi tidak ditulis sebagai rantai `if:`
 # YAML karena YAML tidak bisa diuji di repo ini; sumber kebenarannya fungsi murni
@@ -73,17 +73,31 @@ jobs:
       - name: Refuse a combination that is not on the matrix
         run: dart run tools/dev/bin/dev.dart dispatch --env "${{ inputs.env }}" --device "${{ inputs.device }}" --draft "${{ inputs.draft_release }}" --version "${{ inputs.version }}"
 
-  # Tag dibuat DI SINI, eksplisit dari commit run ini, sebelum callee dipanggil.
+  # Semua production Android (termasuk uji coba `draft_release = no`) harus lolos preflight ini
+  # sebelum job tag bisa berjalan. Callee tetap satu-satunya tempat yang membangun APK dan memeriksa
+  # artifact-nya; mode no melewati Shorebird dan GitHub Release.
+  production-android-preflight:
+    needs: validate
+    if: inputs.env == 'production' && (inputs.device == 'android' || inputs.device == 'all')
+    uses: ./.github/workflows/release-pos.yml
+    with:
+      version: ${{ inputs.version }}
+      draft_release: "no"
+    secrets:
+      ANDROID_KEY_BASE64: ${{ secrets.ANDROID_KEY_BASE64 }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+
+  # Tag dibuat DI SINI, eksplisit dari commit run ini, setelah preflight Android (jika lane itu dipilih).
   # Alasannya: `softprops/action-gh-release` membuat tag yang belum ada dari DEFAULT BRANCH, yang
   # belum tentu commit yang di-dispatch — draft lalu menempel pada commit yang salah. `context.sha`
   # adalah HEAD ref yang dipilih di UI dispatch, jadi release tidak bisa bergeser.
   #
-  # Job ini selalu sukses pada kombinasi yang valid; hanya langkahnya yang bersyarat. Kalau ia
-  # dilewati, job pemanggil yang bergantung padanya ikut dilewati, padahal job itu sendiri tidak
-  # butuh tag (mis. `production/all` dengan draft release = no).
+  # Job ini tetap sukses pada kombinasi valid dengan preflight tidak gagal. Lane non-Android boleh
+  # melewati preflight; untuk production Android, status failure/cancelled mencegah pembuatan tag.
   tag:
-    needs: validate
-    if: always() && needs.validate.result == 'success'
+    needs: [validate, production-android-preflight]
+    if: always() && needs.validate.result == 'success' && (needs.production-android-preflight.result == 'success' || needs.production-android-preflight.result == 'skipped')
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -111,8 +125,8 @@ jobs:
   # `needs: [validate, tag]` adalah syaratNYA build: validate yang gagal menghentikan semuanya, dan
   # tag harus ada lebih dulu karena action itu gagal kalau tag belum ada.
   #
-  # Lima job: satu per lane platform. `all` memilih dua job platform; kombinasi yang tidak ada di
-  # matriks ditolak `validate` sebelum job mana pun dievaluasi.
+  # Lima job lane platform ditambah preflight Android production. `all` memilih dua job platform;
+  # kombinasi yang tidak ada di matriks ditolak `validate` sebelum job mana pun dievaluasi.
 
   staging-android:
     needs: [validate, tag]
@@ -131,7 +145,7 @@ jobs:
   # menulis judul — android yang memilikinya.
   production-android:
     needs: [validate, tag]
-    if: inputs.env == 'production' && (inputs.device == 'android' || inputs.device == 'all')
+    if: inputs.env == 'production' && (inputs.device == 'android' || inputs.device == 'all') && inputs.draft_release == 'yes'
     uses: ./.github/workflows/release-pos.yml
     with:
       version: ${{ inputs.version }}
