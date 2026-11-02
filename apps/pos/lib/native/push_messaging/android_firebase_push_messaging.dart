@@ -19,6 +19,7 @@ import 'package:pos/notifications/push_debug_log.dart';
 const _channelId = 'finnesia_pos_notifications';
 const _channelName = 'Finnesia POS';
 const _channelDescription = 'Notifications from your Finnesia POS account.';
+
 /// Exposed for a regression test so notification UI never falls back to the square launcher icon.
 @visibleForTesting
 const androidPushNotificationInitializationSettings = InitializationSettings(
