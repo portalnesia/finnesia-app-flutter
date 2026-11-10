@@ -34,6 +34,7 @@ dependencies:
   # adapter before use (`.claude/rules/patterns.md` §2a.1).
   dio: ^5.11.1
   freezed_annotation: ^3.1.0
+  flutter_widget_from_html_core: ^0.17.0
   url_launcher: ^6.3.2
   flutter_secure_storage: ^11.2.0
   universal_ble: ^2.3.0

@@ -8,6 +8,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_widget_from_html_core/flutter_widget_from_html_core.dart';
 import 'package:pn_types/src/api/api_error.dart';
 import 'package:pn_types/src/api/transport.dart';
 import 'package:pn_types/src/native/opener_port.dart';
@@ -157,6 +158,8 @@ class _NotificationInboxScreenState extends State<NotificationInboxScreen> {
   Widget _notificationRow(BuildContext context, NotificationItem item) {
     final theme = Theme.of(context).textTheme;
     final pn = context.pn;
+    final subtitle = item.subtitle;
+    final preview = subtitle == null || subtitle.isEmpty ? item.body : subtitle;
     final isUnread = item.readAt == null;
     final isSelected = _selectedIds.contains(item.id);
 
@@ -201,7 +204,7 @@ class _NotificationInboxScreenState extends State<NotificationInboxScreen> {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      item.body,
+                      preview,
                       maxLines: 3,
                       overflow: TextOverflow.ellipsis,
                       style: theme.bodyMedium,
@@ -378,10 +381,14 @@ class _NotificationInboxScreenState extends State<NotificationInboxScreen> {
     await showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
+        scrollable: true,
         title: Text(
           item.title.isEmpty ? l10n.notificationAnnouncementTitle : item.title,
         ),
-        content: Text(item.body),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: _announcementBody(dialogContext, item),
+        ),
         actions: [
           for (final entry in safeButtons)
             _announcementAction(dialogContext, entry.button, entry.uri),
@@ -390,6 +397,29 @@ class _NotificationInboxScreenState extends State<NotificationInboxScreen> {
             child: Text(l10n.commonClose),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _announcementBody(BuildContext dialogContext, NotificationItem item) {
+    final html = item.bodyHtml;
+    if (html == null || html.isEmpty) return Text(item.body);
+
+    final theme = Theme.of(dialogContext);
+    return HtmlWidget(
+      html,
+      customWidgetBuilder: (element) {
+        // Notification HTML never permits images; do not let malformed payloads load remote media.
+        if (element.localName == 'img') return const SizedBox.shrink();
+        return null;
+      },
+      onTapUrl: (url) {
+        final destination = _linkPolicy.resolveDestination(url);
+        if (destination != null) unawaited(_openDestination(destination));
+        return true;
+      },
+      textStyle: theme.textTheme.bodyMedium?.copyWith(
+        color: theme.colorScheme.onSurface,
       ),
     );
   }
