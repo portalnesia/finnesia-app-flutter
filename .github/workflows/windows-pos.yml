@@ -1,18 +1,15 @@
 # Build rilis Windows: paket MSIX (Microsoft Store) dari tag, ke draft GitHub Release.
 #
-# Alur distribusi lengkap: plan/windows-distribution/README.md.
+# Alur distribusi lengkap: docs/distribution.md.
 #
-#   - Paket → draft GitHub Release (asset). Unggah ke Partner Center dilakukan MANUAL.
+#   - Paket selalu masuk ke artifact Actions; rilis production juga melampirkannya ke draft.
+#   - Jika empat secret Partner Center dan MSSTORE_PRODUCT_ID tersedia, job terpisah mengirim
+#     MSIX ke Partner Center. Jika ada nilai yang belum disetel, job itu dilewati tanpa gagal.
 #   - Tidak ada signing: Store menandatangani ulang MSIX saat sertifikasi.
-#   - Upload pertama ke Partner Center WAJIB manual lewat web UI sekali dulu.
+#   - Submission pertama aplikasi tetap harus disiapkan melalui Partner Center.
 #
-# Keputusan pemilik 2026-09-28: CI TIDAK mengunggah ke Store. Jalur otomatis menuntut tenant
-# Entra + app registration + role Manager + empat secret, untuk pekerjaan yang terjadi sekali
-# per rilis dan hanya tiga klik. Yang pemilik kerjakan: unduh .msix dari halaman run, lalu
-# Partner Center → app → Update → Packages → Submit for certification.
-#
-# Workflow ini membutuhkan SHOREBIRD_TOKEN untuk mendaftarkan baseline Windows; tidak ada
-# secret Microsoft Store karena unggah ke Partner Center tetap dilakukan manual.
+# Credentials Partner Center diteruskan melalui workflow_call hanya untuk lane Windows. Secret tidak
+# dicetak ke log; nilai hilang menyebabkan skip, bukan menghalangi build, artifact, atau draft release.
 #
 # Trigger HANYA tag `pos-vMAJOR.MINOR.PATCH` polos — sama dengan `release-pos.yml`, dan itu
 # disengaja: satu nomor versi untuk satu produk di dua platform. Yang membedakan job,
@@ -27,13 +24,16 @@
 #
 #   FLUTTER_VERSION      versi Flutter, sama dengan workflow lain
 #   STORE_IDENTITY_NAME  Package/Identity/Name di Partner Center
+#   MSSTORE_PRODUCT_ID   Actions repository variable, Store product ID
+#   AZURE_AD_TENANT_ID, AZURE_AD_APPLICATION_CLIENT_ID, AZURE_AD_APPLICATION_SECRET, SELLER_ID
+#                        GitHub Actions secrets untuk akses Partner Center (opsional)
 #   FINNESIA_POS_WNS_APP_ID  Actions repository variable, Application (client) ID resmi
 #   FINNESIA_POS_WNS_OBJECT_ID Actions repository variable, service-principal Object ID resmi
 #
 # Jika kedua WNS variable belum ada, workflow mempertahankan build lama dengan WNS nonaktif.
 # Keduanya bukan secret; jangan menyimpan client secret Entra di aplikasi atau repo ini.
 #
-# Setup identitas Store: plan/windows-distribution/README.md §2.
+# Setup submission Partner Center: docs/distribution.md §2.6.
 
 name: Release POS Windows
 
@@ -62,6 +62,14 @@ on:
     secrets:
       SHOREBIRD_TOKEN:
         required: true
+      AZURE_AD_TENANT_ID:
+        required: false
+      AZURE_AD_APPLICATION_CLIENT_ID:
+        required: false
+      AZURE_AD_APPLICATION_SECRET:
+        required: false
+      SELLER_ID:
+        required: false
 
 # Build berjalan paralel dengan Android. Hanya job `publish` yang memakai concurrency group bersama
 # `release-pos.yml`, agar update ke draft release yang sama tidak berpacu.
@@ -82,6 +90,7 @@ jobs:
     outputs:
       version: ${{ steps.version.outputs.version }}
       tag: ${{ steps.version.outputs.tag }}
+      partner_center_upload: ${{ steps.partner_center.outputs.enabled }}
     env:
       SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
       FINNESIA_POS_WNS_APP_ID: ${{ vars.FINNESIA_POS_WNS_APP_ID }}
@@ -93,6 +102,26 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Check Partner Center configuration
+        id: partner_center
+        env:
+          AZURE_AD_TENANT_ID: ${{ secrets.AZURE_AD_TENANT_ID }}
+          AZURE_AD_APPLICATION_CLIENT_ID: ${{ secrets.AZURE_AD_APPLICATION_CLIENT_ID }}
+          AZURE_AD_APPLICATION_SECRET: ${{ secrets.AZURE_AD_APPLICATION_SECRET }}
+          SELLER_ID: ${{ secrets.SELLER_ID }}
+          MSSTORE_PRODUCT_ID: ${{ vars.MSSTORE_PRODUCT_ID }}
+        run: |
+          if [[ -z "$AZURE_AD_TENANT_ID" || -z "$AZURE_AD_APPLICATION_CLIENT_ID" || \
+                -z "$AZURE_AD_APPLICATION_SECRET" || -z "$SELLER_ID" || \
+                -z "$MSSTORE_PRODUCT_ID" ]]; then
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "Partner Center configuration is incomplete; skipping the submission job."
+            exit 0
+          fi
+
+          echo "enabled=true" >> "$GITHUB_OUTPUT"
+          echo "Partner Center configuration is available; the MSIX submission job is enabled."
 
       - name: Validate WNS repository variables
         run: |
@@ -419,8 +448,53 @@ jobs:
           retention-days: 30
           overwrite: true
 
-      # Draft GitHub Release, BUKAN unggahan Store. Publish terpisah dari build sehingga MSIX bisa
-      # dibangun bersamaan dengan Android; concurrency hanya menahan update draft sampai aman.
+  # This stays separate from `build` and `publish`, so a Store submission cannot suppress either
+  # GitHub artifact path. `msstore publish` submits the package; it does not bypass certification.
+  submit-to-partner-center:
+    needs: build
+    if: inputs.draft_release != 'no' && needs.build.outputs.partner_center_upload == 'true'
+    runs-on: windows-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Download the built MSIX
+        uses: actions/download-artifact@v4
+        with:
+          name: finnesia-pos-windows-${{ needs.build.outputs.version }}
+          path: store-package
+
+      - name: Set up Microsoft Store CLI
+        uses: microsoft/microsoft-store-apppublisher@v1.4
+
+      - name: Configure Partner Center credentials
+        shell: pwsh
+        env:
+          AZURE_AD_TENANT_ID: ${{ secrets.AZURE_AD_TENANT_ID }}
+          AZURE_AD_APPLICATION_CLIENT_ID: ${{ secrets.AZURE_AD_APPLICATION_CLIENT_ID }}
+          AZURE_AD_APPLICATION_SECRET: ${{ secrets.AZURE_AD_APPLICATION_SECRET }}
+          SELLER_ID: ${{ secrets.SELLER_ID }}
+        run: |
+          msstore reconfigure `
+            --tenantId "$env:AZURE_AD_TENANT_ID" `
+            --sellerId "$env:SELLER_ID" `
+            --clientId "$env:AZURE_AD_APPLICATION_CLIENT_ID" `
+            --clientSecret "$env:AZURE_AD_APPLICATION_SECRET"
+
+      - name: Submit the MSIX to Partner Center
+        shell: pwsh
+        env:
+          MSSTORE_PRODUCT_ID: ${{ vars.MSSTORE_PRODUCT_ID }}
+        run: |
+          $package = Get-ChildItem -LiteralPath 'store-package' -Filter '*.msix' -File |
+            Select-Object -First 1
+          if (-not $package) {
+            throw 'The downloaded Windows artifact does not contain an MSIX package.'
+          }
+
+          msstore publish "$($package.FullName)" -id "$env:MSSTORE_PRODUCT_ID"
+
+      # `publish` updates the draft GitHub Release, not the Partner Center submission. It remains
+      # independent so the MSIX release asset is added even if the Store job fails.
       # `name:` sengaja tidak diisi agar judul yang dipasang publisher Android tetap dipertahankan.
   publish:
     needs: build

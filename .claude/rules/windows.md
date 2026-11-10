@@ -15,8 +15,10 @@ paths:
 > **Windows dipakai untuk mengembangkan dan menguji aplikasi ini.** `FinnesiaPOS.exe` dibangun
 > dan dijalankan di mesin pengembangan.
 >
-> Jalur CI sekarang membuat rilis Windows dengan Shorebird lalu mengemas MSIX ke draft GitHub
-> Release. Upload ke Partner Center tetap manual. Shorebird Windows masih beta dan mendukung x64.
+> Jalur CI membuat rilis Windows dengan Shorebird lalu mengemas MSIX ke draft GitHub Release.
+> Submission Partner Center berjalan hanya jika seluruh secret dan Product ID opsional tersedia;
+> jika tidak, submission dilewati dan artifact/release tetap berjalan. Shorebird Windows masih beta
+> dan mendukung x64.
 
 Konteks dan keputusan pemilik: `.claude/rules/architecture.md` §1.1.
 
@@ -31,7 +33,8 @@ Konteks dan keputusan pemilik: `.claude/rules/architecture.md` §1.1.
 
 **Nama aplikasi dan branding diset lebih awal** supaya platform ini tidak jadi kejutan nanti.
 Alasan itu tepat: platformnya dipakai untuk pengembangan, dan jalur rilis Shorebird + MSIX kini
-dikonfigurasi dalam GitHub Actions; upload Partner Center tetap manual.
+dikonfigurasi dalam GitHub Actions; Partner Center submission dapat diaktifkan secara opsional
+melalui GitHub Actions secrets dan repository variable. Detail setup ada di `docs/distribution.md` §2.6.
 
 Branding yang sudah diset:
 
@@ -158,7 +161,7 @@ belum dijalankan dalam tugas ini. Jangan menyamakan konfigurasi dengan bukti run
 | Build **release** | Workflow `windows-pos.yml` memakai `shorebird release windows` pada runner Windows x64; hasil release belum diverifikasi sampai GitHub Actions menjalankannya |
 | MSIX sebagai artefak | Workflow mengemas output Shorebird menjadi MSIX dan melampirkannya ke draft GitHub Release; belum ada artifact release yang tersimpan di repo atau diuji pada mesin pengguna |
 | **Printer BLE dari aplikasi Windows** | **Belum terbukti.** `universal_ble_plugin.dll` ikut ter-build, tapi belum ada bukti printer pernah terhubung dari app Windows. Dukungan BLE Windows `universal_ble` belum dijalankan sama sekali. Ini fungsi inti POS — lihat `plan/printer/` |
-| `identity_name` untuk Microsoft Store | Nilainya dikonfigurasi di `apps/pos/pubspec.yaml` dan harus cocok persis dengan `Package/Identity/Name` dari Partner Center; upload dan sertifikasi tetap manual |
+| `identity_name` untuk Microsoft Store | Nilainya dikonfigurasi di `apps/pos/pubspec.yaml` dan harus cocok persis dengan `Package/Identity/Name` dari Partner Center; submission otomatis opsional dan belum diverifikasi pada run release nyata |
 | SQLite di aplikasi yang berjalan | `sqflite` tidak punya implementasi Windows, jadi Windows memakai `sqflite_common_ffi` (`sqlite3.dll` ikut terbundel, diperiksa di folder `Debug`). Jalur file dan bukaan-ulang diuji dengan SQLite FFI sungguhan di `flutter test`; yang belum: aplikasinya sendiri membuka `%APPDATA%\Finnesia\Finnesia POS\finnesia_pos.db` |
 
 Semua pemeriksaan di repo ini untuk Windows bersifat **statis** (test membaca berkas). Itu
