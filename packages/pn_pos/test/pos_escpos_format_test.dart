@@ -438,8 +438,7 @@ void main() {
       final brandIndex = lines.indexOf(receiptLabels.finnesiaBranding);
       expect(brandIndex, greaterThan(0));
       expect(lines[brandIndex - 1], isEmpty);
-      expect(
-          text, contains('${String.fromCharCode(0x1b)}a\u0001Terima kasih'));
+      expect(text, contains('${String.fromCharCode(0x1b)}a\u0001Terima kasih'));
     });
   });
 
