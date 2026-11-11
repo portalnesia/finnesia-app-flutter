@@ -25,6 +25,28 @@ PnPalette paletteOf(Brightness b) =>
     b == Brightness.light ? PnPalette.light : PnPalette.dark;
 
 void main() {
+  // K7 says the system's typeface. Windows has no Roboto italic, so Roboto there came out as a
+  // faked, over-slanted italic; Segoe UI is the Windows face and has a real one.
+  test('Windows sets text in the Windows system face, Android keeps Roboto',
+      () {
+    for (final b in Brightness.values) {
+      expect(
+        pnTheme(b, platform: TargetPlatform.windows)
+            .textTheme
+            .bodyMedium!
+            .fontFamily,
+        'Segoe UI',
+      );
+      expect(
+        pnTheme(b, platform: TargetPlatform.android)
+            .textTheme
+            .bodyMedium!
+            .fontFamily,
+        'Roboto',
+      );
+    }
+  });
+
   for (final b in Brightness.values) {
     group('the ${b.name} theme', () {
       final theme = themes[b]!;

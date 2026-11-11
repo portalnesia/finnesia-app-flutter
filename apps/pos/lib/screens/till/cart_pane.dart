@@ -8,12 +8,14 @@
 import 'package:flutter/material.dart';
 import 'package:pn_pos/src/format.dart';
 import 'package:pn_pos/src/pos_cart.dart';
+import 'package:pn_pos/src/pos_print_category.dart';
 import 'package:pn_ui/src/theme/app_theme.dart';
 import 'package:pn_ui/src/theme/tokens.dart';
 import 'package:pn_ui/src/widgets/ledger_row.dart';
 import 'package:pn_ui/src/widgets/money_text.dart';
 import 'package:pn_ui/src/widgets/top_notice.dart';
 import 'package:pos/l10n/app_localizations.dart';
+import 'package:pos/screens/common/category_ticket_buttons.dart';
 import 'package:pos/screens/till/transaction_detail_sheet.dart';
 import 'package:pos/till/cart_controller.dart';
 import 'package:pos/till/transaction_detail_controller.dart';
@@ -135,6 +137,16 @@ class CartPane extends StatelessWidget {
                       ),
                     ],
                   ),
+                  // Kitchen/bar tickets print straight from the basket, before any sale exists.
+                  if (lines.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    CategoryTicketButtons(
+                      lines: cartLinesWithCategory(
+                        lines,
+                        l10n.posUncategorized,
+                      ),
+                    ),
+                  ],
                   // The one action this screen exists for, and the only amber on it.
                   if (onPay != null && lines.isNotEmpty) ...[
                     const SizedBox(height: 12),

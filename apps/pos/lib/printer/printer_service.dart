@@ -6,13 +6,149 @@
  */
 
 import 'dart:convert';
-import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart';
+import 'package:pn_types/src/native/print_queue_port.dart';
 import 'package:pn_types/src/native/printer_port.dart';
 import 'package:pn_types/src/native/store_port.dart';
 
 /// Where the paired printer lives in the local store.
 const printerKey = 'printer_device';
+
+/// The Windows-only output mode. Missing values remain compatible with saved BLE printers.
+const printerOutputModeKey = 'printer_output_mode';
+
+/// The installed Windows queue, stored separately from the legacy BLE identity.
+const windowsPrinterQueueKey = 'printer_windows_queue';
+
+/// How a job reaches the saved Windows queue; missing or unknown values mean ESC/POS.
+const windowsQueueFormatKey = 'printer_windows_queue_format';
+
+/// Saved text columns and auto-cutter shape the ESC/POS bytes sent over BLE or RAW to a Windows
+/// queue; the PDF route only takes the columns.
+const printerFormatSettingsKey = 'printer_format_settings';
+const printerColumnOptions = [32, 33, 40, 42, 48];
+typedef PrinterFormatSettings = ({int columns, bool autoCutter});
+const defaultPrinterFormatSettings = (columns: 32, autoCutter: false);
+
+enum PrinterMode { bluetooth, windowsQueue }
+
+/// ESC/POS hands a receipt printer the same bytes Bluetooth sends, through the spooler's RAW
+/// datatype. PDF lets the driver render the page, for an ordinary office printer.
+enum WindowsQueueFormat { escPos, pdf }
+
+Future<WindowsQueueFormat> readWindowsQueueFormat(StorePort store) async =>
+    await store.read(windowsQueueFormatKey) == 'pdf'
+    ? WindowsQueueFormat.pdf
+    : WindowsQueueFormat.escPos;
+
+Future<void> saveWindowsQueueFormat(
+  WindowsQueueFormat format,
+  StorePort store,
+) => store.write(windowsQueueFormatKey, switch (format) {
+  WindowsQueueFormat.escPos => 'escpos',
+  WindowsQueueFormat.pdf => 'pdf',
+});
+
+/// Reads saved text-column and BLE cutter preferences; malformed values use the legacy defaults.
+Future<PrinterFormatSettings> readPrinterFormatSettings(StorePort store) async {
+  final raw = await store.read(printerFormatSettingsKey);
+  if (raw == null) return defaultPrinterFormatSettings;
+  try {
+    final value = jsonDecode(raw);
+    if (value is! Map) return defaultPrinterFormatSettings;
+    final columns = value['columns'];
+    final autoCutter = value['autoCutter'];
+    return (
+      columns: columns is int && printerColumnOptions.contains(columns)
+          ? columns
+          : defaultPrinterFormatSettings.columns,
+      autoCutter: autoCutter is bool
+          ? autoCutter
+          : defaultPrinterFormatSettings.autoCutter,
+    );
+  } on FormatException {
+    return defaultPrinterFormatSettings;
+  }
+}
+
+/// Persists local printer formatting preferences used by both output layouts.
+Future<void> savePrinterFormatSettings(
+  PrinterFormatSettings settings,
+  StorePort store,
+) async {
+  if (!printerColumnOptions.contains(settings.columns)) {
+    throw ArgumentError.value(
+      settings.columns,
+      'columns',
+      'Unsupported printer width',
+    );
+  }
+  await store.write(
+    printerFormatSettingsKey,
+    jsonEncode({
+      'columns': settings.columns,
+      'autoCutter': settings.autoCutter,
+    }),
+  );
+}
+
+/// Reads the output mode, keeping all non-Windows platforms on the existing BLE route.
+///
+/// A missing mode with a legacy BLE printer is the migration path: it keeps that printer selected
+/// without rewriting or discarding the saved `printer_device` value. A fresh Windows install has
+/// no implicit choice and lets the caller ask the cashier which type to configure.
+Future<PrinterMode?> readPrinterMode(
+  StorePort store, {
+  required TargetPlatform platform,
+}) async {
+  if (platform != TargetPlatform.windows) return PrinterMode.bluetooth;
+
+  final raw = await store.read(printerOutputModeKey);
+  if (raw == 'bluetooth') return PrinterMode.bluetooth;
+  if (raw == 'windows_queue') return PrinterMode.windowsQueue;
+  return await readSavedPrinter(store) == null ? null : PrinterMode.bluetooth;
+}
+
+Future<void> savePrinterMode(PrinterMode mode, StorePort store) =>
+    store.write(printerOutputModeKey, switch (mode) {
+      PrinterMode.bluetooth => 'bluetooth',
+      PrinterMode.windowsQueue => 'windows_queue',
+    });
+
+/// Reads the saved installed queue. Invalid data is treated as unconfigured, store failures pass.
+Future<WindowsPrintQueue?> readSavedWindowsPrinterQueue(StorePort store) async {
+  final raw = await store.read(windowsPrinterQueueKey);
+  if (raw == null) return null;
+  try {
+    final json = jsonDecode(raw);
+    if (json case {'id': final String id, 'name': final String name}
+        when id.isNotEmpty) {
+      return (id: id, name: name, isDefault: false, isAvailable: true);
+    }
+    return null;
+  } on FormatException {
+    return null;
+  }
+}
+
+/// Saves the queue before selecting it, so a failed save never switches the active route.
+Future<void> rememberWindowsPrinterQueue(
+  WindowsPrintQueue queue,
+  StorePort store,
+) async {
+  await store.write(
+    windowsPrinterQueueKey,
+    jsonEncode({'id': queue.id, 'name': queue.name}),
+  );
+  await savePrinterMode(PrinterMode.windowsQueue, store);
+}
+
+/// Forgets the queue and clears its mode. Any legacy BLE identity remains untouched.
+Future<void> clearWindowsPrinterQueue(StorePort store) async {
+  await store.remove(printerOutputModeKey);
+  await store.remove(windowsPrinterQueueKey);
+}
 
 /// The printer this tablet has been paired with, or `null` when there is none.
 ///

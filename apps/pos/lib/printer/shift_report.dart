@@ -8,78 +8,84 @@
 import 'dart:typed_data';
 
 import 'package:pn_pos/src/pos_escpos_format.dart'
-    show ShiftReportEscPosLabels, formatShiftReportEscPos;
+    show ShiftReportEscPosLabels, ShiftReportSummary, formatShiftReportEscPos;
 import 'package:pn_types/src/pos_shift.dart';
 import 'package:pos/l10n/app_localizations.dart';
+import 'package:pos/printer/receipt.dart' show receiptBrandingText;
 import 'package:pos/screens/common/tender_label.dart';
+
+/// The normalized report fields shared by the ESC/POS and Windows PDF renderers.
+ShiftReportSummary shiftReportData(ShiftSummaryResponse summary) => (
+  number: summary.number,
+  cashierName: summary.cashierName,
+  openedAt: summary.openedAt,
+  totalSales: summary.totalSales,
+  openingCash: summary.openingCash,
+  salesByMethod: summary.salesByMethod,
+  cashOut: summary.cashOut,
+  cashDrop: summary.cashDrop,
+  nonCashTenders: [
+    for (final tender in summary.nonCashTenders)
+      (
+        method: tender.method,
+        reference: tender.reference,
+        amount: tender.amount,
+        saleNumber: tender.saleNumber,
+      ),
+  ],
+  productSales: [
+    for (final product in summary.productSales)
+      (
+        productName: product.productName,
+        quantity: product.quantity,
+        unitPrice: product.unitPrice,
+        total: product.total,
+      ),
+  ],
+);
+
+/// The report's translated labels, shared by ESC/POS and PDF renderers.
+ShiftReportEscPosLabels shiftReportLabels(L10n l10n) => ShiftReportEscPosLabels(
+  title: l10n.posShiftReportTitle,
+  cashier: l10n.posCashier,
+  openedAt: l10n.posOpenedAt,
+  printedAt: l10n.posPrintedAt,
+  totalSales: l10n.posTotalSales,
+  paymentsByMethod: l10n.posPaymentsByMethod,
+  total: l10n.posTotal,
+  deposit: l10n.posDepositSection,
+  openingCash: l10n.posOpeningCash,
+  cashSales: l10n.posCashSalesLabel,
+  cashOut: l10n.posCashOut,
+  totalDeposit: l10n.posTotalDeposit,
+  nonCashPayments: l10n.posNonCashPayments,
+  tenderMethod: (wire) => tenderMethodLabel(l10n, wire),
+  noTenders: l10n.posNoNonCashPayments,
+  productsSoldTitle: l10n.posProductsSoldTitle,
+  productsSoldTotal: l10n.posProductsSoldTotal,
+  finnesiaBranding: receiptBrandingText,
+);
 
 /// The closing report of a shift, as the bytes for the printer.
 ///
 /// The layout is `formatShiftReportEscPos`'s, ported from the web app and checked byte for byte
-/// against it. This hands it what it cannot fetch for itself: the words, in the cashier's language
-/// (`style.md` §7: the formatter takes its labels from the caller), and the figures.
-///
-/// [printedAt] is the moment the button was pressed, passed in so the same summary prints the same
-/// bytes. [showProductSales] and [footerText] are the tenant's settings; the formatter prints
-/// nothing for either unless told.
+/// against it. [printedAt] is passed in so the same summary prints the same bytes; optional product
+/// sales and footer come from the tenant's settings.
 Uint8List shiftReportBytes(
   ShiftSummaryResponse summary, {
   required L10n l10n,
   required DateTime printedAt,
   bool showProductSales = false,
   String? footerText,
+  int columns = 32,
+  bool autoCutter = false,
 }) => formatShiftReportEscPos(
-  (
-    number: summary.number,
-    cashierName: summary.cashierName,
-    openedAt: summary.openedAt,
-    totalSales: summary.totalSales,
-    openingCash: summary.openingCash,
-    salesByMethod: summary.salesByMethod,
-    cashOut: summary.cashOut,
-    cashDrop: summary.cashDrop,
-    nonCashTenders: [
-      for (final t in summary.nonCashTenders)
-        (
-          method: t.method,
-          reference: t.reference,
-          amount: t.amount,
-          saleNumber: t.saleNumber,
-        ),
-    ],
-    productSales: [
-      for (final p in summary.productSales)
-        (
-          productName: p.productName,
-          quantity: p.quantity,
-          unitPrice: p.unitPrice,
-          total: p.total,
-        ),
-    ],
-  ),
+  shiftReportData(summary),
   printedAt.toIso8601String(),
-  ShiftReportEscPosLabels(
-    title: l10n.posShiftReportTitle,
-    cashier: l10n.posCashier,
-    openedAt: l10n.posOpenedAt,
-    printedAt: l10n.posPrintedAt,
-    totalSales: l10n.posTotalSales,
-    paymentsByMethod: l10n.posPaymentsByMethod,
-    total: l10n.posTotal,
-    deposit: l10n.posDepositSection,
-    openingCash: l10n.posOpeningCash,
-    cashSales: l10n.posCashSalesLabel,
-    cashOut: l10n.posCashOut,
-    totalDeposit: l10n.posTotalDeposit,
-    nonCashPayments: l10n.posNonCashPayments,
-    tenderMethod: (wire) => tenderMethodLabel(l10n, wire),
-    noTenders: l10n.posNoNonCashPayments,
-    productsSoldTitle: l10n.posProductsSoldTitle,
-    productsSoldTotal: l10n.posProductsSoldTotal,
-    // Only printed when the formatter is given `showBranding`, which this does not do: nothing
-    // in the tablet's settings turns it on.
-    finnesiaBranding: '',
-  ),
+  shiftReportLabels(l10n),
   showProductSales,
   footerText,
+  true,
+  columns,
+  autoCutter,
 );

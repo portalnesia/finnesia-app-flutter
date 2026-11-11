@@ -47,6 +47,7 @@ Map<String, Object?> line(
   num? total,
   num? discountPercent,
   num? discountAmount,
+  Map<String, Object?>? category,
 }) => {
   'id': id,
   'quantity': quantity,
@@ -56,7 +57,8 @@ Map<String, Object?> line(
   'discount_percent': ?discountPercent,
   'discount_amount': ?discountAmount,
   'description': ?description,
-  if (name != null) 'product': {'id': 'p_$id', 'name': name},
+  if (name != null)
+    'product': {'id': 'p_$id', 'name': name, 'category': ?category},
 };
 
 Map<String, Object?> payment(String method, num amount, {String? reference}) =>
@@ -661,6 +663,100 @@ void main() {
       expect(find.text(l10n.printerBluetoothOff), findsOneWidget);
       expect(rig.printer.written, isEmpty);
     });
+  });
+
+  // The kitchen/bar tickets of `pos-print-controls.tsx`: one button per top-level category, each
+  // printing only that category's goods, with no prices.
+  group('printing the category tickets', () {
+    final drinks = {
+      'id': 'c3',
+      'name': 'Teh',
+      'parent_id': 'c2',
+      'parent': {'id': 'c2', 'name': 'Minuman'},
+    };
+    final items = [
+      line(
+        'i1',
+        name: 'Nasi Goreng',
+        category: {'id': 'c1', 'name': 'Makanan'},
+      ),
+      line('i2', name: 'Es Teh', quantity: 3, category: drinks),
+      line('i3', name: 'Kerupuk'),
+    ];
+
+    testWidgets(
+      'prints one ticket per top-level category, with only its goods',
+      (tester) async {
+        final http = RoutedHttp()
+          ..respond(salePath, ok(sale(items: items, tableNumber: 'A1')))
+          ..respond(outletPath, ok({'id': 'out_1', 'name': 'Outlet Pusat'}));
+
+        final rig = await openSheet(tester, http, savedPrinter: kitchen);
+        await tester.scrollUntilVisible(
+          find.text(l10n.posPrintCategoryTicket(l10n.posUncategorized)),
+          200,
+          scrollable: find.byType(Scrollable).last,
+        );
+        expect(
+          find.text(l10n.posPrintCategoryTicket('Makanan')),
+          findsOneWidget,
+        );
+        expect(
+          find.text(l10n.posPrintCategoryTicket(l10n.posUncategorized)),
+          findsOneWidget,
+        );
+
+        final button = find.text(l10n.posPrintCategoryTicket('Minuman'));
+        await tester.ensureVisible(button);
+        await tester.tap(button);
+        await tester.pumpAndSettle();
+
+        final text = String.fromCharCodes(rig.printer.written.single);
+        expect(text, contains('Minuman'));
+        expect(text, contains('Es Teh'));
+        expect(text, contains('x3'));
+        expect(text, contains('POS-0001'));
+        expect(text, contains('Outlet Pusat'));
+        expect(text, contains('${l10n.posTableNumber}: A1'));
+        expect(text, contains('Finnesia.com'));
+        expect(text, isNot(contains('Nasi Goreng')));
+        expect(text, isNot(contains('Rp')));
+        expect(find.text(l10n.receiptSent), findsOneWidget);
+        expect(rig.analytics.logged.map((e) => e.$1), [
+          'tenant_category_ticket_printed',
+        ]);
+      },
+    );
+
+    // `flex flex-wrap gap-2` with `flex-1`: the receipt and the tickets share a row while they fit,
+    // and the rest go to the next row. Here: the receipt and three tickets.
+    for (final (name, size, thirdOnFirstRow) in [
+      ('a wide sheet fits three to a row', const Size(1280, 800), true),
+      ('a phone wraps them two to a row', const Size(360, 740), false),
+    ]) {
+      testWidgets(name, (tester) async {
+        final http = RoutedHttp()..respond(salePath, ok(sale(items: items)));
+        await openSheet(tester, http, size: size);
+        final last = find.text(
+          l10n.posPrintCategoryTicket(l10n.posUncategorized),
+        );
+        await tester.scrollUntilVisible(
+          last,
+          200,
+          scrollable: find.byType(Scrollable).last,
+        );
+
+        double top(Finder f) => tester.getTopLeft(f).dy;
+        final receipt = top(find.text(l10n.receiptPrint));
+        final makanan = top(find.text(l10n.posPrintCategoryTicket('Makanan')));
+        final minuman = top(find.text(l10n.posPrintCategoryTicket('Minuman')));
+        expect(makanan, receipt);
+        expect(minuman == receipt, thirdOnFirstRow);
+        // The fourth never fits beside three on this sheet, so it always opens a row.
+        expect(top(last), greaterThan(receipt));
+        expect(tester.takeException(), isNull);
+      });
+    }
   });
 
   group('fitting the screen', () {

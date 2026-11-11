@@ -5,6 +5,7 @@
  * Written by Putu Aditya <aditya@portalnesia.com>
  */
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:pn_pos/src/permission_viewer.dart';
 import 'package:pn_types/src/pos_shift.dart';
@@ -248,9 +249,11 @@ class _ShiftScreenState extends State<ShiftScreen> {
         summary,
         client: services.client,
         printer: services.printer,
+        printQueue: services.printQueue,
         store: services.store,
         l10n: l10n,
         now: DateTime.now(),
+        platform: defaultTargetPlatform,
       ),
     );
   }

@@ -9,6 +9,8 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pn_types/src/native/print_queue_fake.dart';
 import 'package:pn_types/src/native/printer_fake.dart';
 import 'package:pn_types/src/native/printer_port.dart';
 import 'package:pn_types/src/native/store_port.dart';
@@ -31,6 +33,44 @@ import 'shift_screen_test.dart'
 // what is here is who can ask for it, what it needs, and what happens when the printer will not.
 
 const kitchen = PrinterDevice(address: 'AA:BB', name: 'Dapur');
+const office = (
+  id: 'windows-printer://office',
+  name: 'Office Laser',
+  isDefault: true,
+  isAvailable: true,
+);
+
+void windowsTest(String description, WidgetTesterCallback callback) {
+  testWidgets(
+    description,
+    callback,
+    variant: const TargetPlatformVariant({TargetPlatform.windows}),
+  );
+}
+
+Future<void> settleAsyncPrint(
+  WidgetTester tester,
+  FakePrintQueuePort queue, {
+  required int expectedOperations,
+}) async {
+  for (
+    var i = 0;
+    i < 200 && queue.operations.length < expectedOperations;
+    i++
+  ) {
+    await tester.pump(const Duration(milliseconds: 10));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 10)),
+    );
+  }
+  for (var i = 0; i < 5; i++) {
+    await tester.pump(const Duration(milliseconds: 10));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 10)),
+    );
+  }
+  await tester.pumpAndSettle();
+}
 
 Finder get printButton => find.widgetWithText(OutlinedButton, 'Cetak Laporan');
 
@@ -76,6 +116,14 @@ Future<({Rig rig, RoutedHttp http})> pumpReport(
 }
 
 String paper(Rig rig) => String.fromCharCodes(rig.printer.written.single);
+
+double pdfPageWidth(List<int> bytes) {
+  final match = RegExp(
+    r'/MediaBox\s*\[\s*0(?:\.0)?\s+0(?:\.0)?\s+([0-9.]+)\s+([0-9.]+)\s*\]',
+  ).firstMatch(String.fromCharCodes(bytes));
+  if (match == null) throw StateError('PDF page has no MediaBox');
+  return double.parse(match.group(1)!);
+}
 
 void main() {
   // The cashier is standing at a drawer they are counting: a report that did not come out has to
@@ -246,6 +294,47 @@ void main() {
       expect(rig.printer.connectedAddress, kitchen.address);
       expect(paper(rig), contains('SH-0001'));
       expect(find.text('Laporan terkirim ke printer'), findsOneWidget);
+    });
+
+    windowsTest('sends a PDF shift report to the selected Windows queue', (
+      tester,
+    ) async {
+      final rig = (await pumpReport(tester)).rig;
+      rig.printQueue.queues.add(office);
+      await rememberWindowsPrinterQueue(office, rig.store);
+      await saveWindowsQueueFormat(WindowsQueueFormat.pdf, rig.store);
+
+      await tester.tap(printButton);
+      await settleAsyncPrint(tester, rig.printQueue, expectedOperations: 2);
+
+      final bytes = rig.printQueue.printed.single.bytes;
+      expect(String.fromCharCodes(bytes.take(5)), '%PDF-');
+      expect(pdfPageWidth(bytes), closeTo(PdfPageFormat.roll80.width, 0.01));
+      expect(bytes.length, greaterThan(1000));
+      expect(rig.printQueue.printed.single.queueId, office.id);
+      expect(rig.printer.operations, isEmpty);
+      expect(find.text('Laporan terkirim ke printer'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    windowsTest('can send another PDF in a later Windows print flow', (
+      tester,
+    ) async {
+      final rig = (await pumpReport(tester)).rig;
+      rig.printQueue.queues.add(office);
+      await rememberWindowsPrinterQueue(office, rig.store);
+      await saveWindowsQueueFormat(WindowsQueueFormat.pdf, rig.store);
+
+      await tester.tap(printButton);
+      await settleAsyncPrint(tester, rig.printQueue, expectedOperations: 2);
+
+      expect(rig.printQueue.printed, hasLength(1));
+      expect(
+        String.fromCharCodes(rig.printQueue.printed.single.bytes.take(5)),
+        '%PDF-',
+      );
+      expect(rig.printer.operations, isEmpty);
+      expect(tester.takeException(), isNull);
     });
   });
 }

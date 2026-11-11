@@ -566,9 +566,309 @@ as String?,
 
 
 /// @nodoc
+mixin _$SalesInvoiceItemProduct {
+
+ String get id; String? get name;@JsonKey(includeIfNull: false) Category? get category;
+/// Create a copy of SalesInvoiceItemProduct
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$SalesInvoiceItemProductCopyWith<SalesInvoiceItemProduct> get copyWith => _$SalesInvoiceItemProductCopyWithImpl<SalesInvoiceItemProduct>(this as SalesInvoiceItemProduct, _$identity);
+
+  /// Serializes this SalesInvoiceItemProduct to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  final _this = this as SalesInvoiceItemProduct;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SalesInvoiceItemProduct&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.category, _this.category) || other.category == _this.category));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+  final _this = this as SalesInvoiceItemProduct;
+  return Object.hash(runtimeType,_this.id,_this.name,_this.category);
+}
+
+@override
+String toString() {
+  final _this = this as SalesInvoiceItemProduct;
+  return 'SalesInvoiceItemProduct(id: ${_this.id}, name: ${_this.name}, category: ${_this.category})';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $SalesInvoiceItemProductCopyWith<$Res>  {
+  factory $SalesInvoiceItemProductCopyWith(SalesInvoiceItemProduct value, $Res Function(SalesInvoiceItemProduct) _then) = _$SalesInvoiceItemProductCopyWithImpl;
+@useResult
+$Res call({
+ String id, String? name,@JsonKey(includeIfNull: false) Category? category
+});
+
+
+$CategoryCopyWith<$Res>? get category;
+
+}
+/// @nodoc
+class _$SalesInvoiceItemProductCopyWithImpl<$Res>
+    implements $SalesInvoiceItemProductCopyWith<$Res> {
+  _$SalesInvoiceItemProductCopyWithImpl(this._self, this._then);
+
+  final SalesInvoiceItemProduct _self;
+  final $Res Function(SalesInvoiceItemProduct) _then;
+
+/// Create a copy of SalesInvoiceItemProduct
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = freezed,Object? category = freezed,}) {
+  return _then(SalesInvoiceItemProduct(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,name: freezed == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String?,category: freezed == category ? _self.category : category // ignore: cast_nullable_to_non_nullable
+as Category?,
+  ));
+}
+/// Create a copy of SalesInvoiceItemProduct
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$CategoryCopyWith<$Res>? get category {
+    if (_self.category == null) {
+    return null;
+  }
+
+  return $CategoryCopyWith<$Res>(_self.category!, (value) {
+    return _then(_self.copyWith(category: value));
+  });
+}
+}
+
+
+/// Adds pattern-matching-related methods to [SalesInvoiceItemProduct].
+extension SalesInvoiceItemProductPatterns on SalesInvoiceItemProduct {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _SalesInvoiceItemProduct value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _SalesInvoiceItemProduct() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _SalesInvoiceItemProduct value)  $default,){
+final _that = this;
+switch (_that) {
+case _SalesInvoiceItemProduct():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _SalesInvoiceItemProduct value)?  $default,){
+final _that = this;
+switch (_that) {
+case _SalesInvoiceItemProduct() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String? name, @JsonKey(includeIfNull: false)  Category? category)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _SalesInvoiceItemProduct() when $default != null:
+return $default(_that.id,_that.name,_that.category);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String? name, @JsonKey(includeIfNull: false)  Category? category)  $default,) {final _that = this;
+switch (_that) {
+case _SalesInvoiceItemProduct():
+return $default(_that.id,_that.name,_that.category);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String? name, @JsonKey(includeIfNull: false)  Category? category)?  $default,) {final _that = this;
+switch (_that) {
+case _SalesInvoiceItemProduct() when $default != null:
+return $default(_that.id,_that.name,_that.category);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+
+@JsonSerializable(explicitToJson: true)
+class _SalesInvoiceItemProduct implements SalesInvoiceItemProduct {
+  const _SalesInvoiceItemProduct({required this.id, this.name, @JsonKey(includeIfNull: false) this.category});
+  factory _SalesInvoiceItemProduct.fromJson(Map<String, dynamic> json) => _$SalesInvoiceItemProductFromJson(json);
+
+@override final  String id;
+@override final  String? name;
+@override@JsonKey(includeIfNull: false) final  Category? category;
+
+/// Create a copy of SalesInvoiceItemProduct
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$SalesInvoiceItemProductCopyWith<_SalesInvoiceItemProduct> get copyWith => __$SalesInvoiceItemProductCopyWithImpl<_SalesInvoiceItemProduct>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$SalesInvoiceItemProductToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _SalesInvoiceItemProduct&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.category, category) || other.category == category));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+    return Object.hash(runtimeType,id,name,category);
+}
+
+@override
+String toString() {
+    return 'SalesInvoiceItemProduct(id: $id, name: $name, category: $category)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$SalesInvoiceItemProductCopyWith<$Res> implements $SalesInvoiceItemProductCopyWith<$Res> {
+  factory _$SalesInvoiceItemProductCopyWith(_SalesInvoiceItemProduct value, $Res Function(_SalesInvoiceItemProduct) _then) = __$SalesInvoiceItemProductCopyWithImpl;
+@override @useResult
+$Res call({
+ String id, String? name,@JsonKey(includeIfNull: false) Category? category
+});
+
+
+@override $CategoryCopyWith<$Res>? get category;
+
+}
+/// @nodoc
+class __$SalesInvoiceItemProductCopyWithImpl<$Res>
+    implements _$SalesInvoiceItemProductCopyWith<$Res> {
+  __$SalesInvoiceItemProductCopyWithImpl(this._self, this._then);
+
+  final _SalesInvoiceItemProduct _self;
+  final $Res Function(_SalesInvoiceItemProduct) _then;
+
+/// Create a copy of SalesInvoiceItemProduct
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = freezed,Object? category = freezed,}) {
+  return _then(_SalesInvoiceItemProduct(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,name: freezed == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String?,category: freezed == category ? _self.category : category // ignore: cast_nullable_to_non_nullable
+as Category?,
+  ));
+}
+
+/// Create a copy of SalesInvoiceItemProduct
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$CategoryCopyWith<$Res>? get category {
+    if (_self.category == null) {
+    return null;
+  }
+
+  return $CategoryCopyWith<$Res>(_self.category!, (value) {
+    return _then(_self.copyWith(category: value));
+  });
+}
+}
+
+
+/// @nodoc
 mixin _$SalesInvoiceItem {
 
- String get id; num get quantity; num get price;@JsonKey(name: 'discount_percent', includeIfNull: false) num? get discountPercent;@JsonKey(name: 'discount_amount', includeIfNull: false) num? get discountAmount;@JsonKey(name: 'tax_id', includeIfNull: false) String? get taxId;@JsonKey(name: 'tax_rate') num get taxRate;@JsonKey(name: 'is_tax_inclusive') bool get isTaxInclusive;@JsonKey(name: 'line_subtotal') num get lineSubtotal;@JsonKey(name: 'line_tax') num get lineTax;@JsonKey(name: 'line_total') num get lineTotal; String? get description; NamedRef? get product;
+ String get id; num get quantity; num get price;@JsonKey(name: 'discount_percent', includeIfNull: false) num? get discountPercent;@JsonKey(name: 'discount_amount', includeIfNull: false) num? get discountAmount;@JsonKey(name: 'tax_id', includeIfNull: false) String? get taxId;@JsonKey(name: 'tax_rate') num get taxRate;@JsonKey(name: 'is_tax_inclusive') bool get isTaxInclusive;@JsonKey(name: 'line_subtotal') num get lineSubtotal;@JsonKey(name: 'line_tax') num get lineTax;@JsonKey(name: 'line_total') num get lineTotal; String? get description; SalesInvoiceItemProduct? get product;
 /// Create a copy of SalesInvoiceItem
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -606,11 +906,11 @@ abstract mixin class $SalesInvoiceItemCopyWith<$Res>  {
   factory $SalesInvoiceItemCopyWith(SalesInvoiceItem value, $Res Function(SalesInvoiceItem) _then) = _$SalesInvoiceItemCopyWithImpl;
 @useResult
 $Res call({
- String id, num quantity, num price,@JsonKey(name: 'discount_percent', includeIfNull: false) num? discountPercent,@JsonKey(name: 'discount_amount', includeIfNull: false) num? discountAmount,@JsonKey(name: 'tax_id', includeIfNull: false) String? taxId,@JsonKey(name: 'tax_rate') num taxRate,@JsonKey(name: 'is_tax_inclusive') bool isTaxInclusive,@JsonKey(name: 'line_subtotal') num lineSubtotal,@JsonKey(name: 'line_tax') num lineTax,@JsonKey(name: 'line_total') num lineTotal, String? description, NamedRef? product
+ String id, num quantity, num price,@JsonKey(name: 'discount_percent', includeIfNull: false) num? discountPercent,@JsonKey(name: 'discount_amount', includeIfNull: false) num? discountAmount,@JsonKey(name: 'tax_id', includeIfNull: false) String? taxId,@JsonKey(name: 'tax_rate') num taxRate,@JsonKey(name: 'is_tax_inclusive') bool isTaxInclusive,@JsonKey(name: 'line_subtotal') num lineSubtotal,@JsonKey(name: 'line_tax') num lineTax,@JsonKey(name: 'line_total') num lineTotal, String? description, SalesInvoiceItemProduct? product
 });
 
 
-$NamedRefCopyWith<$Res>? get product;
+$SalesInvoiceItemProductCopyWith<$Res>? get product;
 
 }
 /// @nodoc
@@ -638,19 +938,19 @@ as num,lineTax: null == lineTax ? _self.lineTax : lineTax // ignore: cast_nullab
 as num,lineTotal: null == lineTotal ? _self.lineTotal : lineTotal // ignore: cast_nullable_to_non_nullable
 as num,description: freezed == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
 as String?,product: freezed == product ? _self.product : product // ignore: cast_nullable_to_non_nullable
-as NamedRef?,
+as SalesInvoiceItemProduct?,
   ));
 }
 /// Create a copy of SalesInvoiceItem
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
-$NamedRefCopyWith<$Res>? get product {
+$SalesInvoiceItemProductCopyWith<$Res>? get product {
     if (_self.product == null) {
     return null;
   }
 
-  return $NamedRefCopyWith<$Res>(_self.product!, (value) {
+  return $SalesInvoiceItemProductCopyWith<$Res>(_self.product!, (value) {
     return _then(_self.copyWith(product: value));
   });
 }
@@ -735,7 +1035,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  num quantity,  num price, @JsonKey(name: 'discount_percent', includeIfNull: false)  num? discountPercent, @JsonKey(name: 'discount_amount', includeIfNull: false)  num? discountAmount, @JsonKey(name: 'tax_id', includeIfNull: false)  String? taxId, @JsonKey(name: 'tax_rate')  num taxRate, @JsonKey(name: 'is_tax_inclusive')  bool isTaxInclusive, @JsonKey(name: 'line_subtotal')  num lineSubtotal, @JsonKey(name: 'line_tax')  num lineTax, @JsonKey(name: 'line_total')  num lineTotal,  String? description,  NamedRef? product)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  num quantity,  num price, @JsonKey(name: 'discount_percent', includeIfNull: false)  num? discountPercent, @JsonKey(name: 'discount_amount', includeIfNull: false)  num? discountAmount, @JsonKey(name: 'tax_id', includeIfNull: false)  String? taxId, @JsonKey(name: 'tax_rate')  num taxRate, @JsonKey(name: 'is_tax_inclusive')  bool isTaxInclusive, @JsonKey(name: 'line_subtotal')  num lineSubtotal, @JsonKey(name: 'line_tax')  num lineTax, @JsonKey(name: 'line_total')  num lineTotal,  String? description,  SalesInvoiceItemProduct? product)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _SalesInvoiceItem() when $default != null:
 return $default(_that.id,_that.quantity,_that.price,_that.discountPercent,_that.discountAmount,_that.taxId,_that.taxRate,_that.isTaxInclusive,_that.lineSubtotal,_that.lineTax,_that.lineTotal,_that.description,_that.product);case _:
@@ -756,7 +1056,7 @@ return $default(_that.id,_that.quantity,_that.price,_that.discountPercent,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  num quantity,  num price, @JsonKey(name: 'discount_percent', includeIfNull: false)  num? discountPercent, @JsonKey(name: 'discount_amount', includeIfNull: false)  num? discountAmount, @JsonKey(name: 'tax_id', includeIfNull: false)  String? taxId, @JsonKey(name: 'tax_rate')  num taxRate, @JsonKey(name: 'is_tax_inclusive')  bool isTaxInclusive, @JsonKey(name: 'line_subtotal')  num lineSubtotal, @JsonKey(name: 'line_tax')  num lineTax, @JsonKey(name: 'line_total')  num lineTotal,  String? description,  NamedRef? product)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  num quantity,  num price, @JsonKey(name: 'discount_percent', includeIfNull: false)  num? discountPercent, @JsonKey(name: 'discount_amount', includeIfNull: false)  num? discountAmount, @JsonKey(name: 'tax_id', includeIfNull: false)  String? taxId, @JsonKey(name: 'tax_rate')  num taxRate, @JsonKey(name: 'is_tax_inclusive')  bool isTaxInclusive, @JsonKey(name: 'line_subtotal')  num lineSubtotal, @JsonKey(name: 'line_tax')  num lineTax, @JsonKey(name: 'line_total')  num lineTotal,  String? description,  SalesInvoiceItemProduct? product)  $default,) {final _that = this;
 switch (_that) {
 case _SalesInvoiceItem():
 return $default(_that.id,_that.quantity,_that.price,_that.discountPercent,_that.discountAmount,_that.taxId,_that.taxRate,_that.isTaxInclusive,_that.lineSubtotal,_that.lineTax,_that.lineTotal,_that.description,_that.product);case _:
@@ -776,7 +1076,7 @@ return $default(_that.id,_that.quantity,_that.price,_that.discountPercent,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  num quantity,  num price, @JsonKey(name: 'discount_percent', includeIfNull: false)  num? discountPercent, @JsonKey(name: 'discount_amount', includeIfNull: false)  num? discountAmount, @JsonKey(name: 'tax_id', includeIfNull: false)  String? taxId, @JsonKey(name: 'tax_rate')  num taxRate, @JsonKey(name: 'is_tax_inclusive')  bool isTaxInclusive, @JsonKey(name: 'line_subtotal')  num lineSubtotal, @JsonKey(name: 'line_tax')  num lineTax, @JsonKey(name: 'line_total')  num lineTotal,  String? description,  NamedRef? product)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  num quantity,  num price, @JsonKey(name: 'discount_percent', includeIfNull: false)  num? discountPercent, @JsonKey(name: 'discount_amount', includeIfNull: false)  num? discountAmount, @JsonKey(name: 'tax_id', includeIfNull: false)  String? taxId, @JsonKey(name: 'tax_rate')  num taxRate, @JsonKey(name: 'is_tax_inclusive')  bool isTaxInclusive, @JsonKey(name: 'line_subtotal')  num lineSubtotal, @JsonKey(name: 'line_tax')  num lineTax, @JsonKey(name: 'line_total')  num lineTotal,  String? description,  SalesInvoiceItemProduct? product)?  $default,) {final _that = this;
 switch (_that) {
 case _SalesInvoiceItem() when $default != null:
 return $default(_that.id,_that.quantity,_that.price,_that.discountPercent,_that.discountAmount,_that.taxId,_that.taxRate,_that.isTaxInclusive,_that.lineSubtotal,_that.lineTax,_that.lineTotal,_that.description,_that.product);case _:
@@ -806,7 +1106,7 @@ class _SalesInvoiceItem implements SalesInvoiceItem {
 @override@JsonKey(name: 'line_tax') final  num lineTax;
 @override@JsonKey(name: 'line_total') final  num lineTotal;
 @override final  String? description;
-@override final  NamedRef? product;
+@override final  SalesInvoiceItemProduct? product;
 
 /// Create a copy of SalesInvoiceItem
 /// with the given fields replaced by the non-null parameter values.
@@ -843,11 +1143,11 @@ abstract mixin class _$SalesInvoiceItemCopyWith<$Res> implements $SalesInvoiceIt
   factory _$SalesInvoiceItemCopyWith(_SalesInvoiceItem value, $Res Function(_SalesInvoiceItem) _then) = __$SalesInvoiceItemCopyWithImpl;
 @override @useResult
 $Res call({
- String id, num quantity, num price,@JsonKey(name: 'discount_percent', includeIfNull: false) num? discountPercent,@JsonKey(name: 'discount_amount', includeIfNull: false) num? discountAmount,@JsonKey(name: 'tax_id', includeIfNull: false) String? taxId,@JsonKey(name: 'tax_rate') num taxRate,@JsonKey(name: 'is_tax_inclusive') bool isTaxInclusive,@JsonKey(name: 'line_subtotal') num lineSubtotal,@JsonKey(name: 'line_tax') num lineTax,@JsonKey(name: 'line_total') num lineTotal, String? description, NamedRef? product
+ String id, num quantity, num price,@JsonKey(name: 'discount_percent', includeIfNull: false) num? discountPercent,@JsonKey(name: 'discount_amount', includeIfNull: false) num? discountAmount,@JsonKey(name: 'tax_id', includeIfNull: false) String? taxId,@JsonKey(name: 'tax_rate') num taxRate,@JsonKey(name: 'is_tax_inclusive') bool isTaxInclusive,@JsonKey(name: 'line_subtotal') num lineSubtotal,@JsonKey(name: 'line_tax') num lineTax,@JsonKey(name: 'line_total') num lineTotal, String? description, SalesInvoiceItemProduct? product
 });
 
 
-@override $NamedRefCopyWith<$Res>? get product;
+@override $SalesInvoiceItemProductCopyWith<$Res>? get product;
 
 }
 /// @nodoc
@@ -875,7 +1175,7 @@ as num,lineTax: null == lineTax ? _self.lineTax : lineTax // ignore: cast_nullab
 as num,lineTotal: null == lineTotal ? _self.lineTotal : lineTotal // ignore: cast_nullable_to_non_nullable
 as num,description: freezed == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
 as String?,product: freezed == product ? _self.product : product // ignore: cast_nullable_to_non_nullable
-as NamedRef?,
+as SalesInvoiceItemProduct?,
   ));
 }
 
@@ -883,12 +1183,12 @@ as NamedRef?,
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
-$NamedRefCopyWith<$Res>? get product {
+$SalesInvoiceItemProductCopyWith<$Res>? get product {
     if (_self.product == null) {
     return null;
   }
 
-  return $NamedRefCopyWith<$Res>(_self.product!, (value) {
+  return $SalesInvoiceItemProductCopyWith<$Res>(_self.product!, (value) {
     return _then(_self.copyWith(product: value));
   });
 }

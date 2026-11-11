@@ -16,6 +16,7 @@ import 'package:pn_types/src/native/push_messaging_port.dart';
 import 'package:pn_types/src/notification.dart';
 import 'package:pn_types/src/session.dart';
 import 'package:pn_ui/src/theme/app_theme.dart';
+import 'package:pn_ui/src/theme/palette.dart';
 import 'package:pn_ui/src/theme/tokens.dart';
 import 'package:pos/l10n/app_localizations.dart';
 import 'package:pos/native/opener/active.dart' as browser;
@@ -370,13 +371,18 @@ class _NotificationInboxScreenState extends State<NotificationInboxScreen> {
     }
   }
 
+  // The announcement detail mirrors the web dialog (notification-detail-dialog.tsx): image, then
+  // the body, then the CTAs, with only "Close" in the action row.
   Future<void> _showAnnouncement(NotificationItem item) async {
     final l10n = L10n.of(context);
-    final safeButtons = <({NotificationItemButton button, Uri uri})>[];
-    for (final button in item.buttons) {
-      final uri = _linkPolicy.resolveDestination(button.link);
-      if (uri != null) safeButtons.add((button: button, uri: uri));
-    }
+    // The web's filter: a label to show and a link that passes its href check.
+    final buttons = [
+      for (final button in item.buttons)
+        if (button.label.trim().isNotEmpty)
+          if (_linkPolicy.resolveAction(button.link) case final action?)
+            (button: button, action: action),
+    ];
+    final image = _linkPolicy.resolveMedia(item.image ?? '')?.toString();
 
     await showDialog<void>(
       context: context,
@@ -387,12 +393,35 @@ class _NotificationInboxScreenState extends State<NotificationInboxScreen> {
         ),
         content: SizedBox(
           width: double.maxFinite,
-          child: _announcementBody(dialogContext, item),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (image != null && image.isNotEmpty) ...[
+                _announcementImage(dialogContext, item, image),
+                const SizedBox(height: 16),
+              ],
+              _announcementBody(dialogContext, item),
+              if (buttons.isNotEmpty) ...[
+                const SizedBox(height: 20),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (final entry in buttons)
+                      _announcementAction(
+                        dialogContext,
+                        entry.button,
+                        entry.action,
+                      ),
+                  ],
+                ),
+              ],
+            ],
+          ),
         ),
         actions: [
-          for (final entry in safeButtons)
-            _announcementAction(dialogContext, entry.button, entry.uri),
-          TextButton(
+          OutlinedButton(
             onPressed: () => Navigator.of(dialogContext).pop(),
             child: Text(l10n.commonClose),
           ),
@@ -401,44 +430,202 @@ class _NotificationInboxScreenState extends State<NotificationInboxScreen> {
     );
   }
 
-  Widget _announcementBody(BuildContext dialogContext, NotificationItem item) {
-    final html = item.bodyHtml;
-    if (html == null || html.isEmpty) return Text(item.body);
+  /// An in-app link leaves the dialog, as router navigation does on the web. An external one
+  /// opens beside it, as a new tab would, and the dialog stays.
+  void _followAction(
+    BuildContext dialogContext,
+    ({Uri uri, bool inApp}) action,
+  ) {
+    if (action.inApp) Navigator.of(dialogContext).pop();
+    unawaited(_openDestination(action.uri));
+  }
 
+  /// The content image: full width, at most 320 high, contained in its 4:3 or 3:4 box. A tap
+  /// opens it full screen with the title and summary as its caption, like the web's lightbox.
+  Widget _announcementImage(
+    BuildContext dialogContext,
+    NotificationItem item,
+    String url,
+  ) {
+    final pn = dialogContext.pn;
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxHeight: 320),
+        child: AspectRatio(
+          aspectRatio: item.imageRatio == '4:3' ? 4 / 3 : 3 / 4,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: InkWell(
+              onTap: () => _showImageViewer(dialogContext, item, url),
+              child: Image.network(
+                url,
+                fit: BoxFit.contain,
+                semanticLabel: item.title,
+                errorBuilder: (_, _, _) => ColoredBox(
+                  color: pn.surfaceMuted,
+                  child: Center(
+                    child: Icon(
+                      Icons.broken_image_outlined,
+                      color: pn.inkMuted,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showImageViewer(
+    BuildContext dialogContext,
+    NotificationItem item,
+    String url,
+  ) {
+    final subtitle = item.subtitle;
+    final caption = subtitle == null || subtitle.isEmpty ? item.body : subtitle;
+    final textTheme = Theme.of(dialogContext).textTheme;
+    // A photo viewer is black in both themes, so its text and controls are white in both.
+    unawaited(
+      showDialog<void>(
+        context: dialogContext,
+        builder: (viewerContext) => Dialog.fullscreen(
+          backgroundColor: Colors.black,
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: InteractiveViewer(
+                  maxScale: 4,
+                  child: Center(
+                    child: Image.network(
+                      url,
+                      fit: BoxFit.contain,
+                      semanticLabel: item.title,
+                      errorBuilder: (_, _, _) => const Icon(
+                        Icons.broken_image_outlined,
+                        color: Colors.white70,
+                        size: 48,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: SafeArea(
+                  child: ColoredBox(
+                    color: Colors.black54,
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            item.title,
+                            style: textTheme.titleSmall?.copyWith(
+                              color: Colors.white,
+                            ),
+                          ),
+                          if (caption.isNotEmpty)
+                            Text(
+                              caption,
+                              style: textTheme.bodySmall?.copyWith(
+                                color: Colors.white70,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                top: 0,
+                right: 0,
+                child: SafeArea(
+                  child: IconButton(
+                    tooltip: L10n.of(viewerContext).commonClose,
+                    color: Colors.white,
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.of(viewerContext).pop(),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _announcementBody(BuildContext dialogContext, NotificationItem item) {
     final theme = Theme.of(dialogContext);
+    final textStyle = theme.textTheme.bodyMedium?.copyWith(
+      color: theme.colorScheme.onSurface,
+    );
+    final html = item.bodyHtml;
+    // Text keeps the body's newlines, which is what `whitespace-pre-wrap` does on the web.
+    if (html == null || html.isEmpty) return Text(item.body, style: textStyle);
+
+    final pn = dialogContext.pn;
     return HtmlWidget(
-      html,
+      '<div class="$_bodyRootClass">${_keepSoftBreaks(html)}</div>',
+      factoryBuilder: _RawHrefWidgetFactory.new,
+      customStylesBuilder: (element) => _webBodyStyles(
+        element.localName,
+        pn,
+        theme.colorScheme.onSurface,
+        spaced:
+            (element.parent?.classes.contains(_bodyRootClass) ?? false) &&
+            element.nextElementSibling != null,
+      ),
       customWidgetBuilder: (element) {
         // Notification HTML never permits images; do not let malformed payloads load remote media.
         if (element.localName == 'img') return const SizedBox.shrink();
         return null;
       },
       onTapUrl: (url) {
-        final destination = _linkPolicy.resolveDestination(url);
-        if (destination != null) unawaited(_openDestination(destination));
+        final action = _linkPolicy.resolveAction(url);
+        if (action != null) _followAction(dialogContext, action);
         return true;
       },
-      textStyle: theme.textTheme.bodyMedium?.copyWith(
-        color: theme.colorScheme.onSurface,
-      ),
+      textStyle: textStyle?.copyWith(height: 1.625),
     );
   }
 
   Widget _announcementAction(
     BuildContext dialogContext,
     NotificationItemButton button,
-    Uri destination,
+    ({Uri uri, bool inApp}) action,
   ) {
-    void open() {
-      Navigator.of(dialogContext).pop();
-      unawaited(_openDestination(destination));
-    }
-
+    final pn = dialogContext.pn;
+    void open() => _followAction(dialogContext, action);
     final child = Text(button.label);
-    return switch (button.style.toLowerCase()) {
-      'primary' => FilledButton(onPressed: open, child: child),
-      'secondary' || 'outline' => OutlinedButton(onPressed: open, child: child),
-      _ => TextButton(onPressed: open, child: child),
+    // The web's CTA_VARIANT. A style it does not know gets its default button, the primary one.
+    return switch (button.style) {
+      'secondary' => FilledButton(
+        style: FilledButton.styleFrom(
+          backgroundColor: pn.secondary,
+          foregroundColor: pn.onSecondary,
+        ),
+        onPressed: open,
+        child: child,
+      ),
+      'error' => FilledButton(
+        style: FilledButton.styleFrom(
+          backgroundColor: pn.error,
+          foregroundColor: pn.onError,
+        ),
+        onPressed: open,
+        child: child,
+      ),
+      'outline' => OutlinedButton(onPressed: open, child: child),
+      'ghost' => TextButton(onPressed: open, child: child),
+      _ => FilledButton(onPressed: open, child: child),
     };
   }
 
@@ -546,6 +733,71 @@ class _NotificationInboxScreenState extends State<NotificationInboxScreen> {
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(content: Text(message)));
   }
+}
+
+const _bodyRootClass = 'pn-notification-body';
+
+/// Goldmark writes a soft line break inside a paragraph as a bare newline, which the web keeps
+/// with `whitespace-pre-wrap` on `p`. The HTML renderer collapses whitespace, so those newlines
+/// become `<br>`, inside paragraphs only: between blocks a newline is just markup layout.
+String _keepSoftBreaks(String html) => html.replaceAllMapped(
+  RegExp(r'<p>([\s\S]*?)</p>'),
+  (match) => '<p>${match[1]!.replaceAll('\n', '<br>')}</p>',
+);
+
+/// The web dialog's Tailwind classes on the body, as CSS the HTML renderer understands.
+/// [spaced] is `space-y-2`: Tailwind 4 puts the gap under every top-level block but the last.
+/// Nested blocks have no margin, as after Tailwind's reset.
+Map<String, String>? _webBodyStyles(
+  String? tag,
+  PnPalette pn,
+  Color ink, {
+  required bool spaced,
+}) {
+  final block = {'margin': spaced ? '0 0 8px 0' : '0'};
+  Map<String, String> heading(int px) => {
+    ...block,
+    'font-size': '${px}px',
+    'font-weight': '600',
+  };
+  return switch (tag) {
+    'p' => block,
+    'h1' => heading(20),
+    'h2' => heading(18),
+    'h3' => heading(16),
+    'h4' => heading(14),
+    'ul' || 'ol' => {...block, 'padding-left': '24px'},
+    'li' => {'margin': '0'},
+    'blockquote' => {
+      ...block,
+      'padding-left': '12px',
+      'border-left': '2px solid ${_css(pn.border)}',
+      'color': _css(pn.inkMuted),
+    },
+    'pre' => {
+      ...block,
+      'padding': '8px',
+      'background-color': _css(pn.surfaceMuted),
+    },
+    'code' => {'background-color': _css(pn.surfaceMuted)},
+    'hr' => {'margin': '16px 0'},
+    'strong' => {'font-weight': '600'},
+    // The web link keeps the body colour and is told apart by its underline.
+    'a' => {'color': _css(ink), 'text-decoration': 'underline'},
+    _ => null,
+  };
+}
+
+String _css(Color color) =>
+    'rgba(${(color.r * 255).round()}, ${(color.g * 255).round()}, '
+    '${(color.b * 255).round()}, ${color.a})';
+
+/// Hands `onTapUrl` the href as the server wrote it. The default factory resolves it first, and
+/// without a base URL it turns `//host/path` into an HTTPS link and drops `/path` altogether, so
+/// the web's link rules could not tell the two apart.
+class _RawHrefWidgetFactory extends WidgetFactory {
+  @override
+  String? urlFull(String url) => url.isEmpty ? null : url;
 }
 
 class _PushPermissionPrompt extends StatelessWidget {

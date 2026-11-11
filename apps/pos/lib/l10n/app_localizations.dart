@@ -1033,6 +1033,258 @@ abstract class L10n {
   /// **'Gagal melupakan printer. Coba lagi.'**
   String get menuPrinterForgetFailed;
 
+  /// No description provided for @printerOutputChooseTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Pilih jenis printer'**
+  String get printerOutputChooseTitle;
+
+  /// No description provided for @printerOutputChooseDesc.
+  ///
+  /// In id, this message translates to:
+  /// **'Pilih cara aplikasi Windows ini mencetak.'**
+  String get printerOutputChooseDesc;
+
+  /// No description provided for @printerOutputSectionTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Sambungan printer'**
+  String get printerOutputSectionTitle;
+
+  /// No description provided for @printerOutputFlutterModesNote.
+  ///
+  /// In id, this message translates to:
+  /// **'Printer Windows menerima perintah ESC/POS langsung, atau PDF lewat driver-nya.'**
+  String get printerOutputFlutterModesNote;
+
+  /// No description provided for @printerOutputBluetooth.
+  ///
+  /// In id, this message translates to:
+  /// **'Bluetooth'**
+  String get printerOutputBluetooth;
+
+  /// No description provided for @printerOutputWindowsQueue.
+  ///
+  /// In id, this message translates to:
+  /// **'Printer Windows'**
+  String get printerOutputWindowsQueue;
+
+  /// No description provided for @printerOutputChooseHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Pilih Bluetooth atau printer Windows yang sudah terpasang.'**
+  String get printerOutputChooseHint;
+
+  /// No description provided for @printerOutputSaveFailed.
+  ///
+  /// In id, this message translates to:
+  /// **'Gagal menyimpan pilihan printer. Coba lagi.'**
+  String get printerOutputSaveFailed;
+
+  /// No description provided for @printerLineColumns.
+  ///
+  /// In id, this message translates to:
+  /// **'Karakter per baris'**
+  String get printerLineColumns;
+
+  /// No description provided for @printerLineColumnsHelp.
+  ///
+  /// In id, this message translates to:
+  /// **'Pilih lebar yang sesuai dengan kertas. Cetak ruler untuk mengeceknya.'**
+  String get printerLineColumnsHelp;
+
+  /// No description provided for @printerLineColumnsOption.
+  ///
+  /// In id, this message translates to:
+  /// **'{columns} karakter'**
+  String printerLineColumnsOption(int columns);
+
+  /// No description provided for @printerAutoCutter.
+  ///
+  /// In id, this message translates to:
+  /// **'Printer ini memiliki pemotong otomatis'**
+  String get printerAutoCutter;
+
+  /// No description provided for @printerAutoCutterHelp.
+  ///
+  /// In id, this message translates to:
+  /// **'Matikan untuk printer yang kertasnya disobek manual.'**
+  String get printerAutoCutterHelp;
+
+  /// No description provided for @printerFormatLoadFailed.
+  ///
+  /// In id, this message translates to:
+  /// **'Gagal membaca pengaturan format printer.'**
+  String get printerFormatLoadFailed;
+
+  /// No description provided for @printerFormatSaveFailed.
+  ///
+  /// In id, this message translates to:
+  /// **'Gagal menyimpan pengaturan format printer. Coba lagi.'**
+  String get printerFormatSaveFailed;
+
+  /// No description provided for @printerTestPrint.
+  ///
+  /// In id, this message translates to:
+  /// **'Cetak halaman tes'**
+  String get printerTestPrint;
+
+  /// No description provided for @printerTestPrintTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'TES PRINTER'**
+  String get printerTestPrintTitle;
+
+  /// No description provided for @printerTestPrintSent.
+  ///
+  /// In id, this message translates to:
+  /// **'Halaman tes terkirim ke printer.'**
+  String get printerTestPrintSent;
+
+  /// No description provided for @printerTestPrintFailed.
+  ///
+  /// In id, this message translates to:
+  /// **'Gagal mengirim halaman tes ke printer.'**
+  String get printerTestPrintFailed;
+
+  /// No description provided for @printerWindowsQueueFormattingNote.
+  ///
+  /// In id, this message translates to:
+  /// **'Lebar kertas dan pemotongan diatur oleh driver printer Windows.'**
+  String get printerWindowsQueueFormattingNote;
+
+  /// No description provided for @printerWindowsQueueFormat.
+  ///
+  /// In id, this message translates to:
+  /// **'Format cetak'**
+  String get printerWindowsQueueFormat;
+
+  /// No description provided for @printerWindowsQueueFormatEscPos.
+  ///
+  /// In id, this message translates to:
+  /// **'Printer struk (ESC/POS)'**
+  String get printerWindowsQueueFormatEscPos;
+
+  /// No description provided for @printerWindowsQueueFormatPdf.
+  ///
+  /// In id, this message translates to:
+  /// **'Printer biasa (PDF)'**
+  String get printerWindowsQueueFormatPdf;
+
+  /// No description provided for @printerWindowsQueueFormatEscPosNote.
+  ///
+  /// In id, this message translates to:
+  /// **'Perintah ESC/POS dikirim langsung ke printer, sama seperti lewat Bluetooth.'**
+  String get printerWindowsQueueFormatEscPosNote;
+
+  /// No description provided for @printerWindowsQueueTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Pilih printer Windows'**
+  String get printerWindowsQueueTitle;
+
+  /// No description provided for @printerWindowsQueueDesc.
+  ///
+  /// In id, this message translates to:
+  /// **'Printer yang terpasang di Windows akan muncul di sini. Dokumen dikirim sebagai PDF melalui driver printer yang dipilih.'**
+  String get printerWindowsQueueDesc;
+
+  /// No description provided for @printerWindowsQueueChange.
+  ///
+  /// In id, this message translates to:
+  /// **'Pilih printer Windows'**
+  String get printerWindowsQueueChange;
+
+  /// No description provided for @printerWindowsQueueForget.
+  ///
+  /// In id, this message translates to:
+  /// **'Lupakan printer Windows'**
+  String get printerWindowsQueueForget;
+
+  /// No description provided for @printerWindowsQueueEmpty.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum ada printer terpasang di Windows. Pasang printer dan drivernya, lalu coba lagi.'**
+  String get printerWindowsQueueEmpty;
+
+  /// No description provided for @printerWindowsQueueUnavailable.
+  ///
+  /// In id, this message translates to:
+  /// **'Sedang tidak tersedia'**
+  String get printerWindowsQueueUnavailable;
+
+  /// No description provided for @printerWindowsQueueDefault.
+  ///
+  /// In id, this message translates to:
+  /// **'Default'**
+  String get printerWindowsQueueDefault;
+
+  /// No description provided for @printerWindowsQueueLoadFailed.
+  ///
+  /// In id, this message translates to:
+  /// **'Belum bisa memuat daftar printer Windows. Periksa pengaturan printer lalu coba lagi.'**
+  String get printerWindowsQueueLoadFailed;
+
+  /// No description provided for @printerWindowsQueueSaveFailed.
+  ///
+  /// In id, this message translates to:
+  /// **'Printer sudah dipilih, tetapi perangkat gagal mengingatnya. Coba lagi.'**
+  String get printerWindowsQueueSaveFailed;
+
+  /// No description provided for @printerWindowsQueueNotConfigured.
+  ///
+  /// In id, this message translates to:
+  /// **'Pilih printer Windows yang sudah terpasang terlebih dahulu.'**
+  String get printerWindowsQueueNotConfigured;
+
+  /// No description provided for @printerWindowsQueueNotFound.
+  ///
+  /// In id, this message translates to:
+  /// **'Printer Windows yang dipilih sudah tidak tersedia. Pilih lagi.'**
+  String get printerWindowsQueueNotFound;
+
+  /// No description provided for @printerWindowsQueuePrintFailed.
+  ///
+  /// In id, this message translates to:
+  /// **'Cetakan belum bisa dikirim ke printer Windows.'**
+  String get printerWindowsQueuePrintFailed;
+
+  /// No description provided for @printerWindowsQueueCancelled.
+  ///
+  /// In id, this message translates to:
+  /// **'Pekerjaan cetak Windows dibatalkan.'**
+  String get printerWindowsQueueCancelled;
+
+  /// No description provided for @printerWindowsQueueUnsupported.
+  ///
+  /// In id, this message translates to:
+  /// **'Printer Windows hanya tersedia di aplikasi Windows.'**
+  String get printerWindowsQueueUnsupported;
+
+  /// No description provided for @printerWindowsQueueForgetTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Lupakan printer Windows ini?'**
+  String get printerWindowsQueueForgetTitle;
+
+  /// No description provided for @printerWindowsQueueForgetDesc.
+  ///
+  /// In id, this message translates to:
+  /// **'Queue Windows yang tersimpan akan dihapus. Pengaturan printer Bluetooth tetap seperti semula.'**
+  String get printerWindowsQueueForgetDesc;
+
+  /// No description provided for @printerWindowsQueueForgetConfirm.
+  ///
+  /// In id, this message translates to:
+  /// **'Ya, lupakan'**
+  String get printerWindowsQueueForgetConfirm;
+
+  /// No description provided for @printerWindowsQueueForgetFailed.
+  ///
+  /// In id, this message translates to:
+  /// **'Gagal melupakan printer Windows. Coba lagi.'**
+  String get printerWindowsQueueForgetFailed;
+
   /// No description provided for @inspectorTitle.
   ///
   /// In id, this message translates to:
@@ -1500,6 +1752,18 @@ abstract class L10n {
   /// In id, this message translates to:
   /// **'*** TRANSAKSI DIBATALKAN ***'**
   String get receiptVoided;
+
+  /// No description provided for @posPrintCategoryTicket.
+  ///
+  /// In id, this message translates to:
+  /// **'Cetak {category}'**
+  String posPrintCategoryTicket(String category);
+
+  /// No description provided for @posUncategorized.
+  ///
+  /// In id, this message translates to:
+  /// **'Tanpa Kategori'**
+  String get posUncategorized;
 
   /// No description provided for @receiptNoItems.
   ///

@@ -41,7 +41,7 @@ PendingSaleReceipt receipt() => const PendingSaleReceipt(
           price: 1000,
           lineSubtotal: 1000,
           lineTotal: 1000,
-          product: NamedRef(id: 'prd_1', name: 'Kopi Susu'),
+          product: SalesInvoiceItemProduct(id: 'prd_1', name: 'Kopi Susu'),
         ),
       ],
     );

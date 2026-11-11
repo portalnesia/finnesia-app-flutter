@@ -295,6 +295,55 @@
   "menuPrinterForgetDesc": "The tablet will not print to this printer again until you connect one.",
   "menuPrinterForgetConfirm": "Yes, forget it",
   "menuPrinterForgetFailed": "Could not forget the printer. Try again.",
+  "printerOutputChooseTitle": "Choose printer type",
+  "printerOutputChooseDesc": "Select how this Windows app should print.",
+  "printerOutputSectionTitle": "Printer connection",
+  "printerOutputFlutterModesNote": "A Windows printer takes ESC/POS commands directly, or a PDF through its driver.",
+  "printerOutputBluetooth": "Bluetooth",
+  "printerOutputWindowsQueue": "Windows printer",
+  "printerOutputChooseHint": "Choose Bluetooth or an installed Windows printer.",
+  "printerOutputSaveFailed": "Could not save the printer selection. Try again.",
+  "printerLineColumns": "Characters per line",
+  "printerLineColumnsHelp": "Choose the width that fits your paper. Print the ruler to check it.",
+  "printerLineColumnsOption": "{columns} characters",
+  "@printerLineColumnsOption": {
+    "placeholders": {
+      "columns": {
+        "type": "int"
+      }
+    }
+  },
+  "printerAutoCutter": "This printer has an automatic cutter",
+  "printerAutoCutterHelp": "Turn this off for manual tear-off printers.",
+  "printerFormatLoadFailed": "Could not read the printer formatting settings.",
+  "printerFormatSaveFailed": "Could not save the printer formatting settings. Try again.",
+  "printerTestPrint": "Print test page",
+  "printerTestPrintTitle": "PRINTER TEST",
+  "printerTestPrintSent": "Test page sent to the printer.",
+  "printerTestPrintFailed": "Could not send the test page to the printer.",
+  "printerWindowsQueueFormattingNote": "Paper width and cutting are controlled by the Windows printer driver.",
+  "printerWindowsQueueFormat": "Print format",
+  "printerWindowsQueueFormatEscPos": "Receipt printer (ESC/POS)",
+  "printerWindowsQueueFormatPdf": "Regular printer (PDF)",
+  "printerWindowsQueueFormatEscPosNote": "ESC/POS commands go straight to the printer, the same as over Bluetooth.",
+  "printerWindowsQueueTitle": "Select a Windows printer",
+  "printerWindowsQueueDesc": "Installed Windows printers appear here. Documents are sent as PDF through the selected printer driver.",
+  "printerWindowsQueueChange": "Choose Windows printer",
+  "printerWindowsQueueForget": "Forget Windows printer",
+  "printerWindowsQueueEmpty": "No printers are installed in Windows. Install the printer and its driver, then try again.",
+  "printerWindowsQueueUnavailable": "Not currently available",
+  "printerWindowsQueueDefault": "Default",
+  "printerWindowsQueueLoadFailed": "Could not list Windows printers. Check the printer setup and try again.",
+  "printerWindowsQueueSaveFailed": "The printer was selected, but this device could not remember it. Try again.",
+  "printerWindowsQueueNotConfigured": "Choose an installed Windows printer first.",
+  "printerWindowsQueueNotFound": "The selected Windows printer is no longer available. Choose it again.",
+  "printerWindowsQueuePrintFailed": "Could not send the job to the Windows printer.",
+  "printerWindowsQueueCancelled": "The Windows print job was cancelled.",
+  "printerWindowsQueueUnsupported": "Windows printer queues are only available in the Windows app.",
+  "printerWindowsQueueForgetTitle": "Forget this Windows printer?",
+  "printerWindowsQueueForgetDesc": "The saved Windows queue will be removed. Your Bluetooth printer setting will remain unchanged.",
+  "printerWindowsQueueForgetConfirm": "Yes, forget it",
+  "printerWindowsQueueForgetFailed": "Could not forget the Windows printer. Try again.",
   "inspectorTitle": "Request inspector",
   "inspectorEmpty": "No requests recorded yet.",
   "inspectorClear": "Clear all",
@@ -373,6 +422,15 @@
   "receiptLoadFailed": "The receipt could not be loaded. Try again.",
   "receiptPaymentMethod": "Payment Method",
   "receiptVoided": "*** TRANSACTION VOIDED ***",
+  "posPrintCategoryTicket": "Print {category}",
+  "@posPrintCategoryTicket": {
+    "placeholders": {
+      "category": {
+        "type": "String"
+      }
+    }
+  },
+  "posUncategorized": "Uncategorized",
   "receiptNoItems": "No item details",
   "receiptPaidBy": "Paid ({method})",
   "@receiptPaidBy": {

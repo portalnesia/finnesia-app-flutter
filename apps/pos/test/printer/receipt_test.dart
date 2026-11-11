@@ -55,7 +55,7 @@ POSSale _sale({
             price: 25000,
             lineSubtotal: 50000,
             lineTotal: 50000,
-            product: NamedRef(id: 'p', name: 'Kopi Susu'),
+            product: SalesInvoiceItemProduct(id: 'p', name: 'Kopi Susu'),
           ),
         ],
   ),
@@ -128,7 +128,7 @@ void main() {
               price: 10000,
               lineSubtotal: 10000,
               lineTotal: 10000,
-              product: NamedRef(id: 'gone', name: ''),
+              product: SalesInvoiceItemProduct(id: 'gone', name: ''),
             ),
           ],
         ),
@@ -191,6 +191,17 @@ void main() {
       expect(
         _paper(_sale(), footerText: 'Terima kasih'),
         contains('Terima kasih'),
+      );
+    });
+
+    test('always centers Finnesia branding after the tenant footer', () {
+      final paper = _paper(_sale(), footerText: 'Terima kasih');
+
+      expect(
+        paper,
+        contains(
+          '\x1Ba\x01Terima kasih\n\nFinnesia.com\nAplikasi Kasir Otomatis\n',
+        ),
       );
     });
 

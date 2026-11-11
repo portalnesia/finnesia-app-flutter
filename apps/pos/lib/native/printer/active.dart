@@ -5,8 +5,10 @@
  * Written by Putu Aditya <aditya@portalnesia.com>
  */
 
+import 'package:pn_types/src/native/print_queue_port.dart';
 import 'package:pn_types/src/native/printer_port.dart';
 import 'package:pos/native/printer/printer_ble.dart';
+import 'package:pos/native/printer/windows_print_queue.dart';
 
 /// The thermal printer, over BLE. Widgets and `printer_service` use this, never the plugin
 /// (`.claude/rules/native-ports.md` §1.1).
@@ -16,3 +18,10 @@ PrinterPort _printer = BlePrinter();
 /// Replaces the implementation. Called by a test with a fake; not by the app
 /// (`.claude/rules/native-ports.md` §2.4).
 void setPrinter(PrinterPort impl) => _printer = impl;
+
+/// The ordinary Windows print queue. It accepts PDF documents and lets the installed driver
+/// render them; this is deliberately a separate contract from the BLE ESC/POS byte port.
+PrintQueuePort get printQueue => _printQueue;
+PrintQueuePort _printQueue = WindowsPrintQueueAdapter();
+
+void setPrintQueue(PrintQueuePort impl) => _printQueue = impl;

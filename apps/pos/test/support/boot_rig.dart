@@ -17,6 +17,7 @@ import 'package:pn_types/src/native/app_info_fake.dart';
 import 'package:pn_types/src/native/device_info_fake.dart';
 import 'package:pn_types/src/native/link_port.dart';
 import 'package:pn_types/src/native/opener_fake.dart';
+import 'package:pn_types/src/native/print_queue_fake.dart';
 import 'package:pn_types/src/native/preferences_fake.dart';
 import 'package:pn_types/src/native/printer_fake.dart';
 import 'package:pos/native/scanner/scanner_fake.dart';
@@ -67,6 +68,9 @@ class Rig {
 
   /// The thermal printer. Finds nothing until a test hands it devices: `printer = FakePrinter([..])`.
   FakePrinter printer = FakePrinter();
+
+  /// Ordinary installed queues for Windows PDF print tests.
+  final FakePrintQueuePort printQueue = FakePrintQueuePort();
 
   /// The camera that reads the pairing QR. Reads nothing until a test says so: `scanner.read(..)`.
   final scanner = FakeScanner();
@@ -122,6 +126,7 @@ class Rig {
     deviceInfo: deviceInfo,
     appInfo: appInfo,
     printer: printer,
+    printQueue: printQueue,
     scanner: scanner,
     analytics: analytics,
     language: language,

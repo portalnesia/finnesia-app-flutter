@@ -38,6 +38,8 @@ dependencies:
   url_launcher: ^6.3.2
   flutter_secure_storage: ^11.2.0
   universal_ble: ^2.3.0
+  # RAW jobs to a Windows spooler queue (`lib/native/printer/windows_raw_spooler.dart`).
+  ffi: ^2.2.0
   shared_preferences: ^2.5.5
   flutter_localizations:
     sdk: flutter
@@ -65,6 +67,8 @@ dependencies:
   # Shorebird patch, which never changes the installed app's versionCode at all. Cannot
   # be exercised locally: Play Core requires the app to be installed through Play.
   in_app_update: ^5.0.0
+  pdf: ^3.13.0
+  printing: ^5.15.1
 dev_dependencies:
   build_runner: ^2.4.0
   flutter_test:
@@ -89,6 +93,10 @@ flutter:
 
   assets:
     - assets/logo/finnesia.png
+    - assets/fonts/NotoSans-Regular.ttf
+    - assets/fonts/NotoSans-Bold.ttf
+    - assets/fonts/NotoSansMono-Regular.ttf
+    - assets/fonts/NotoSansMono-Bold.ttf
     - shorebird.yaml
 
 # MSIX packaging — two jobs, and the second one is why the values below are what they are.
@@ -150,6 +158,10 @@ msix_config:
   # adaptive icon does, so the transparent-background glyph would be white on white in light mode.
   # Same source and reasoning as the Windows `.ico` (`tool/generate_windows_icon.dart`).
   logo_path: assets/icon/icon.png
+  # Keep the logo's margin. By default the tool `trim()`s the logo first, cutting every border the
+  # colour of its top-left pixel; on this full-bleed orange icon that removed the orange margin,
+  # and the glyph filled the taskbar icon edge to edge.
+  trim_logo: false
   # Sideload: sign with a self-signed test certificate. The certificate lands next to the .msix
   # and must be installed to Local Machine > Trusted People before the package opens.
   sign_msix: true

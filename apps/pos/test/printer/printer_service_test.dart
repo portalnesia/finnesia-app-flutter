@@ -6,8 +6,8 @@
  */
 
 import 'dart:convert';
-import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pn_types/src/native/printer_fake.dart';
 import 'package:pn_types/src/native/printer_port.dart';
@@ -91,6 +91,160 @@ void main() {
         throwsA(isA<StoreException>()),
       );
     });
+  });
+
+  group('Windows printer mode and queue settings', () {
+    const office = (
+      id: 'windows-printer://office',
+      name: 'Office Laser',
+      isDefault: true,
+      isAvailable: false,
+    );
+
+    test('a fresh Windows install has no implicit printer choice', () async {
+      final store = FakeStorePort();
+
+      expect(
+        await readPrinterMode(store, platform: TargetPlatform.windows),
+        isNull,
+      );
+      expect(store.values, isEmpty);
+    });
+
+    test(
+      'a saved legacy Bluetooth printer migrates to Bluetooth without rewrite',
+      () async {
+        final store = FakeStorePort({printerKey: saved(printer1)});
+
+        expect(
+          await readPrinterMode(store, platform: TargetPlatform.windows),
+          PrinterMode.bluetooth,
+        );
+        expect(store.values, {printerKey: saved(printer1)});
+        expect(await readSavedPrinter(store), printer1);
+      },
+    );
+
+    test(
+      'non-Windows platforms stay on Bluetooth even with a queue mode saved',
+      () async {
+        final store = FakeStorePort({printerOutputModeKey: 'windows_queue'});
+
+        expect(
+          await readPrinterMode(store, platform: TargetPlatform.android),
+          PrinterMode.bluetooth,
+        );
+      },
+    );
+
+    test(
+      'remembers queue identity separately and preserves the BLE pairing',
+      () async {
+        final store = FakeStorePort({printerKey: saved(printer1)});
+
+        await rememberWindowsPrinterQueue(office, store);
+
+        expect(jsonDecode(store.values[windowsPrinterQueueKey]!), {
+          'id': office.id,
+          'name': office.name,
+        });
+        expect(store.values[printerOutputModeKey], 'windows_queue');
+        expect(
+          await readPrinterMode(store, platform: TargetPlatform.windows),
+          PrinterMode.windowsQueue,
+        );
+        expect(await readSavedPrinter(store), printer1);
+        // Availability/default status is runtime metadata; only stable queue identity is persisted.
+        expect(await readSavedWindowsPrinterQueue(store), (
+          id: office.id,
+          name: office.name,
+          isDefault: false,
+          isAvailable: true,
+        ));
+      },
+    );
+
+    test(
+      'forgetting the Windows queue leaves the legacy Bluetooth setting intact',
+      () async {
+        final store = FakeStorePort({printerKey: saved(printer1)});
+        await rememberWindowsPrinterQueue(office, store);
+
+        await clearWindowsPrinterQueue(store);
+
+        expect(store.values, {printerKey: saved(printer1)});
+        expect(await readSavedWindowsPrinterQueue(store), isNull);
+        expect(
+          await readPrinterMode(store, platform: TargetPlatform.windows),
+          PrinterMode.bluetooth,
+        );
+      },
+    );
+
+    test('malformed queue data is unconfigured, while storage failure passes through', () async {
+      for (final raw in [
+        'not json',
+        '[]',
+        '{}',
+        '{"id":"", "name":"Office"}',
+      ]) {
+        expect(
+          await readSavedWindowsPrinterQueue(
+            FakeStorePort({windowsPrinterQueueKey: raw}),
+          ),
+          isNull,
+          reason: raw,
+        );
+      }
+      final store = FakeStorePort()..failNext(StoreException('disk full'));
+      await expectLater(
+        readSavedWindowsPrinterQueue(store),
+        throwsA(isA<StoreException>()),
+      );
+    });
+
+    // A Windows queue is usually the receipt printer itself, so it gets the same ESC/POS bytes
+    // as Bluetooth unless the cashier picked PDF for an ordinary page printer.
+    test('a queue sends ESC/POS unless PDF was chosen', () async {
+      expect(
+        await readWindowsQueueFormat(FakeStorePort()),
+        WindowsQueueFormat.escPos,
+      );
+      for (final raw in ['', 'bogus', 'PDF']) {
+        expect(
+          await readWindowsQueueFormat(
+            FakeStorePort({windowsQueueFormatKey: raw}),
+          ),
+          WindowsQueueFormat.escPos,
+          reason: raw,
+        );
+      }
+      expect(
+        await readWindowsQueueFormat(
+          FakeStorePort({windowsQueueFormatKey: 'pdf'}),
+        ),
+        WindowsQueueFormat.pdf,
+      );
+    });
+
+    test('saves the queue format and reads it back', () async {
+      final store = FakeStorePort();
+      await saveWindowsQueueFormat(WindowsQueueFormat.pdf, store);
+      expect(await readWindowsQueueFormat(store), WindowsQueueFormat.pdf);
+      await saveWindowsQueueFormat(WindowsQueueFormat.escPos, store);
+      expect(await readWindowsQueueFormat(store), WindowsQueueFormat.escPos);
+    });
+
+    test(
+      'lets a failing store through when reading the queue format',
+      () async {
+        final store = FakeStorePort()..failNext(StoreException('disk full'));
+        await expectLater(
+          readWindowsQueueFormat(store),
+          throwsA(isA<StoreException>()),
+        );
+      },
+    );
   });
 
   group('pairPrinter', () {

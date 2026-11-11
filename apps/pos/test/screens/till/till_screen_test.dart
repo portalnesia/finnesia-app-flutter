@@ -23,6 +23,7 @@ import 'package:pn_types/src/session.dart';
 import 'package:pos/app/app_scope.dart';
 import 'package:pos/app/pos_app.dart';
 import 'package:pos/l10n/app_localizations.dart';
+import 'package:pos/printer/printer_service.dart';
 import 'package:pos/screens/queue/pending_sales_screen.dart';
 import 'package:pos/screens/till/cart_pane.dart';
 import 'package:pos/screens/till/catalog_pane.dart';
@@ -364,6 +365,45 @@ void main() {
   });
 
   group('the cart', () {
+    // `pos-cart-page.tsx` prints the kitchen/bar ticket straight from the cart, before any sale.
+    testWidgets('prints a category ticket of what is in the basket', (
+      tester,
+    ) async {
+      final http = RoutedHttp();
+      catalog(
+        http,
+        products: [
+          {
+            ...kopi,
+            'category': {'id': 'cat_1', 'name': 'Minuman'},
+          },
+          teh,
+        ],
+      );
+      final rig = Rig({
+        ...storedSession(signedIn),
+        printerKey: jsonEncode({'address': 'AA:BB', 'name': 'Dapur'}),
+      });
+      await pumpTill(tester, http, rig: rig);
+      expect(find.text(l10n.posPrintCategoryTicket('Minuman')), findsNothing);
+
+      await tapProduct(tester, 'Kopi');
+      await tapProduct(tester, 'Teh');
+      await tester.tap(find.text(l10n.posPrintCategoryTicket('Minuman')));
+      await tester.pumpAndSettle();
+
+      final text = String.fromCharCodes(rig.printer.written.single);
+      expect(text, contains('Kopi'));
+      expect(text, contains('x1'));
+      expect(text, isNot(contains('Teh')));
+      expect(
+        find.text(l10n.posPrintCategoryTicket(l10n.posUncategorized)),
+        findsOneWidget,
+      );
+      // Printing leaves the basket as it was.
+      expect(line('Kopi'), findsOneWidget);
+    });
+
     testWidgets('starts empty, and says how to fill it', (tester) async {
       final http = RoutedHttp();
       catalog(http);
@@ -1367,6 +1407,34 @@ void main() {
     }
 
     final heldButton = find.byKey(const Key('held-button'));
+
+    // `pos-held-orders-dialog.tsx`: the kitchen should not wait for the basket to be resumed.
+    testWidgets(
+      'a held basket prints its category ticket without being resumed',
+      (tester) async {
+        final http = RoutedHttp();
+        catalog(http);
+        final rig = Rig({
+          ...storedSession(signedIn),
+          printerKey: jsonEncode({'address': 'AA:BB', 'name': 'Dapur'}),
+        });
+        await rig.holdStore.writeAll([held('a', 'Meja 1')]);
+        await pumpTill(tester, http, rig: rig);
+
+        await tester.tap(heldButton);
+        await tester.pumpAndSettle();
+        await tester.tap(
+          find.text(l10n.posPrintCategoryTicket(l10n.posUncategorized)),
+        );
+        await tester.pumpAndSettle();
+
+        final text = String.fromCharCodes(rig.printer.written.single);
+        expect(text, contains('Kopi'));
+        expect(text, contains('x2'));
+        expect((await rig.holdStore.readAll()).single.label, 'Meja 1');
+        expect(find.text(l10n.heldTitle), findsOneWidget);
+      },
+    );
 
     testWidgets('the button says how many are waiting', (tester) async {
       await pumpHeld(tester, seed: [held('a', 'Meja 1'), held('b', 'Meja 2')]);

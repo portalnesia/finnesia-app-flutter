@@ -49,6 +49,18 @@ import 'pos_print_category.dart';
 import 'pos_receipt.dart';
 import 'pos_tender.dart';
 
+/// Manual-tear printers need a margin at the start and enough tail to reach the tear bar.
+/// A printer with its own cutter supplies that margin after each cut, so it needs no padding.
+List<Uint8List> _ticketStart(bool autoCutter) => [
+      cmdInit(),
+      if (!autoCutter) cmdFeed(2),
+    ];
+
+/// Automatic cutters feed past their blade before a partial cut; manual-tear printers get
+/// tail feed only and must not receive an ESC/POS cut command.
+List<Uint8List> _ticketEnd(bool autoCutter) =>
+    autoCutter ? [cmdCut()] : [cmdFeed(5)];
+
 /// One payment row as a receipt or report reads it.
 ///
 /// A record rather than a class: two fields, compared by value, never serialized.
@@ -163,6 +175,8 @@ Uint8List formatReceiptEscPos(
   ReceiptEscPosLabels labels, [
   String? footerText,
   bool? showBranding,
+  int columns = 32,
+  bool autoCutter = false,
 ]) {
   final lines = posReceiptLines(
     invoiceItems: sale.invoiceItems,
@@ -171,8 +185,7 @@ Uint8List formatReceiptEscPos(
   final payments = sale.payments ?? const <PaymentLine>[];
   final singleMethod = payments.length == 1;
   final ops = <Uint8List>[
-    cmdInit(),
-    cmdFeed(2),
+    ..._ticketStart(autoCutter),
     cmdAlign(EscPosAlign.center),
     cmdBold(true),
     cmdText(labels.title),
@@ -206,7 +219,7 @@ Uint8List formatReceiptEscPos(
       '${labels.paymentMethodLabel}: ${labels.tenderMethod(method)}',
     ));
   }
-  ops.add(cmdDivider());
+  ops.add(cmdDivider(columns));
 
   if (lines.isEmpty) {
     ops.add(cmdText(labels.noItems));
@@ -214,32 +227,31 @@ Uint8List formatReceiptEscPos(
     for (final line in lines) {
       ops.add(cmdText(line.name));
       ops.add(cmdLineColumns(
-        '${jsNumber(line.quantity)} x ${formatCurrency(line.price)}',
-        formatCurrency(line.total),
-      ));
+          '${jsNumber(line.quantity)} x ${formatCurrency(line.price)}',
+          formatCurrency(line.total),
+          columns));
       // `> 0`, not `>= 0`: a zero discount row is noise on every full-price line.
       if (line.discount > 0) {
         ops.add(cmdLineColumns(
-          labels.discount,
-          '-${formatCurrency(line.discount)}',
-        ));
+            labels.discount, '-${formatCurrency(line.discount)}', columns));
       }
     }
   }
 
-  ops.add(cmdDivider());
-  ops.add(cmdLineColumns(labels.subtotal, formatCurrency(sale.subtotal)));
+  ops.add(cmdDivider(columns));
+  ops.add(
+      cmdLineColumns(labels.subtotal, formatCurrency(sale.subtotal), columns));
   if (sale.discountAmount > 0) {
     ops.add(cmdLineColumns(
-      labels.discount,
-      '-${formatCurrency(sale.discountAmount)}',
-    ));
+        labels.discount, '-${formatCurrency(sale.discountAmount)}', columns));
   }
   if (sale.taxAmount > 0) {
-    ops.add(cmdLineColumns(labels.tax, formatCurrency(sale.taxAmount)));
+    ops.add(
+        cmdLineColumns(labels.tax, formatCurrency(sale.taxAmount), columns));
   }
   ops.add(cmdBold(true));
-  ops.add(cmdLineColumns(labels.paymentTotal, formatCurrency(sale.grandTotal)));
+  ops.add(cmdLineColumns(
+      labels.paymentTotal, formatCurrency(sale.grandTotal), columns));
   ops.add(cmdBold(false));
   ops.add(cmdText(''));
 
@@ -247,29 +259,21 @@ Uint8List formatReceiptEscPos(
   if (singleMethod) {
     if (hasCash) {
       ops.add(cmdLineColumns(
-        labels.cashTendered,
-        formatCurrency(sale.tenderedAmount),
-      ));
+          labels.cashTendered, formatCurrency(sale.tenderedAmount), columns));
       ops.add(cmdBold(true));
       ops.add(cmdLineColumns(
-        labels.change,
-        formatCurrency(sale.changeAmount),
-      ));
+          labels.change, formatCurrency(sale.changeAmount), columns));
       ops.add(cmdBold(false));
     }
   } else {
     for (final payment in payments) {
-      ops.add(cmdLineColumns(
-        labels.paidByMethod(payment.method),
-        formatCurrency(payment.amount),
-      ));
+      ops.add(cmdLineColumns(labels.paidByMethod(payment.method),
+          formatCurrency(payment.amount), columns));
     }
     if (hasCash) {
       ops.add(cmdBold(true));
       ops.add(cmdLineColumns(
-        labels.change,
-        formatCurrency(sale.changeAmount),
-      ));
+          labels.change, formatCurrency(sale.changeAmount), columns));
       ops.add(cmdBold(false));
     }
   }
@@ -290,8 +294,7 @@ Uint8List formatReceiptEscPos(
     );
   }
 
-  ops.add(cmdFeed(5));
-  ops.add(cmdCut());
+  ops.addAll(_ticketEnd(autoCutter));
   return buildCommands(ops);
 }
 
@@ -301,11 +304,15 @@ class CategoryTicketEscPosLabels {
     required this.noItems,
     required this.tableNumber,
     required this.queueNumber,
+    this.finnesiaBranding = '',
   });
 
   final String noItems;
   final String tableNumber;
   final String queueNumber;
+
+  /// Printed under the lines when the ticket is branded, one line per `\n`.
+  final String finnesiaBranding;
 }
 
 /// Builds a kitchen/bar ticket for one top-level category.
@@ -332,10 +339,12 @@ Uint8List formatCategoryTicketEscPos(
   String? tableNumber,
   String? queueNumber,
   DateTime? now,
+  int columns = 32,
+  bool autoCutter = false,
+  bool? showBranding,
 ]) {
   final ops = <Uint8List>[
-    cmdInit(),
-    cmdFeed(2),
+    ..._ticketStart(autoCutter),
     cmdAlign(EscPosAlign.center),
     cmdBold(true),
     cmdText(categoryName),
@@ -356,19 +365,26 @@ Uint8List formatCategoryTicketEscPos(
   if (queueNumber != null && queueNumber.isNotEmpty) {
     ops.add(cmdText('${labels.queueNumber}: $queueNumber'));
   }
-  ops.add(cmdDivider());
+  ops.add(cmdDivider(columns));
 
   if (lines.isEmpty) {
     ops.add(cmdAlign(EscPosAlign.center));
     ops.add(cmdText(labels.noItems));
   } else {
     for (final line in lines) {
-      ops.add(cmdLineColumns(line.name, 'x${jsNumber(line.quantity)}'));
+      ops.add(
+          cmdLineColumns(line.name, 'x${jsNumber(line.quantity)}', columns));
     }
   }
 
-  ops.add(cmdFeed(5));
-  ops.add(cmdCut());
+  // The kitchen ticket has no shop footer, so the branding follows one blank line.
+  if (showBranding == true) {
+    ops.add(cmdText(''));
+    ops.add(cmdAlign(EscPosAlign.center));
+    ops.add(cmdText(labels.finnesiaBranding));
+  }
+
+  ops.addAll(_ticketEnd(autoCutter));
   return buildCommands(ops);
 }
 
@@ -468,6 +484,8 @@ Uint8List formatShiftReportEscPos(
   bool? showProductSales,
   String? footerText,
   bool? showBranding,
+  int columns = 32,
+  bool autoCutter = false,
 ]) {
   // `?? 0` is load-bearing, not defensive: a card-only shift has no CASH key at all, and
   // the deposit total would become NaN without it.
@@ -476,30 +494,28 @@ Uint8List formatShiftReportEscPos(
       summary.openingCash + cashSales - summary.cashOut - summary.cashDrop;
 
   final ops = <Uint8List>[
-    cmdInit(),
-    cmdFeed(2),
+    ..._ticketStart(autoCutter),
     cmdAlign(EscPosAlign.center),
     cmdBold(true),
     cmdText(labels.title),
     cmdBold(false),
     cmdText(summary.number),
     cmdAlign(EscPosAlign.left),
-    cmdDivider(),
+    cmdDivider(columns),
   ];
 
   final cashierName = summary.cashierName;
   if (cashierName != null && cashierName.isNotEmpty) {
-    ops.add(cmdLineColumns(labels.cashier, cashierName));
+    ops.add(cmdLineColumns(labels.cashier, cashierName, columns));
   }
-  ops.add(cmdLineColumns(labels.openedAt, formatDateTime(summary.openedAt)));
-  ops.add(cmdLineColumns(labels.printedAt, formatDateTime(printedAt)));
+  ops.add(cmdLineColumns(
+      labels.openedAt, formatDateTime(summary.openedAt), columns));
+  ops.add(cmdLineColumns(labels.printedAt, formatDateTime(printedAt), columns));
   ops.add(cmdBold(true));
   ops.add(cmdLineColumns(
-    labels.totalSales,
-    formatCurrency(summary.totalSales),
-  ));
+      labels.totalSales, formatCurrency(summary.totalSales), columns));
   ops.add(cmdBold(false));
-  ops.add(cmdDivider());
+  ops.add(cmdDivider(columns));
 
   ops.add(cmdBold(true));
   ops.add(cmdText(labels.paymentsByMethod));
@@ -509,46 +525,39 @@ Uint8List formatShiftReportEscPos(
   // QRIS and look entirely plausible.
   for (final entry in summary.salesByMethod.entries) {
     ops.add(cmdLineColumns(
-      labels.tenderMethod(entry.key),
-      formatCurrency(entry.value),
-    ));
+        labels.tenderMethod(entry.key), formatCurrency(entry.value), columns));
   }
-  ops.add(cmdLineColumns(labels.total, formatCurrency(summary.totalSales)));
-  ops.add(cmdDivider());
+  ops.add(cmdLineColumns(
+      labels.total, formatCurrency(summary.totalSales), columns));
+  ops.add(cmdDivider(columns));
 
   ops.add(cmdBold(true));
   ops.add(cmdText(labels.deposit));
   ops.add(cmdBold(false));
   ops.add(cmdLineColumns(
-    labels.openingCash,
-    formatCurrency(summary.openingCash),
-  ));
-  ops.add(cmdLineColumns(labels.cashSales, formatCurrency(cashSales)));
-  ops.add(cmdLineColumns(
-    labels.cashOut,
-    '-${formatCurrency(summary.cashOut + summary.cashDrop)}',
-  ));
+      labels.openingCash, formatCurrency(summary.openingCash), columns));
+  ops.add(cmdLineColumns(labels.cashSales, formatCurrency(cashSales), columns));
+  ops.add(cmdLineColumns(labels.cashOut,
+      '-${formatCurrency(summary.cashOut + summary.cashDrop)}', columns));
   ops.add(cmdBold(true));
   ops.add(cmdLineColumns(
-    labels.totalDeposit,
-    formatCurrency(totalDeposit),
-  ));
+      labels.totalDeposit, formatCurrency(totalDeposit), columns));
   ops.add(cmdBold(false));
-  ops.add(cmdDivider());
+  ops.add(cmdDivider(columns));
 
   if (showProductSales == true && summary.productSales.isNotEmpty) {
     // A second divider, so the section is set off from the deposit above it. Present in
     // the source, and it does produce two adjacent divider rows there.
-    ops.add(cmdDivider());
+    ops.add(cmdDivider(columns));
     ops.add(cmdBold(true));
     ops.add(cmdText(labels.productsSoldTitle));
     ops.add(cmdBold(false));
     for (final line in summary.productSales) {
       ops.add(cmdText(line.productName));
       ops.add(cmdLineColumns(
-        '${jsNumber(line.quantity)} x ${formatCurrency(line.unitPrice)}',
-        formatCurrency(line.total),
-      ));
+          '${jsNumber(line.quantity)} x ${formatCurrency(line.unitPrice)}',
+          formatCurrency(line.total),
+          columns));
     }
     // Summed from the product lines themselves, not from `total_sales` — the two differ
     // whenever a sale carried a discount or a tax, and the audit requirement (I18) is that
@@ -559,13 +568,11 @@ Uint8List formatShiftReportEscPos(
     );
     ops.add(cmdBold(true));
     ops.add(cmdLineColumns(
-      labels.productsSoldTotal,
-      formatCurrency(productsTotal),
-    ));
+        labels.productsSoldTotal, formatCurrency(productsTotal), columns));
     ops.add(cmdBold(false));
   }
 
-  ops.add(cmdDivider());
+  ops.add(cmdDivider(columns));
   ops.add(cmdBold(true));
   ops.add(cmdText(labels.nonCashPayments));
   ops.add(cmdBold(false));
@@ -581,9 +588,7 @@ Uint8List formatShiftReportEscPos(
         '${tender.saleNumber} ${labels.tenderMethod(tender.method)}',
       ));
       ops.add(cmdLineColumns(
-        tender.reference ?? '',
-        formatCurrency(tender.amount),
-      ));
+          tender.reference ?? '', formatCurrency(tender.amount), columns));
     }
   }
 
@@ -596,9 +601,30 @@ Uint8List formatShiftReportEscPos(
     );
   }
 
-  ops.add(cmdFeed(5));
-  ops.add(cmdCut());
+  ops.addAll(_ticketEnd(autoCutter));
   return buildCommands(ops);
+}
+
+/// Prints a ruler so a cashier can see whether the selected character width fits the paper.
+Uint8List formatTestPageEscPos(
+  String title,
+  String columnsLabel,
+  int columns, [
+  bool autoCutter = false,
+]) {
+  final ruler = List.generate(columns, (index) => '${(index + 1) % 10}').join();
+  return buildCommands([
+    ..._ticketStart(autoCutter),
+    cmdAlign(EscPosAlign.center),
+    cmdBold(true),
+    cmdText(title),
+    cmdBold(false),
+    cmdText(columnsLabel),
+    cmdAlign(EscPosAlign.left),
+    cmdText(ruler),
+    cmdDivider(columns),
+    ..._ticketEnd(autoCutter),
+  ]);
 }
 
 /// Whether the source's `if (footerText || showBranding)` branch runs.
@@ -627,5 +653,10 @@ void _addFooter(
   for (final line in footerText?.split('\n') ?? const <String>[]) {
     ops.add(cmdText(line));
   }
-  if (showBranding == true) ops.add(cmdText(brandingText));
+  if (showBranding == true) {
+    final hasFooterText =
+        footerText?.split('\n').any((line) => line.isNotEmpty) ?? false;
+    if (hasFooterText) ops.add(cmdText(''));
+    ops.add(cmdText(brandingText));
+  }
 }

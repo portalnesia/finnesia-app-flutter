@@ -55,8 +55,8 @@ void main() {
       expect(cmdFeed(), equals(Uint8List.fromList([0x1b, 0x64, 1])));
     });
 
-    test('cmdCut emits a partial-cut sequence', () {
-      expect(cmdCut(), equals(Uint8List.fromList([0x1d, 0x56, 1])));
+    test('cmdCut feeds to the blade before a partial cut', () {
+      expect(cmdCut(), equals(Uint8List.fromList([0x1d, 0x56, 66, 0])));
     });
 
     test('cmdText encodes UTF-8 bytes with a trailing newline', () {

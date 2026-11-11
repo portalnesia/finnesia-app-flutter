@@ -9,6 +9,8 @@
 
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import 'category.dart';
+
 part 'pos.freezed.dart';
 part 'pos.g.dart';
 
@@ -120,12 +122,28 @@ abstract class POSSalePayment with _$POSSalePayment {
       _$POSSalePaymentFromJson(json);
 }
 
+/// The product on an invoice line: its name for the receipt, its category for the kitchen ticket.
+///
+/// Not the whole `Product`: a full `Product.fromJson` would fail the sale over a catalogue field
+/// neither reads. `explicitToJson` for the same reason as [SalesInvoiceItem]: the offline queue
+/// writes the line back out, category and parent included.
+@freezed
+abstract class SalesInvoiceItemProduct with _$SalesInvoiceItemProduct {
+  @JsonSerializable(explicitToJson: true)
+  const factory SalesInvoiceItemProduct({
+    required String id,
+    String? name,
+    @JsonKey(includeIfNull: false) Category? category,
+  }) = _SalesInvoiceItemProduct;
+
+  factory SalesInvoiceItemProduct.fromJson(Map<String, dynamic> json) =>
+      _$SalesInvoiceItemProductFromJson(json);
+}
+
 /// One line of the goods a sale sold.
 ///
-/// Ported from `SalesInvoiceItem` in `packages/types/src/sales.ts`, partially: what the receipt
-/// and the sale detail read. [product] is a [NamedRef] and not the whole `Product`: only its name
-/// is read, and a full `Product.fromJson` would fail the sale over a catalogue field it never
-/// shows.
+/// Ported from `SalesInvoiceItem` in `packages/types/src/sales.ts`, partially: what the receipt,
+/// the sale detail and the kitchen ticket read.
 ///
 /// `explicitToJson`: without it [product] stays a `NamedRef` instance rather than a map, and
 /// `jsonEncode` on the result fails with "not a subtype of `Map<String, dynamic>`". Nothing in
@@ -148,7 +166,7 @@ abstract class SalesInvoiceItem with _$SalesInvoiceItem {
     @JsonKey(name: 'line_tax') @Default(0) num lineTax,
     @JsonKey(name: 'line_total') required num lineTotal,
     String? description,
-    NamedRef? product,
+    SalesInvoiceItemProduct? product,
   }) = _SalesInvoiceItem;
 
   factory SalesInvoiceItem.fromJson(Map<String, dynamic> json) =>

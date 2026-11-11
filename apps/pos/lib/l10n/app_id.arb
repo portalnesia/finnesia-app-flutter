@@ -295,6 +295,55 @@
   "menuPrinterForgetDesc": "Tablet tidak akan mencetak ke printer ini lagi sampai Anda menyambungkan printer.",
   "menuPrinterForgetConfirm": "Ya, lupakan",
   "menuPrinterForgetFailed": "Gagal melupakan printer. Coba lagi.",
+  "printerOutputChooseTitle": "Pilih jenis printer",
+  "printerOutputChooseDesc": "Pilih cara aplikasi Windows ini mencetak.",
+  "printerOutputSectionTitle": "Sambungan printer",
+  "printerOutputFlutterModesNote": "Printer Windows menerima perintah ESC/POS langsung, atau PDF lewat driver-nya.",
+  "printerOutputBluetooth": "Bluetooth",
+  "printerOutputWindowsQueue": "Printer Windows",
+  "printerOutputChooseHint": "Pilih Bluetooth atau printer Windows yang sudah terpasang.",
+  "printerOutputSaveFailed": "Gagal menyimpan pilihan printer. Coba lagi.",
+  "printerLineColumns": "Karakter per baris",
+  "printerLineColumnsHelp": "Pilih lebar yang sesuai dengan kertas. Cetak ruler untuk mengeceknya.",
+  "printerLineColumnsOption": "{columns} karakter",
+  "@printerLineColumnsOption": {
+    "placeholders": {
+      "columns": {
+        "type": "int"
+      }
+    }
+  },
+  "printerAutoCutter": "Printer ini memiliki pemotong otomatis",
+  "printerAutoCutterHelp": "Matikan untuk printer yang kertasnya disobek manual.",
+  "printerFormatLoadFailed": "Gagal membaca pengaturan format printer.",
+  "printerFormatSaveFailed": "Gagal menyimpan pengaturan format printer. Coba lagi.",
+  "printerTestPrint": "Cetak halaman tes",
+  "printerTestPrintTitle": "TES PRINTER",
+  "printerTestPrintSent": "Halaman tes terkirim ke printer.",
+  "printerTestPrintFailed": "Gagal mengirim halaman tes ke printer.",
+  "printerWindowsQueueFormattingNote": "Lebar kertas dan pemotongan diatur oleh driver printer Windows.",
+  "printerWindowsQueueFormat": "Format cetak",
+  "printerWindowsQueueFormatEscPos": "Printer struk (ESC/POS)",
+  "printerWindowsQueueFormatPdf": "Printer biasa (PDF)",
+  "printerWindowsQueueFormatEscPosNote": "Perintah ESC/POS dikirim langsung ke printer, sama seperti lewat Bluetooth.",
+  "printerWindowsQueueTitle": "Pilih printer Windows",
+  "printerWindowsQueueDesc": "Printer yang terpasang di Windows akan muncul di sini. Dokumen dikirim sebagai PDF melalui driver printer yang dipilih.",
+  "printerWindowsQueueChange": "Pilih printer Windows",
+  "printerWindowsQueueForget": "Lupakan printer Windows",
+  "printerWindowsQueueEmpty": "Belum ada printer terpasang di Windows. Pasang printer dan drivernya, lalu coba lagi.",
+  "printerWindowsQueueUnavailable": "Sedang tidak tersedia",
+  "printerWindowsQueueDefault": "Default",
+  "printerWindowsQueueLoadFailed": "Belum bisa memuat daftar printer Windows. Periksa pengaturan printer lalu coba lagi.",
+  "printerWindowsQueueSaveFailed": "Printer sudah dipilih, tetapi perangkat gagal mengingatnya. Coba lagi.",
+  "printerWindowsQueueNotConfigured": "Pilih printer Windows yang sudah terpasang terlebih dahulu.",
+  "printerWindowsQueueNotFound": "Printer Windows yang dipilih sudah tidak tersedia. Pilih lagi.",
+  "printerWindowsQueuePrintFailed": "Cetakan belum bisa dikirim ke printer Windows.",
+  "printerWindowsQueueCancelled": "Pekerjaan cetak Windows dibatalkan.",
+  "printerWindowsQueueUnsupported": "Printer Windows hanya tersedia di aplikasi Windows.",
+  "printerWindowsQueueForgetTitle": "Lupakan printer Windows ini?",
+  "printerWindowsQueueForgetDesc": "Queue Windows yang tersimpan akan dihapus. Pengaturan printer Bluetooth tetap seperti semula.",
+  "printerWindowsQueueForgetConfirm": "Ya, lupakan",
+  "printerWindowsQueueForgetFailed": "Gagal melupakan printer Windows. Coba lagi.",
   "inspectorTitle": "Inspector request",
   "inspectorEmpty": "Belum ada request yang tercatat.",
   "inspectorClear": "Hapus semua",
@@ -411,6 +460,15 @@
   "receiptLoadFailed": "Struk belum bisa dimuat. Coba lagi.",
   "receiptPaymentMethod": "Metode Pembayaran",
   "receiptVoided": "*** TRANSAKSI DIBATALKAN ***",
+  "posPrintCategoryTicket": "Cetak {category}",
+  "@posPrintCategoryTicket": {
+    "placeholders": {
+      "category": {
+        "type": "String"
+      }
+    }
+  },
+  "posUncategorized": "Tanpa Kategori",
   "receiptNoItems": "Tidak ada rincian barang",
   "receiptPaidBy": "Bayar ({method})",
   "@receiptPaidBy": {

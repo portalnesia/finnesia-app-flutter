@@ -578,6 +578,155 @@ class L10nId extends L10n {
   String get menuPrinterForgetFailed => 'Gagal melupakan printer. Coba lagi.';
 
   @override
+  String get printerOutputChooseTitle => 'Pilih jenis printer';
+
+  @override
+  String get printerOutputChooseDesc =>
+      'Pilih cara aplikasi Windows ini mencetak.';
+
+  @override
+  String get printerOutputSectionTitle => 'Sambungan printer';
+
+  @override
+  String get printerOutputFlutterModesNote =>
+      'Printer Windows menerima perintah ESC/POS langsung, atau PDF lewat driver-nya.';
+
+  @override
+  String get printerOutputBluetooth => 'Bluetooth';
+
+  @override
+  String get printerOutputWindowsQueue => 'Printer Windows';
+
+  @override
+  String get printerOutputChooseHint =>
+      'Pilih Bluetooth atau printer Windows yang sudah terpasang.';
+
+  @override
+  String get printerOutputSaveFailed =>
+      'Gagal menyimpan pilihan printer. Coba lagi.';
+
+  @override
+  String get printerLineColumns => 'Karakter per baris';
+
+  @override
+  String get printerLineColumnsHelp =>
+      'Pilih lebar yang sesuai dengan kertas. Cetak ruler untuk mengeceknya.';
+
+  @override
+  String printerLineColumnsOption(int columns) {
+    return '$columns karakter';
+  }
+
+  @override
+  String get printerAutoCutter => 'Printer ini memiliki pemotong otomatis';
+
+  @override
+  String get printerAutoCutterHelp =>
+      'Matikan untuk printer yang kertasnya disobek manual.';
+
+  @override
+  String get printerFormatLoadFailed =>
+      'Gagal membaca pengaturan format printer.';
+
+  @override
+  String get printerFormatSaveFailed =>
+      'Gagal menyimpan pengaturan format printer. Coba lagi.';
+
+  @override
+  String get printerTestPrint => 'Cetak halaman tes';
+
+  @override
+  String get printerTestPrintTitle => 'TES PRINTER';
+
+  @override
+  String get printerTestPrintSent => 'Halaman tes terkirim ke printer.';
+
+  @override
+  String get printerTestPrintFailed => 'Gagal mengirim halaman tes ke printer.';
+
+  @override
+  String get printerWindowsQueueFormattingNote =>
+      'Lebar kertas dan pemotongan diatur oleh driver printer Windows.';
+
+  @override
+  String get printerWindowsQueueFormat => 'Format cetak';
+
+  @override
+  String get printerWindowsQueueFormatEscPos => 'Printer struk (ESC/POS)';
+
+  @override
+  String get printerWindowsQueueFormatPdf => 'Printer biasa (PDF)';
+
+  @override
+  String get printerWindowsQueueFormatEscPosNote =>
+      'Perintah ESC/POS dikirim langsung ke printer, sama seperti lewat Bluetooth.';
+
+  @override
+  String get printerWindowsQueueTitle => 'Pilih printer Windows';
+
+  @override
+  String get printerWindowsQueueDesc =>
+      'Printer yang terpasang di Windows akan muncul di sini. Dokumen dikirim sebagai PDF melalui driver printer yang dipilih.';
+
+  @override
+  String get printerWindowsQueueChange => 'Pilih printer Windows';
+
+  @override
+  String get printerWindowsQueueForget => 'Lupakan printer Windows';
+
+  @override
+  String get printerWindowsQueueEmpty =>
+      'Belum ada printer terpasang di Windows. Pasang printer dan drivernya, lalu coba lagi.';
+
+  @override
+  String get printerWindowsQueueUnavailable => 'Sedang tidak tersedia';
+
+  @override
+  String get printerWindowsQueueDefault => 'Default';
+
+  @override
+  String get printerWindowsQueueLoadFailed =>
+      'Belum bisa memuat daftar printer Windows. Periksa pengaturan printer lalu coba lagi.';
+
+  @override
+  String get printerWindowsQueueSaveFailed =>
+      'Printer sudah dipilih, tetapi perangkat gagal mengingatnya. Coba lagi.';
+
+  @override
+  String get printerWindowsQueueNotConfigured =>
+      'Pilih printer Windows yang sudah terpasang terlebih dahulu.';
+
+  @override
+  String get printerWindowsQueueNotFound =>
+      'Printer Windows yang dipilih sudah tidak tersedia. Pilih lagi.';
+
+  @override
+  String get printerWindowsQueuePrintFailed =>
+      'Cetakan belum bisa dikirim ke printer Windows.';
+
+  @override
+  String get printerWindowsQueueCancelled =>
+      'Pekerjaan cetak Windows dibatalkan.';
+
+  @override
+  String get printerWindowsQueueUnsupported =>
+      'Printer Windows hanya tersedia di aplikasi Windows.';
+
+  @override
+  String get printerWindowsQueueForgetTitle => 'Lupakan printer Windows ini?';
+
+  @override
+  String get printerWindowsQueueForgetDesc =>
+      'Queue Windows yang tersimpan akan dihapus. Pengaturan printer Bluetooth tetap seperti semula.';
+
+  @override
+  String get printerWindowsQueueForgetConfirm => 'Ya, lupakan';
+
+  @override
+  String get printerWindowsQueueForgetFailed =>
+      'Gagal melupakan printer Windows. Coba lagi.';
+
+  @override
   String get inspectorTitle => 'Inspector request';
 
   @override
@@ -831,6 +980,14 @@ class L10nId extends L10n {
 
   @override
   String get receiptVoided => '*** TRANSAKSI DIBATALKAN ***';
+
+  @override
+  String posPrintCategoryTicket(String category) {
+    return 'Cetak $category';
+  }
+
+  @override
+  String get posUncategorized => 'Tanpa Kategori';
 
   @override
   String get receiptNoItems => 'Tidak ada rincian barang';

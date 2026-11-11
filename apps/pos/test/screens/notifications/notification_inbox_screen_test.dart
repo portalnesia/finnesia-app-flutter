@@ -41,6 +41,8 @@ Map<String, Object?> _itemJson({
   String? readAt,
   String? bodyHtml,
   String? subtitle,
+  String? image,
+  String? imageRatio,
   List<Object?> buttons = const [],
 }) => {
   'id': id,
@@ -56,8 +58,8 @@ Map<String, Object?> _itemJson({
   'company_id': companyId,
   'actor': null,
   'icon': null,
-  'image': null,
-  'image_ratio': null,
+  'image': image,
+  'image_ratio': imageRatio,
   'buttons': buttons,
   'read_at': readAt,
   'created_at': '2026-10-28T01:02:03Z',
@@ -461,12 +463,12 @@ void main() {
       },
     );
 
-    testWidgets('does not open an untrusted link in notification HTML', (
-      tester,
+    // The detail dialog follows the web app (notification-detail-dialog.tsx): any link the
+    // server sanitizer kept opens, protocol-relative and unsafe hrefs do nothing.
+    Future<void> openAnnouncement(
+      WidgetTester tester,
+      Map<String, Object?> item,
     ) async {
-      final item = _itemJson(
-        bodyHtml: '<p><a href="https://attacker.example/steal">Link eksternal</a></p>',
-      );
       transport.respond(
         _answer({
           'items': [item],
@@ -485,20 +487,172 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Laporan siap'));
       await tester.pumpAndSettle();
+    }
 
-      final link = find.byWidgetPredicate(
-        (widget) =>
-            widget is RichText &&
-            widget.text.toPlainText().contains('Link eksternal'),
+    Finder richText(String text) => find.byWidgetPredicate(
+      (widget) =>
+          widget is RichText && widget.text.toPlainText().contains(text),
+    );
+
+    testWidgets(
+      'opens an external body link like the web, not a protocol-relative one',
+      (tester) async {
+        await openAnnouncement(
+          tester,
+          _itemJson(
+            bodyHtml:
+                '<p><a href="//attacker.example/steal">Tautan ganda</a></p>'
+                '<p><a href="https://finnesia.com/promo" target="_blank">Promo</a></p>',
+          ),
+        );
+
+        await tester.tapOnText(find.textRange.ofSubstring('Tautan ganda'));
+        await tester.pump();
+        expect(opener.opened, isEmpty);
+
+        await tester.tapOnText(find.textRange.ofSubstring('Promo'));
+        await tester.pump();
+        expect(opener.opened, ['https://finnesia.com/promo']);
+        // An external link leaves the dialog open, as a new tab does on the web.
+        expect(find.byType(AlertDialog), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'an in-app body link opens the paired origin and closes the dialog',
+      (tester) async {
+        await openAnnouncement(
+          tester,
+          _itemJson(
+            bodyHtml: '<p><a href="/reports/weekly">Rekap mingguan</a></p>',
+          ),
+        );
+
+        await tester.tapOnText(find.textRange.ofSubstring('Rekap mingguan'));
+        await tester.pumpAndSettle();
+
+        expect(opener.opened, ['https://erp.perusahaan.com/reports/weekly']);
+        expect(find.byType(AlertDialog), findsNothing);
+      },
+    );
+
+    testWidgets('shows every CTA the web shows, styled by its variant', (
+      tester,
+    ) async {
+      await openAnnouncement(
+        tester,
+        _itemJson(
+          buttons: [
+            {
+              'label': 'Promo',
+              'link': 'https://finnesia.com/promo',
+              'style': 'primary',
+            },
+            {
+              'label': 'Email',
+              'link': 'mailto:cs@finnesia.com',
+              'style': 'outline',
+            },
+            {'label': 'Bantuan', 'link': 'tel:+62811', 'style': 'ghost'},
+            {
+              'label': 'Laporan',
+              'link': '/reports/weekly',
+              'style': 'secondary',
+            },
+            {
+              'label': 'Bahaya',
+              'link': 'javascript:alert(1)',
+              'style': 'primary',
+            },
+            {'label': '   ', 'link': '/kosong', 'style': 'primary'},
+          ],
+        ),
       );
-      expect(link, findsOneWidget);
-      await tester.tap(link);
-      await tester.pump();
 
-      expect(opener.opened, isEmpty);
+      expect(find.widgetWithText(FilledButton, 'Promo'), findsOneWidget);
+      expect(find.widgetWithText(OutlinedButton, 'Email'), findsOneWidget);
+      expect(find.widgetWithText(TextButton, 'Bantuan'), findsOneWidget);
+      expect(find.widgetWithText(FilledButton, 'Laporan'), findsOneWidget);
+      expect(find.text('Bahaya'), findsNothing);
+      expect(find.widgetWithText(OutlinedButton, 'Tutup'), findsOneWidget);
+
+      await tester.tap(find.text('Email'));
+      await tester.pump();
+      expect(opener.opened, ['mailto:cs@finnesia.com']);
+      expect(find.byType(AlertDialog), findsOneWidget);
+
+      await tester.tap(find.text('Laporan'));
+      await tester.pumpAndSettle();
+      expect(opener.opened.last, 'https://erp.perusahaan.com/reports/weekly');
+      expect(find.byType(AlertDialog), findsNothing);
+    });
+
+    testWidgets('keeps soft line breaks and the web heading scale', (
+      tester,
+    ) async {
+      await openAnnouncement(
+        tester,
+        _itemJson(bodyHtml: '<h1>Judul</h1>\n<p>Baris satu\nBaris dua</p>'),
+      );
+
+      expect(richText('Baris satu\nBaris dua'), findsOneWidget);
+      double? headingSize;
+      tester.widget<RichText>(richText('Judul')).text.visitChildren((span) {
+        if (span is TextSpan && (span.text ?? '').contains('Judul')) {
+          headingSize = span.style?.fontSize;
+          return false;
+        }
+        return true;
+      });
+      expect(headingSize, 20);
+    });
+
+    testWidgets('shows the content image and opens it full screen', (
+      tester,
+    ) async {
+      await openAnnouncement(
+        tester,
+        _itemJson(
+          image: 'https://cdn.finnesia.com/promo.png',
+          imageRatio: '4:3',
+        ),
+      );
+
+      final image = find.byWidgetPredicate(
+        (widget) =>
+            widget is Image &&
+            widget.image is NetworkImage &&
+            (widget.image as NetworkImage).url ==
+                'https://cdn.finnesia.com/promo.png',
+      );
+      expect(image, findsOneWidget);
+
+      await tester.tap(image);
+      await tester.pumpAndSettle();
+      expect(find.byType(InteractiveViewer), findsOneWidget);
+    });
+
+    testWidgets('loads a server-relative image from the paired server', (
+      tester,
+    ) async {
+      // The API signs announcement images as `/static/...`; the web page loads them from its
+      // own origin, the till from the server it is paired with.
+      await openAnnouncement(
+        tester,
+        _itemJson(
+          image: '/static/announcement/a.png?signature=s&expired=1',
+          imageRatio: '3:4',
+        ),
+      );
+
       expect(
-        find.text('Tautan notifikasi tidak aman atau tidak tersedia.'),
-        findsNothing,
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is Image &&
+              widget.image is NetworkImage &&
+              (widget.image as NetworkImage).url == 'https://erp.perusahaan.com/static/announcement/a.png?signature=s&expired=1',
+        ),
+        findsOneWidget,
       );
     });
 

@@ -9,7 +9,11 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pdf/pdf.dart';
 import 'package:pn_pos/src/pos_pending_sale.dart';
+import 'package:pn_types/src/category.dart';
+import 'package:pn_types/src/native/print_queue_fake.dart';
+import 'package:pn_types/src/native/print_queue_port.dart';
 import 'package:pn_types/src/native/printer_fake.dart';
 import 'package:pn_types/src/native/printer_port.dart';
 import 'package:pn_types/src/pos.dart';
@@ -192,10 +196,57 @@ Future<({Rig rig, RoutedHttp http})> pumpDone(
 
 String paper(Rig rig) => String.fromCharCodes(rig.printer.written.single);
 
+double pdfPageWidth(List<int> bytes) {
+  final match = RegExp(
+    r'/MediaBox\s*\[\s*0(?:\.0)?\s+0(?:\.0)?\s+([0-9.]+)\s+([0-9.]+)\s*\]',
+  ).firstMatch(String.fromCharCodes(bytes));
+  if (match == null) throw StateError('PDF page has no MediaBox');
+  return double.parse(match.group(1)!);
+}
+
 int asked(RoutedHttp http, String path) =>
     http.calls.where((c) => c.path.split('?').first == path).length;
 
+Future<void> settleAsyncPrint(
+  WidgetTester tester,
+  FakePrintQueuePort queue, {
+  required int expectedOperations,
+}) async {
+  // Advance both the widget-test clock and real async time for PDF font asset reads.
+  for (
+    var i = 0;
+    i < 200 && queue.operations.length < expectedOperations;
+    i++
+  ) {
+    await tester.pump(const Duration(milliseconds: 10));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 10)),
+    );
+  }
+  for (var i = 0; i < 5; i++) {
+    await tester.pump(const Duration(milliseconds: 10));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 10)),
+    );
+  }
+  await tester.pumpAndSettle();
+}
+
 void main() {
+  const office = (
+    id: 'windows-printer://office',
+    name: 'Office Laser',
+    isDefault: true,
+    isAvailable: true,
+  );
+  void windowsTest(String description, WidgetTesterCallback callback) {
+    testWidgets(
+      description,
+      callback,
+      variant: const TargetPlatformVariant({TargetPlatform.windows}),
+    );
+  }
+
   group('printing it', () {
     testWidgets('sends the receipt to the printer that is paired', (
       tester,
@@ -212,6 +263,10 @@ void main() {
       // The words of the shop, read for it: the name of the outlet and the footer.
       expect(text, contains('Outlet Pusat'));
       expect(text, contains('Terima kasih'));
+      expect(
+        text,
+        contains('Terima kasih\n\nFinnesia.com\nAplikasi Kasir Otomatis\n'),
+      );
       expect(find.text('Struk terkirim ke printer'), findsOneWidget);
     });
 
@@ -277,9 +332,148 @@ void main() {
       await tester.tap(printButton);
       await tester.pumpAndSettle();
 
+      expect(paper(rig), contains('Finnesia.com\nAplikasi Kasir Otomatis\n'));
       expect(rig.analytics.logged.map((e) => e.$1), [
         'tenant_pending_receipt_printed',
       ]);
+    });
+
+    windowsTest(
+      'first Windows print asks for a printer type and a queue, then sends ESC/POS RAW',
+      (tester) async {
+        final rig = (await pumpDone(tester, paired: false)).rig;
+        rig.printQueue.queues.add(office);
+
+        await tester.tap(printButton);
+        await tester.pumpAndSettle();
+        expect(find.text('Pilih jenis printer'), findsOneWidget);
+
+        await tester.tap(find.text('Printer Windows'));
+        await tester.pumpAndSettle();
+        expect(find.text('Pilih printer Windows'), findsOneWidget);
+        await tester.tap(find.text('Office Laser'));
+        await settleAsyncPrint(tester, rig.printQueue, expectedOperations: 3);
+
+        expect(
+          await readPrinterMode(rig.store, platform: TargetPlatform.windows),
+          PrinterMode.windowsQueue,
+        );
+        // A queue chosen for the first time gets the same ESC/POS bytes as Bluetooth.
+        expect(rig.printQueue.printed, isEmpty);
+        expect(rig.printQueue.rawPrinted.single.bytes.take(2), [0x1b, 0x40]);
+        expect(rig.printer.operations, isEmpty);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    windowsTest('sends a recorded receipt PDF to the selected Windows queue', (
+      tester,
+    ) async {
+      final (:rig, :http) = await pumpDone(tester);
+      rig.printQueue.queues.add(office);
+      await rememberWindowsPrinterQueue(office, rig.store);
+      await saveWindowsQueueFormat(WindowsQueueFormat.pdf, rig.store);
+      expect(
+        await readPrinterMode(rig.store, platform: TargetPlatform.windows),
+        PrinterMode.windowsQueue,
+      );
+      expect((await readSavedWindowsPrinterQueue(rig.store))?.id, office.id);
+
+      await tester.tap(printButton);
+      await settleAsyncPrint(tester, rig.printQueue, expectedOperations: 2);
+
+      final visibleText = tester
+          .widgetList<Text>(find.byType(Text))
+          .map((widget) => widget.data)
+          .whereType<String>()
+          .toList();
+      expect(
+        tester.takeException(),
+        isNull,
+        reason: 'visible text: $visibleText',
+      );
+      expect(
+        rig.printQueue.operations,
+        [PrintQueueOperation.list, PrintQueueOperation.print],
+        reason:
+            'BLE operations: ${rig.printer.operations}; visible: $visibleText',
+      );
+      final bytes = rig.printQueue.printed.single.bytes;
+      expect(String.fromCharCodes(bytes.take(5)), '%PDF-');
+      expect(pdfPageWidth(bytes), closeTo(PdfPageFormat.roll80.width, 0.01));
+      expect(rig.printQueue.printed.single.queueId, office.id);
+      expect(rig.printer.operations, isEmpty);
+      expect(find.text('Struk terkirim ke printer'), findsOneWidget);
+      expect(asked(http, salePath), 0);
+      expect(tester.takeException(), isNull);
+    });
+
+    windowsTest('sends a pending receipt PDF without reading the server sale', (
+      tester,
+    ) async {
+      final (:rig, :http) = await pumpDone(tester, pending: pendingSale());
+      rig.printQueue.queues.add(office);
+      await rememberWindowsPrinterQueue(office, rig.store);
+      await saveWindowsQueueFormat(WindowsQueueFormat.pdf, rig.store);
+
+      await tester.tap(printButton);
+      await settleAsyncPrint(tester, rig.printQueue, expectedOperations: 2);
+
+      expect(
+        String.fromCharCodes(rig.printQueue.printed.single.bytes.take(5)),
+        '%PDF-',
+      );
+      expect(rig.printer.operations, isEmpty);
+      expect(asked(http, salePath), 0);
+      expect(rig.analytics.logged.map((event) => event.$1), [
+        'tenant_pending_receipt_printed',
+      ]);
+      expect(tester.takeException(), isNull);
+    });
+
+    windowsTest('reports a queue submission error in the cashier language', (
+      tester,
+    ) async {
+      final rig = (await pumpDone(tester)).rig;
+      rig.printQueue.queues.add(office);
+      await rememberWindowsPrinterQueue(office, rig.store);
+      await saveWindowsQueueFormat(WindowsQueueFormat.pdf, rig.store);
+      rig.printQueue.failNext(
+        PrintQueueOperation.print,
+        const PrintQueueException(PrintQueueFailure.printFailed),
+      );
+
+      await tester.tap(printButton);
+      await settleAsyncPrint(tester, rig.printQueue, expectedOperations: 2);
+
+      expect(
+        find.text('Cetakan belum bisa dikirim ke printer Windows.'),
+        findsOneWidget,
+      );
+      expect(rig.printQueue.printed, isEmpty);
+      expect(rig.printer.operations, isEmpty);
+      expect(tester.takeException(), isNull);
+    });
+
+    windowsTest('reports a Windows queue that was removed after selection', (
+      tester,
+    ) async {
+      final (:rig, :http) = await pumpDone(tester);
+      await rememberWindowsPrinterQueue(office, rig.store);
+      await saveWindowsQueueFormat(WindowsQueueFormat.pdf, rig.store);
+
+      await tester.tap(printButton);
+      await settleAsyncPrint(tester, rig.printQueue, expectedOperations: 1);
+
+      expect(
+        find.text(
+          'Printer Windows yang dipilih sudah tidak tersedia. Pilih lagi.',
+        ),
+        findsOneWidget,
+      );
+      expect(rig.printQueue.printed, isEmpty);
+      expect(rig.printer.operations, isEmpty);
+      expect(tester.takeException(), isNull);
     });
   });
 
@@ -358,6 +552,77 @@ void main() {
         greaterThanOrEqualTo(PnTouch.min),
       );
       expect(find.text('Transaksi Baru'), findsOneWidget);
+    });
+  });
+
+  // The web's change dialog offers the kitchen/bar tickets next to the receipt.
+  group('category tickets', () {
+    const drinks = Category(
+      id: 'c2',
+      name: 'Teh',
+      parentId: 'c1',
+      parent: Category(id: 'c1', name: 'Minuman'),
+    );
+
+    testWidgets('a recorded sale prints its category ticket', (tester) async {
+      final json = saleJson();
+      final invoice = json['invoice']! as Map<String, Object?>;
+      final item = (invoice['items']! as List).single as Map<String, Object?>;
+      item['product'] = {
+        'id': 'p',
+        'name': 'Kopi Susu',
+        'category': {
+          'id': 'c2',
+          'name': 'Teh',
+          'parent_id': 'c1',
+          'parent': {'id': 'c1', 'name': 'Minuman'},
+        },
+      };
+      final setup = await pumpDone(tester, completed: POSSale.fromJson(json));
+
+      await tester.tap(find.text('Cetak Minuman'));
+      await tester.pumpAndSettle();
+
+      final text = paper(setup.rig);
+      expect(text, contains('Minuman'));
+      expect(text, contains('Kopi Susu'));
+      expect(text, contains('x2'));
+      expect(text, contains('POS-0007'));
+      expect(text, contains('Outlet Pusat'));
+    });
+
+    testWidgets('a queued sale prints it from the copy taken at payment', (
+      tester,
+    ) async {
+      final queued = pendingSale().copyWith(
+        receipt: pendingSale().receipt.copyWith(
+          outletName: 'Outlet Pusat',
+          items: const [
+            SalesInvoiceItem(
+              id: 'l1',
+              quantity: 2,
+              price: 25000,
+              lineSubtotal: 50000,
+              lineTotal: 50000,
+              product: SalesInvoiceItemProduct(
+                id: 'p',
+                name: 'Kopi Susu',
+                category: drinks,
+              ),
+            ),
+          ],
+        ),
+      );
+      final setup = await pumpDone(tester, pending: queued);
+
+      await tester.tap(find.text('Cetak Minuman'));
+      await tester.pumpAndSettle();
+
+      final text = paper(setup.rig);
+      expect(text, contains('Kopi Susu'));
+      expect(text, contains('Outlet Pusat'));
+      // No server number yet: the same marker the temporary receipt carries.
+      expect(text, contains('SEMENTARA'));
     });
   });
 }

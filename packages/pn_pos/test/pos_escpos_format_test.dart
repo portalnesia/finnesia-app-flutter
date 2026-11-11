@@ -120,11 +120,10 @@ void main() {
   });
 
   group('formatReceiptEscPos', () {
-    test('ends with a feed and a cut command', () {
+    test('manual-tear mode ends with feed only and no cut command', () {
       final arr = formatReceiptEscPos(receiptSale(), 'Barang', receiptLabels);
-      // feed(5) then cut(1) — bottom tear-off margin, check the tail literally.
-      expect(arr.sublist(arr.length - 6),
-          equals(Uint8List.fromList([0x1b, 0x64, 5, 0x1d, 0x56, 1])));
+      expect(arr.sublist(arr.length - 3),
+          equals(Uint8List.fromList([0x1b, 0x64, 5])));
     });
 
     test('starts with init plus top padding feed', () {
@@ -406,6 +405,41 @@ void main() {
       expect(text, contains('2 x Rp 10.000'));
       expect(text, isNot(contains('2.0 x')));
     });
+    test('uses the selected width and auto-cutter commands', () {
+      final bytes = formatReceiptEscPos(
+        receiptSale(),
+        'Barang',
+        receiptLabels,
+        null,
+        null,
+        48,
+        true,
+      );
+      final text = _decode(bytes);
+      expect(text, contains('-' * 48));
+      expect(bytes.sublist(0, 2), equals(Uint8List.fromList([0x1b, 0x40])));
+      expect(bytes.sublist(bytes.length - 4),
+          equals(Uint8List.fromList([0x1d, 0x56, 66, 0])));
+      final itemRow = text.split('\n').firstWhere(
+            (line) => line.startsWith('1 x Rp 10.000'),
+          );
+      expect(itemRow.length, 48);
+    });
+
+    test('leaves a centered blank line between tenant footer and branding', () {
+      final text = _decode(formatReceiptEscPos(
+        receiptSale(),
+        'Barang',
+        receiptLabels,
+        'Terima kasih',
+        true,
+      ));
+      final lines = text.split('\n');
+      final brandIndex = lines.indexOf(receiptLabels.finnesiaBranding);
+      expect(brandIndex, greaterThan(0));
+      expect(lines[brandIndex - 1], isEmpty);
+      expect(text, contains('${String.fromCharCode(0x1b)}a\u0001Terima kasih'));
+    });
   });
 
   group('formatCategoryTicketEscPos', () {
@@ -510,7 +544,7 @@ void main() {
       expect(withoutQueue, isNot(contains('No. Antrian')));
     });
 
-    test('pads top and bottom: init + feed(2) head, feed(5) + cut tail', () {
+    test('pads manual-tear tickets without sending a cut command', () {
       final arr = formatCategoryTicketEscPos(
         'Makanan',
         [line()],
@@ -520,8 +554,8 @@ void main() {
       );
       expect(arr.sublist(0, 5),
           equals(Uint8List.fromList([0x1b, 0x40, 0x1b, 0x64, 2])));
-      expect(arr.sublist(arr.length - 6),
-          equals(Uint8List.fromList([0x1b, 0x64, 5, 0x1d, 0x56, 1])));
+      expect(arr.sublist(arr.length - 3),
+          equals(Uint8List.fromList([0x1b, 0x64, 5])));
     });
 
     // ---- Not in the oracle.
@@ -552,6 +586,46 @@ void main() {
       expect(text, isNot(contains('\n\n\n')));
     });
 
+    test(
+        'ends with a blank line and the centred branding when asked, as the web does',
+        () {
+      const labels = CategoryTicketEscPosLabels(
+        noItems: 'Kosong',
+        tableNumber: 'No. Meja',
+        queueNumber: 'No. Antrian',
+        finnesiaBranding: 'Finnesia.com\nAplikasi Kasir Otomatis',
+      );
+      final branded = _decode(formatCategoryTicketEscPos(
+        'Makanan',
+        [line()],
+        null,
+        null,
+        labels,
+        null,
+        null,
+        DateTime.utc(2026, 9, 15),
+        32,
+        false,
+        true,
+      ));
+      expect(
+        branded,
+        contains(
+          'x2\n\n${String.fromCharCode(0x1b)}a\u0001'
+          'Finnesia.com\nAplikasi Kasir Otomatis\n',
+        ),
+      );
+
+      final plain = _decode(formatCategoryTicketEscPos(
+        'Makanan',
+        [line()],
+        null,
+        null,
+        labels,
+      ));
+      expect(plain, isNot(contains('Finnesia.com')));
+    });
+
     test('prints an integral quantity without a decimal point', () {
       final text = _decode(formatCategoryTicketEscPos(
         'Makanan',
@@ -562,6 +636,25 @@ void main() {
       ));
       expect(text, contains('x2'));
       expect(text, isNot(contains('x2.0')));
+    });
+    test('uses the selected width and cutter profile', () {
+      final bytes = formatCategoryTicketEscPos(
+        'Makanan',
+        [line()],
+        null,
+        null,
+        categoryLabels,
+        null,
+        null,
+        DateTime.utc(2026, 9, 15),
+        48,
+        true,
+      );
+      final text = _decode(bytes);
+      expect(text, contains('-' * 48));
+      expect(bytes.sublist(0, 2), equals(Uint8List.fromList([0x1b, 0x40])));
+      expect(bytes.sublist(bytes.length - 4),
+          equals(Uint8List.fromList([0x1d, 0x56, 66, 0])));
     });
   });
 
@@ -805,12 +898,12 @@ void main() {
       expect(withBranding, contains(shiftLabels.finnesiaBranding));
     });
 
-    test('pads top and bottom: init + feed(2) head, feed(5) + cut tail', () {
+    test('pads manual-tear reports without sending a cut command', () {
       final arr = formatShiftReportEscPos(summary(), printedAt, shiftLabels);
       expect(arr.sublist(0, 5),
           equals(Uint8List.fromList([0x1b, 0x40, 0x1b, 0x64, 2])));
-      expect(arr.sublist(arr.length - 6),
-          equals(Uint8List.fromList([0x1b, 0x64, 5, 0x1d, 0x56, 1])));
+      expect(arr.sublist(arr.length - 3),
+          equals(Uint8List.fromList([0x1b, 0x64, 5])));
     });
 
     // ---- Not in the oracle.
@@ -875,6 +968,39 @@ void main() {
       ));
       expect(text, contains('PS/010 Metode QRIS'));
       expect(text, isNot(contains('null')));
+    });
+    test('uses selected columns and auto-cutter on shift reports', () {
+      final bytes = formatShiftReportEscPos(
+        summary(),
+        printedAt,
+        shiftLabels,
+        false,
+        null,
+        true,
+        48,
+        true,
+      );
+      final text = _decode(bytes);
+      expect(text, contains('-' * 48));
+      expect(bytes.sublist(0, 2), equals(Uint8List.fromList([0x1b, 0x40])));
+      expect(bytes.sublist(bytes.length - 4),
+          equals(Uint8List.fromList([0x1d, 0x56, 66, 0])));
+    });
+  });
+
+  group('formatTestPageEscPos', () {
+    test('prints the selected column ruler and honors the cutter mode', () {
+      final manual = formatTestPageEscPos('TEST', '48 columns', 48);
+      final text = _decode(manual);
+      expect(text, contains('48 columns'));
+      expect(text, contains('1234567890' * 4 + '12345678'));
+      expect(manual.sublist(manual.length - 3),
+          equals(Uint8List.fromList([0x1b, 0x64, 5])));
+
+      final cut = formatTestPageEscPos('TEST', '48 columns', 48, true);
+      expect(cut.sublist(0, 2), equals(Uint8List.fromList([0x1b, 0x40])));
+      expect(cut.sublist(cut.length - 4),
+          equals(Uint8List.fromList([0x1d, 0x56, 66, 0])));
     });
   });
 }

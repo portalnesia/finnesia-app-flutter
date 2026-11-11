@@ -183,6 +183,18 @@ void main() {
     });
   });
 
+  group('the packaged icon', () {
+    test(
+      'keeps the margin around the logo, which the tool trims by default',
+      () {
+        // The tool runs `trim()` on the logo before resizing, and `trim()` cuts every border the
+        // colour of the top-left pixel. `icon.png` is full-bleed orange, so the orange margin went
+        // and the glyph filled the taskbar icon to its edges.
+        expect(msixScalar(pubspec, 'trim_logo'), 'false');
+      },
+    );
+  });
+
   group('the readers', () {
     const bad = '''
 msix_config:

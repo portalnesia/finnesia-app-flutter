@@ -317,7 +317,7 @@ void main() {
       lineSubtotal: 30000,
       lineTotal: 30000,
       description: 'Kopi Susu',
-      product: NamedRef(id: 'p1', name: 'Kopi Susu'),
+      product: SalesInvoiceItemProduct(id: 'p1', name: 'Kopi Susu'),
     );
 
     test('toJson writes plain maps, not live objects', () {
@@ -464,6 +464,26 @@ void main() {
       expect(wire['tax_rate'], 11);
       expect(wire['is_tax_inclusive'], isTrue);
       expect(wire['line_tax'], 990.99);
+    });
+
+    test('keeps the product category the kitchen ticket groups by', () {
+      // The single-sale endpoint preloads Items.Product.Category and its Parent; the queue
+      // writes the item back out, so the category has to survive the round trip too.
+      final item = SalesInvoiceItem.fromJson(
+        jsonDecode('''
+          {"id":"i1","quantity":1,"price":10000,"line_subtotal":10000,
+           "line_total":10000,
+           "product":{"id":"p1","name":"Es Teh","category":{"id":"c2","name":"Teh",
+             "parent_id":"c1","parent":{"id":"c1","name":"Minuman"}}}}''')
+            as Map<String, dynamic>,
+      );
+
+      expect(item.product?.name, 'Es Teh');
+      expect(item.product?.category?.parent?.name, 'Minuman');
+      final again = SalesInvoiceItem.fromJson(
+        jsonDecode(jsonEncode(item.toJson())) as Map<String, dynamic>,
+      );
+      expect(again, item);
     });
   });
 }

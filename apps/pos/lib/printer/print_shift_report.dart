@@ -5,40 +5,60 @@
  * Written by Putu Aditya <aditya@portalnesia.com>
  */
 
+import 'package:flutter/foundation.dart';
 import 'package:pn_types/src/api/client.dart';
+import 'package:pn_types/src/native/print_queue_port.dart';
 import 'package:pn_types/src/native/printer_port.dart';
 import 'package:pn_types/src/native/store_port.dart';
 import 'package:pn_types/src/pos_shift.dart';
 import 'package:pos/l10n/app_localizations.dart';
 import 'package:pos/printer/print_settings.dart';
+import 'package:pos/printer/printer_output.dart';
 import 'package:pos/printer/printer_service.dart';
 import 'package:pos/printer/shift_report.dart';
+import 'package:pos/printer/windows_print_format.dart';
+import 'package:pos/printer/windows_shift_report_pdf.dart';
 
-/// Prints the closing report of [summary] to the paired printer.
+/// Prints the closing report of [summary] to the selected printer.
 ///
-/// Throws [PrinterException], for the caller to put in words: with no printer saved that is
-/// `notConnected`, which the screen turns into an offer to pair.
-///
-/// The tenant's settings decide two optional parts of the paper (the product breakdown and the
-/// footer): see [readPrintSettings], which prints without them when they cannot be read.
+/// Windows renders the same normalized summary and labels into PDF, then sends it through the
+/// selected installed system queue. Other platforms keep the existing BLE ESC/POS output. The
+/// tenant's settings decide whether the product breakdown and footer appear; unreadable settings
+/// still leave the core report printable.
 Future<void> printShiftReport(
   ShiftSummaryResponse summary, {
   required ApiClient client,
   required PrinterPort printer,
+  required PrintQueuePort printQueue,
   required StorePort store,
   required L10n l10n,
   required DateTime now,
+  required TargetPlatform platform,
 }) async {
   final settings = await readPrintSettings(client);
-  await printDocument(
-    shiftReportBytes(
-      summary,
-      l10n: l10n,
-      printedAt: now,
-      showProductSales: settings?.showProductSalesSummary ?? false,
-      footerText: settings?.receiptFooterText,
+  final showProductSales = settings?.showProductSalesSummary ?? false;
+  final footerText = settings?.receiptFooterText;
+  final printerFormat = await readPrinterFormatSettings(store);
+  final bluetoothBytes = shiftReportBytes(
+    summary,
+    l10n: l10n,
+    printedAt: now,
+    showProductSales: showProductSales,
+    footerText: footerText,
+    columns: printerFormat.columns,
+    autoCutter: printerFormat.autoCutter,
+  );
+  await printSelectedDocument(
+    bluetoothBytes: bluetoothBytes,
+    buildWindowsPdf: (pageSize) => renderShiftReportPdf(
+      escPosBytes: bluetoothBytes,
+      columns: printerFormat.columns,
+      pageFormat: windowsQueuePageFormat(pageSize),
     ),
-    printer: printer,
+    documentName: l10n.posShiftReportTitle,
+    bluetooth: printer,
+    printQueue: printQueue,
     store: store,
+    platform: platform,
   );
 }
