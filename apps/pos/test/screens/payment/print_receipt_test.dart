@@ -338,7 +338,7 @@ void main() {
     });
 
     windowsTest(
-      'first Windows print asks for a printer type and an installed queue',
+      'first Windows print asks for a printer type and a queue, then sends ESC/POS RAW',
       (tester) async {
         final rig = (await pumpDone(tester, paired: false)).rig;
         rig.printQueue.queues.add(office);
@@ -357,10 +357,9 @@ void main() {
           await readPrinterMode(rig.store, platform: TargetPlatform.windows),
           PrinterMode.windowsQueue,
         );
-        expect(
-          String.fromCharCodes(rig.printQueue.printed.single.bytes.take(5)),
-          '%PDF-',
-        );
+        // A queue chosen for the first time gets the same ESC/POS bytes as Bluetooth.
+        expect(rig.printQueue.printed, isEmpty);
+        expect(rig.printQueue.rawPrinted.single.bytes.take(2), [0x1b, 0x40]);
         expect(rig.printer.operations, isEmpty);
         expect(tester.takeException(), isNull);
       },
@@ -372,6 +371,7 @@ void main() {
       final (:rig, :http) = await pumpDone(tester);
       rig.printQueue.queues.add(office);
       await rememberWindowsPrinterQueue(office, rig.store);
+      await saveWindowsQueueFormat(WindowsQueueFormat.pdf, rig.store);
       expect(
         await readPrinterMode(rig.store, platform: TargetPlatform.windows),
         PrinterMode.windowsQueue,
@@ -413,6 +413,7 @@ void main() {
       final (:rig, :http) = await pumpDone(tester, pending: pendingSale());
       rig.printQueue.queues.add(office);
       await rememberWindowsPrinterQueue(office, rig.store);
+      await saveWindowsQueueFormat(WindowsQueueFormat.pdf, rig.store);
 
       await tester.tap(printButton);
       await settleAsyncPrint(tester, rig.printQueue, expectedOperations: 2);
@@ -435,6 +436,7 @@ void main() {
       final rig = (await pumpDone(tester)).rig;
       rig.printQueue.queues.add(office);
       await rememberWindowsPrinterQueue(office, rig.store);
+      await saveWindowsQueueFormat(WindowsQueueFormat.pdf, rig.store);
       rig.printQueue.failNext(
         PrintQueueOperation.print,
         const PrintQueueException(PrintQueueFailure.printFailed),
@@ -444,7 +446,7 @@ void main() {
       await settleAsyncPrint(tester, rig.printQueue, expectedOperations: 2);
 
       expect(
-        find.text('PDF belum bisa dikirim ke printer Windows.'),
+        find.text('Cetakan belum bisa dikirim ke printer Windows.'),
         findsOneWidget,
       );
       expect(rig.printQueue.printed, isEmpty);
@@ -457,6 +459,7 @@ void main() {
     ) async {
       final (:rig, :http) = await pumpDone(tester);
       await rememberWindowsPrinterQueue(office, rig.store);
+      await saveWindowsQueueFormat(WindowsQueueFormat.pdf, rig.store);
 
       await tester.tap(printButton);
       await settleAsyncPrint(tester, rig.printQueue, expectedOperations: 1);

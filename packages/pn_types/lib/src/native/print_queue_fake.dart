@@ -9,7 +9,7 @@ import 'dart:typed_data';
 
 import 'print_queue_port.dart';
 
-enum PrintQueueOperation { list, print }
+enum PrintQueueOperation { list, print, printRaw }
 
 /// A visible, configurable fake for tests that cannot call the Windows spooler.
 class FakePrintQueuePort implements PrintQueuePort {
@@ -20,6 +20,7 @@ class FakePrintQueuePort implements PrintQueuePort {
   WindowsPrintPageSize pageSize = const (width: 226.77165, height: 850.3937);
   final operations = <PrintQueueOperation>[];
   final printed = <({String queueId, String name, Uint8List bytes})>[];
+  final rawPrinted = <({String queueId, String name, Uint8List bytes})>[];
   final _failures = <PrintQueueOperation, List<PrintQueueException>>{};
 
   void failNext(PrintQueueOperation operation, PrintQueueException failure) {
@@ -40,6 +41,22 @@ class FakePrintQueuePort implements PrintQueuePort {
     final failure = _takeFailure(PrintQueueOperation.list);
     if (failure != null) throw failure;
     return List.unmodifiable(queues);
+  }
+
+  @override
+  Future<void> printRaw({
+    required String queueId,
+    required String name,
+    required Uint8List bytes,
+  }) async {
+    operations.add(PrintQueueOperation.printRaw);
+    final failure = _takeFailure(PrintQueueOperation.printRaw);
+    if (failure != null) throw failure;
+    rawPrinted.add((
+      queueId: queueId,
+      name: name,
+      bytes: Uint8List.fromList(bytes),
+    ));
   }
 
   @override

@@ -595,7 +595,7 @@ class L10nEn extends L10n {
 
   @override
   String get printerOutputFlutterModesNote =>
-      'Windows printing uses the system printer driver (PDF).';
+      'A Windows printer takes ESC/POS commands directly, or a PDF through its driver.';
 
   @override
   String get printerOutputBluetooth => 'Bluetooth';
@@ -656,6 +656,19 @@ class L10nEn extends L10n {
       'Paper width and cutting are controlled by the Windows printer driver.';
 
   @override
+  String get printerWindowsQueueFormat => 'Print format';
+
+  @override
+  String get printerWindowsQueueFormatEscPos => 'Receipt printer (ESC/POS)';
+
+  @override
+  String get printerWindowsQueueFormatPdf => 'Regular printer (PDF)';
+
+  @override
+  String get printerWindowsQueueFormatEscPosNote =>
+      'ESC/POS commands go straight to the printer, the same as over Bluetooth.';
+
+  @override
   String get printerWindowsQueueTitle => 'Select a Windows printer';
 
   @override
@@ -696,7 +709,7 @@ class L10nEn extends L10n {
 
   @override
   String get printerWindowsQueuePrintFailed =>
-      'Could not send the PDF to the Windows printer.';
+      'Could not send the job to the Windows printer.';
 
   @override
   String get printerWindowsQueueCancelled =>

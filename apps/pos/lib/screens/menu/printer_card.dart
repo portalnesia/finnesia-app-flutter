@@ -23,6 +23,7 @@ typedef _WindowsPrinterCardState = ({
   PrinterMode? mode,
   PrinterDevice? bluetooth,
   WindowsPrintQueue? queue,
+  WindowsQueueFormat format,
 });
 
 /// Which printer this device prints to, and the way to change that.
@@ -52,12 +53,13 @@ class _PrinterCardState extends State<PrinterCard> {
 
   Future<_WindowsPrinterCardState> _loadWindowsState() async {
     final store = AppScope.of(context).store;
-    final (mode, bluetooth, queue) = await (
+    final (mode, bluetooth, queue, format) = await (
       readPrinterMode(store, platform: TargetPlatform.windows),
       readSavedPrinter(store),
       readSavedWindowsPrinterQueue(store),
+      readWindowsQueueFormat(store),
     ).wait;
-    return (mode: mode, bluetooth: bluetooth, queue: queue);
+    return (mode: mode, bluetooth: bluetooth, queue: queue, format: format);
   }
 
   Future<void> _pair() async {
@@ -82,6 +84,19 @@ class _PrinterCardState extends State<PrinterCard> {
     } on StoreException {
       if (mounted) {
         showTopNotice(context, message: l10n.printerOutputSaveFailed);
+      }
+      return;
+    }
+    if (mounted) _reload();
+  }
+
+  Future<void> _selectQueueFormat(WindowsQueueFormat format) async {
+    final l10n = L10n.of(context);
+    try {
+      await saveWindowsQueueFormat(format, AppScope.of(context).store);
+    } on StoreException {
+      if (mounted) {
+        showTopNotice(context, message: l10n.printerFormatSaveFailed);
       }
       return;
     }
@@ -274,7 +289,7 @@ class _PrinterCardState extends State<PrinterCard> {
         else if (state.mode == PrinterMode.bluetooth)
           _bluetoothControls(l10n, state.bluetooth)
         else
-          _windowsQueueControls(l10n, state.queue),
+          _windowsQueueControls(l10n, state.queue, state.format),
       ],
     ),
   );
@@ -310,13 +325,41 @@ class _PrinterCardState extends State<PrinterCard> {
     ],
   );
 
-  Widget _windowsQueueControls(L10n l10n, WindowsPrintQueue? queue) => Column(
+  Widget _windowsQueueControls(
+    L10n l10n,
+    WindowsPrintQueue? queue,
+    WindowsQueueFormat format,
+  ) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       Text(queue?.name ?? l10n.menuPrinterNone),
+      const SizedBox(height: 12),
+      Text(
+        l10n.printerWindowsQueueFormat,
+        style: Theme.of(context).textTheme.labelLarge,
+      ),
+      const SizedBox(height: 8),
+      SegmentedButton<WindowsQueueFormat>(
+        selected: {format},
+        segments: [
+          ButtonSegment(
+            value: WindowsQueueFormat.escPos,
+            label: Text(l10n.printerWindowsQueueFormatEscPos),
+          ),
+          ButtonSegment(
+            value: WindowsQueueFormat.pdf,
+            label: Text(l10n.printerWindowsQueueFormatPdf),
+          ),
+        ],
+        onSelectionChanged: (values) {
+          if (values.first != format) _selectQueueFormat(values.first);
+        },
+      ),
       const SizedBox(height: 8),
       Text(
-        l10n.printerWindowsQueueFormattingNote,
+        format == WindowsQueueFormat.escPos
+            ? l10n.printerWindowsQueueFormatEscPosNote
+            : l10n.printerWindowsQueueFormattingNote,
         style: Theme.of(context).textTheme.bodySmall,
       ),
       const SizedBox(height: 12),
@@ -334,6 +377,7 @@ class _PrinterCardState extends State<PrinterCard> {
                 mode: PrinterMode.windowsQueue,
                 bluetooth: null,
                 queue: null,
+                format: format,
               ));
             }
           },
@@ -350,6 +394,10 @@ class _PrinterCardState extends State<PrinterCard> {
             child: Text(l10n.printerWindowsQueueForget),
           ),
         ),
+      ],
+      if (format == WindowsQueueFormat.escPos) ...[
+        const SizedBox(height: 16),
+        PrinterFormatControls(showTestPrint: queue != null),
       ],
     ],
   );

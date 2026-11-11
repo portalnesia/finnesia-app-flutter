@@ -37,6 +37,8 @@ dependencies:
   url_launcher: ^6.3.2
   flutter_secure_storage: ^11.2.0
   universal_ble: ^2.3.0
+  # RAW jobs to a Windows spooler queue (`lib/native/printer/windows_raw_spooler.dart`).
+  ffi: ^2.2.0
   shared_preferences: ^2.5.5
   flutter_localizations:
     sdk: flutter

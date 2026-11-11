@@ -45,7 +45,9 @@ void main() {
 
         expect(find.text('Sambungan printer'), findsOneWidget);
         expect(
-          find.text('Printer Windows mencetak lewat driver sistem (PDF).'),
+          find.text(
+            'Printer Windows menerima perintah ESC/POS langsung, atau PDF lewat driver-nya.',
+          ),
           findsOneWidget,
         );
         expect(find.text('Pilih printer Windows'), findsOneWidget);
@@ -98,7 +100,9 @@ void main() {
       expect(find.text('Bluetooth'), findsOneWidget);
       expect(find.text('Dapur'), findsOneWidget);
       expect(
-        find.text('Printer Windows mencetak lewat driver sistem (PDF).'),
+        find.text(
+          'Printer Windows menerima perintah ESC/POS langsung, atau PDF lewat driver-nya.',
+        ),
         findsOneWidget,
       );
       expect(rig.printQueue.operations, isEmpty);

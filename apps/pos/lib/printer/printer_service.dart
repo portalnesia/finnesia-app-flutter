@@ -21,13 +21,34 @@ const printerOutputModeKey = 'printer_output_mode';
 /// The installed Windows queue, stored separately from the legacy BLE identity.
 const windowsPrinterQueueKey = 'printer_windows_queue';
 
-/// Saved text columns are shared by Bluetooth and Windows PDF output; auto-cutter applies only to BLE.
+/// How a job reaches the saved Windows queue; missing or unknown values mean ESC/POS.
+const windowsQueueFormatKey = 'printer_windows_queue_format';
+
+/// Saved text columns and auto-cutter shape the ESC/POS bytes sent over BLE or RAW to a Windows
+/// queue; the PDF route only takes the columns.
 const printerFormatSettingsKey = 'printer_format_settings';
 const printerColumnOptions = [32, 33, 40, 42, 48];
 typedef PrinterFormatSettings = ({int columns, bool autoCutter});
 const defaultPrinterFormatSettings = (columns: 32, autoCutter: false);
 
 enum PrinterMode { bluetooth, windowsQueue }
+
+/// ESC/POS hands a receipt printer the same bytes Bluetooth sends, through the spooler's RAW
+/// datatype. PDF lets the driver render the page, for an ordinary office printer.
+enum WindowsQueueFormat { escPos, pdf }
+
+Future<WindowsQueueFormat> readWindowsQueueFormat(StorePort store) async =>
+    await store.read(windowsQueueFormatKey) == 'pdf'
+    ? WindowsQueueFormat.pdf
+    : WindowsQueueFormat.escPos;
+
+Future<void> saveWindowsQueueFormat(
+  WindowsQueueFormat format,
+  StorePort store,
+) => store.write(windowsQueueFormatKey, switch (format) {
+  WindowsQueueFormat.escPos => 'escpos',
+  WindowsQueueFormat.pdf => 'pdf',
+});
 
 /// Reads saved text-column and BLE cutter preferences; malformed values use the legacy defaults.
 Future<PrinterFormatSettings> readPrinterFormatSettings(StorePort store) async {

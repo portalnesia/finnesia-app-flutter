@@ -5,17 +5,24 @@
  * Written by Putu Aditya <aditya@portalnesia.com>
  */
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:pn_pos/src/pos_escpos_format.dart' show formatTestPageEscPos;
+import 'package:pn_types/src/native/print_queue_port.dart';
 import 'package:pn_types/src/native/printer_port.dart';
 import 'package:pn_types/src/native/store_port.dart';
 import 'package:pn_ui/src/widgets/top_notice.dart';
 import 'package:pos/app/app_scope.dart';
 import 'package:pos/l10n/app_localizations.dart';
 import 'package:pos/printer/printer_failure_text.dart';
+import 'package:pos/printer/printer_output.dart';
+import 'package:pos/printer/printer_queue_failure_text.dart';
 import 'package:pos/printer/printer_service.dart';
+import 'package:pos/printer/windows_print_format.dart';
+import 'package:pos/printer/windows_print_pdf.dart';
 
-/// ESC/POS formatting options belong to the paired Bluetooth printer, not a Windows driver queue.
+/// ESC/POS formatting options for whatever receives the ESC/POS bytes: the paired Bluetooth
+/// printer, or a Windows queue printing RAW. The test page goes to the selected output.
 class PrinterFormatControls extends StatefulWidget {
   const PrinterFormatControls({super.key, required this.showTestPrint});
 
@@ -87,15 +94,24 @@ class _PrinterFormatControlsState extends State<PrinterFormatControls> {
     final services = AppScope.of(context);
     setState(() => _printing = true);
     try {
-      await printDocument(
-        formatTestPageEscPos(
-          l10n.printerTestPrintTitle,
-          l10n.printerLineColumnsOption(settings.columns),
-          settings.columns,
-          settings.autoCutter,
+      final bytes = formatTestPageEscPos(
+        l10n.printerTestPrintTitle,
+        l10n.printerLineColumnsOption(settings.columns),
+        settings.columns,
+        settings.autoCutter,
+      );
+      await printSelectedDocument(
+        bluetoothBytes: bytes,
+        buildWindowsPdf: (pageSize) => renderWindowsPrintPdf(
+          escPosBytes: bytes,
+          columns: settings.columns,
+          pageFormat: windowsQueuePageFormat(pageSize),
         ),
-        printer: services.printer,
+        documentName: l10n.printerTestPrintTitle,
+        bluetooth: services.printer,
+        printQueue: services.printQueue,
         store: services.store,
+        platform: defaultTargetPlatform,
       );
       if (mounted) {
         showTopNotice(context, message: l10n.printerTestPrintSent);
@@ -109,6 +125,13 @@ class _PrinterFormatControlsState extends State<PrinterFormatControls> {
             error.reason,
             fallback: l10n.printerTestPrintFailed,
           ),
+        );
+      }
+    } on PrintQueueException catch (error) {
+      if (mounted) {
+        showTopNotice(
+          context,
+          message: printerQueueFailureText(l10n, error.reason),
         );
       }
     } on StoreException {

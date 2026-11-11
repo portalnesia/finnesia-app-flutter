@@ -589,7 +589,7 @@ class L10nId extends L10n {
 
   @override
   String get printerOutputFlutterModesNote =>
-      'Printer Windows mencetak lewat driver sistem (PDF).';
+      'Printer Windows menerima perintah ESC/POS langsung, atau PDF lewat driver-nya.';
 
   @override
   String get printerOutputBluetooth => 'Bluetooth';
@@ -649,6 +649,19 @@ class L10nId extends L10n {
       'Lebar kertas dan pemotongan diatur oleh driver printer Windows.';
 
   @override
+  String get printerWindowsQueueFormat => 'Format cetak';
+
+  @override
+  String get printerWindowsQueueFormatEscPos => 'Printer struk (ESC/POS)';
+
+  @override
+  String get printerWindowsQueueFormatPdf => 'Printer biasa (PDF)';
+
+  @override
+  String get printerWindowsQueueFormatEscPosNote =>
+      'Perintah ESC/POS dikirim langsung ke printer, sama seperti lewat Bluetooth.';
+
+  @override
   String get printerWindowsQueueTitle => 'Pilih printer Windows';
 
   @override
@@ -689,7 +702,7 @@ class L10nId extends L10n {
 
   @override
   String get printerWindowsQueuePrintFailed =>
-      'PDF belum bisa dikirim ke printer Windows.';
+      'Cetakan belum bisa dikirim ke printer Windows.';
 
   @override
   String get printerWindowsQueueCancelled =>

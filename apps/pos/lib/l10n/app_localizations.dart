@@ -1054,7 +1054,7 @@ abstract class L10n {
   /// No description provided for @printerOutputFlutterModesNote.
   ///
   /// In id, this message translates to:
-  /// **'Printer Windows mencetak lewat driver sistem (PDF).'**
+  /// **'Printer Windows menerima perintah ESC/POS langsung, atau PDF lewat driver-nya.'**
   String get printerOutputFlutterModesNote;
 
   /// No description provided for @printerOutputBluetooth.
@@ -1153,6 +1153,30 @@ abstract class L10n {
   /// **'Lebar kertas dan pemotongan diatur oleh driver printer Windows.'**
   String get printerWindowsQueueFormattingNote;
 
+  /// No description provided for @printerWindowsQueueFormat.
+  ///
+  /// In id, this message translates to:
+  /// **'Format cetak'**
+  String get printerWindowsQueueFormat;
+
+  /// No description provided for @printerWindowsQueueFormatEscPos.
+  ///
+  /// In id, this message translates to:
+  /// **'Printer struk (ESC/POS)'**
+  String get printerWindowsQueueFormatEscPos;
+
+  /// No description provided for @printerWindowsQueueFormatPdf.
+  ///
+  /// In id, this message translates to:
+  /// **'Printer biasa (PDF)'**
+  String get printerWindowsQueueFormatPdf;
+
+  /// No description provided for @printerWindowsQueueFormatEscPosNote.
+  ///
+  /// In id, this message translates to:
+  /// **'Perintah ESC/POS dikirim langsung ke printer, sama seperti lewat Bluetooth.'**
+  String get printerWindowsQueueFormatEscPosNote;
+
   /// No description provided for @printerWindowsQueueTitle.
   ///
   /// In id, this message translates to:
@@ -1222,7 +1246,7 @@ abstract class L10n {
   /// No description provided for @printerWindowsQueuePrintFailed.
   ///
   /// In id, this message translates to:
-  /// **'PDF belum bisa dikirim ke printer Windows.'**
+  /// **'Cetakan belum bisa dikirim ke printer Windows.'**
   String get printerWindowsQueuePrintFailed;
 
   /// No description provided for @printerWindowsQueueCancelled.

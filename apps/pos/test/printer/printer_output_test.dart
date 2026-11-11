@@ -26,19 +26,52 @@ void main() {
   final escPos = Uint8List.fromList([0x1b, 0x40, 0x41]);
   final pdf = Uint8List.fromList([37, 80, 68, 70, 45, 49]);
 
-  FakeStorePort windowsStore() => FakeStorePort({
+  FakeStorePort windowsStore({String? format}) => FakeStorePort({
     printerKey: jsonEncode({'address': 'AA:BB', 'name': 'Kitchen BLE'}),
     printerOutputModeKey: 'windows_queue',
     windowsPrinterQueueKey: jsonEncode({'id': office.id, 'name': office.name}),
+    windowsQueueFormatKey: ?format,
   });
 
   group('Windows print queue output', () {
+    // The PDF route re-renders the receipt through the driver, which clipped and shifted it on
+    // an Epson TM-U220; RAW hands the printer the same bytes Bluetooth sends.
+    test('sends the ESC/POS bytes RAW to the saved queue by default, without a PDF', () async {
+      final bluetooth = FakePrinter();
+      final printQueue = FakePrintQueuePort([office]);
+      var pdfBuilds = 0;
+
+      await printSelectedDocument(
+        bluetoothBytes: escPos,
+        buildWindowsPdf: (_) async {
+          pdfBuilds++;
+          return pdf;
+        },
+        documentName: 'Receipt',
+        bluetooth: bluetooth,
+        printQueue: printQueue,
+        store: windowsStore(),
+        platform: TargetPlatform.windows,
+      );
+
+      expect(pdfBuilds, 0);
+      expect(bluetooth.operations, isEmpty);
+      expect(printQueue.operations, [
+        PrintQueueOperation.list,
+        PrintQueueOperation.printRaw,
+      ]);
+      expect(printQueue.rawPrinted.single.queueId, office.id);
+      expect(printQueue.rawPrinted.single.name, 'Receipt');
+      expect(printQueue.rawPrinted.single.bytes, escPos);
+      expect(printQueue.printed, isEmpty);
+    });
+
     test(
-      'submits generated PDF to the saved queue, not the BLE port',
+      'submits generated PDF to the saved queue when PDF was chosen',
       () async {
         final bluetooth = FakePrinter();
         final printQueue = FakePrintQueuePort([office]);
-        final store = windowsStore();
+        final store = windowsStore(format: 'pdf');
         var pdfBuilds = 0;
         WindowsPrintPageSize? builtForPageSize;
 
@@ -130,7 +163,7 @@ void main() {
     test('surfaces a Windows spooler submission error unchanged', () async {
       final printQueue = FakePrintQueuePort([office])
         ..failNext(
-          PrintQueueOperation.print,
+          PrintQueueOperation.printRaw,
           const PrintQueueException(PrintQueueFailure.printFailed),
         );
 
@@ -154,7 +187,7 @@ void main() {
       );
       expect(printQueue.operations, [
         PrintQueueOperation.list,
-        PrintQueueOperation.print,
+        PrintQueueOperation.printRaw,
       ]);
     });
   });

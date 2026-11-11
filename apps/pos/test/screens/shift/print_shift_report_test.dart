@@ -302,6 +302,7 @@ void main() {
       final rig = (await pumpReport(tester)).rig;
       rig.printQueue.queues.add(office);
       await rememberWindowsPrinterQueue(office, rig.store);
+      await saveWindowsQueueFormat(WindowsQueueFormat.pdf, rig.store);
 
       await tester.tap(printButton);
       await settleAsyncPrint(tester, rig.printQueue, expectedOperations: 2);
@@ -322,6 +323,7 @@ void main() {
       final rig = (await pumpReport(tester)).rig;
       rig.printQueue.queues.add(office);
       await rememberWindowsPrinterQueue(office, rig.store);
+      await saveWindowsQueueFormat(WindowsQueueFormat.pdf, rig.store);
 
       await tester.tap(printButton);
       await settleAsyncPrint(tester, rig.printQueue, expectedOperations: 2);

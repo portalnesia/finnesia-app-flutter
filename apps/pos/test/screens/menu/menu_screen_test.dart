@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pn_pos/src/pos_pending_sale.dart';
 import 'package:pn_types/src/api/transport.dart';
+import 'package:pn_types/src/native/print_queue_fake.dart';
 import 'package:pn_types/src/native/printer_fake.dart';
 import 'package:pn_types/src/native/printer_port.dart';
 import 'package:pn_types/src/native/public_http_port.dart';
@@ -216,6 +217,7 @@ Future<Rig> pumpMenu(
   PrinterDevice? savedPrinter,
   FakePrinter? printer,
   bool printerUnreadable = false,
+  Map<String, String> extraStored = const {},
   bool settle = true,
 }) async {
   tester.view.physicalSize = size;
@@ -231,6 +233,7 @@ Future<Rig> pumpMenu(
         'address': savedPrinter.address,
         'name': savedPrinter.name,
       }),
+    ...extraStored,
   };
   final rig = Rig(
     stored,
@@ -376,6 +379,87 @@ void main() {
 
       expect(find.text(l10n.menuVersionUnknown), findsOneWidget);
     });
+  });
+
+  // A Windows queue is usually the receipt printer, which a driver-rendered PDF clipped and
+  // shifted; ESC/POS goes to it RAW, with the same width and cutter settings as Bluetooth.
+  group('the printer on Windows', () {
+    const epson = (
+      id: 'EPSON TM-U220 Receipt',
+      name: 'EPSON TM-U220 Receipt',
+      isDefault: true,
+      isAvailable: true,
+    );
+    final windows = TargetPlatformVariant.only(TargetPlatform.windows);
+    final queueStored = {
+      printerOutputModeKey: 'windows_queue',
+      windowsPrinterQueueKey: jsonEncode({'id': epson.id, 'name': epson.name}),
+    };
+
+    testWidgets(
+      'a saved queue prints ESC/POS by default, with width and cutter',
+      (tester) async {
+        await pumpMenu(tester, extraStored: queueStored);
+
+        expect(find.text('Printer struk (ESC/POS)'), findsOneWidget);
+        expect(find.text('Printer biasa (PDF)'), findsOneWidget);
+        expect(find.text('Karakter per baris'), findsWidgets);
+        expect(find.text('Cetak halaman tes'), findsOneWidget);
+        expect(
+          find.text(
+            'Lebar kertas dan pemotongan diatur oleh driver printer Windows.',
+          ),
+          findsNothing,
+        );
+      },
+      variant: windows,
+    );
+
+    testWidgets(
+      'choosing PDF saves it and hands width and cutting to the driver',
+      (tester) async {
+        final rig = await pumpMenu(tester, extraStored: queueStored);
+
+        await tester.ensureVisible(find.text('Printer biasa (PDF)'));
+        await tester.tap(find.text('Printer biasa (PDF)'));
+        await tester.pumpAndSettle();
+
+        expect(await rig.store.read(windowsQueueFormatKey), 'pdf');
+        expect(find.text('Karakter per baris'), findsNothing);
+        expect(
+          find.text(
+            'Lebar kertas dan pemotongan diatur oleh driver printer Windows.',
+          ),
+          findsOneWidget,
+        );
+      },
+      variant: windows,
+    );
+
+    testWidgets(
+      'the test page goes RAW to the saved queue, not over Bluetooth',
+      (tester) async {
+        final printer = FakePrinter();
+        final rig = await pumpMenu(
+          tester,
+          extraStored: queueStored,
+          printer: printer,
+        );
+        rig.printQueue.queues.add(epson);
+
+        await tester.ensureVisible(find.text('Cetak halaman tes'));
+        await tester.tap(find.text('Cetak halaman tes'));
+        await tester.pumpAndSettle();
+
+        expect(
+          rig.printQueue.operations,
+          contains(PrintQueueOperation.printRaw),
+        );
+        expect(rig.printQueue.rawPrinted.single.queueId, epson.id);
+        expect(printer.operations, isEmpty);
+      },
+      variant: windows,
+    );
   });
 
   group('the printer', () {

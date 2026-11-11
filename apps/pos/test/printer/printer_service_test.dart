@@ -202,6 +202,49 @@ void main() {
         throwsA(isA<StoreException>()),
       );
     });
+
+    // A Windows queue is usually the receipt printer itself, so it gets the same ESC/POS bytes
+    // as Bluetooth unless the cashier picked PDF for an ordinary page printer.
+    test('a queue sends ESC/POS unless PDF was chosen', () async {
+      expect(
+        await readWindowsQueueFormat(FakeStorePort()),
+        WindowsQueueFormat.escPos,
+      );
+      for (final raw in ['', 'bogus', 'PDF']) {
+        expect(
+          await readWindowsQueueFormat(
+            FakeStorePort({windowsQueueFormatKey: raw}),
+          ),
+          WindowsQueueFormat.escPos,
+          reason: raw,
+        );
+      }
+      expect(
+        await readWindowsQueueFormat(
+          FakeStorePort({windowsQueueFormatKey: 'pdf'}),
+        ),
+        WindowsQueueFormat.pdf,
+      );
+    });
+
+    test('saves the queue format and reads it back', () async {
+      final store = FakeStorePort();
+      await saveWindowsQueueFormat(WindowsQueueFormat.pdf, store);
+      expect(await readWindowsQueueFormat(store), WindowsQueueFormat.pdf);
+      await saveWindowsQueueFormat(WindowsQueueFormat.escPos, store);
+      expect(await readWindowsQueueFormat(store), WindowsQueueFormat.escPos);
+    });
+
+    test(
+      'lets a failing store through when reading the queue format',
+      () async {
+        final store = FakeStorePort()..failNext(StoreException('disk full'));
+        await expectLater(
+          readWindowsQueueFormat(store),
+          throwsA(isA<StoreException>()),
+        );
+      },
+    );
   });
 
   group('pairPrinter', () {
