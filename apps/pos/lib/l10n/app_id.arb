@@ -460,6 +460,15 @@
   "receiptLoadFailed": "Struk belum bisa dimuat. Coba lagi.",
   "receiptPaymentMethod": "Metode Pembayaran",
   "receiptVoided": "*** TRANSAKSI DIBATALKAN ***",
+  "posPrintCategoryTicket": "Cetak {category}",
+  "@posPrintCategoryTicket": {
+    "placeholders": {
+      "category": {
+        "type": "String"
+      }
+    }
+  },
+  "posUncategorized": "Tanpa Kategori",
   "receiptNoItems": "Tidak ada rincian barang",
   "receiptPaidBy": "Bayar ({method})",
   "@receiptPaidBy": {

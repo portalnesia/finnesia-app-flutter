@@ -30,6 +30,24 @@ Map<String, dynamic> _$POSSalePaymentToJson(_POSSalePayment instance) =>
       'reference': instance.reference,
     };
 
+_SalesInvoiceItemProduct _$SalesInvoiceItemProductFromJson(
+  Map<String, dynamic> json,
+) => _SalesInvoiceItemProduct(
+  id: json['id'] as String,
+  name: json['name'] as String?,
+  category: json['category'] == null
+      ? null
+      : Category.fromJson(json['category'] as Map<String, dynamic>),
+);
+
+Map<String, dynamic> _$SalesInvoiceItemProductToJson(
+  _SalesInvoiceItemProduct instance,
+) => <String, dynamic>{
+  'id': instance.id,
+  'name': instance.name,
+  'category': ?instance.category?.toJson(),
+};
+
 _SalesInvoiceItem _$SalesInvoiceItemFromJson(Map<String, dynamic> json) =>
     _SalesInvoiceItem(
       id: json['id'] as String,
@@ -46,7 +64,9 @@ _SalesInvoiceItem _$SalesInvoiceItemFromJson(Map<String, dynamic> json) =>
       description: json['description'] as String?,
       product: json['product'] == null
           ? null
-          : NamedRef.fromJson(json['product'] as Map<String, dynamic>),
+          : SalesInvoiceItemProduct.fromJson(
+              json['product'] as Map<String, dynamic>,
+            ),
     );
 
 Map<String, dynamic> _$SalesInvoiceItemToJson(_SalesInvoiceItem instance) =>

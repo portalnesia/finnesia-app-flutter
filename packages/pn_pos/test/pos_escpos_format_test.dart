@@ -586,6 +586,46 @@ void main() {
       expect(text, isNot(contains('\n\n\n')));
     });
 
+    test(
+        'ends with a blank line and the centred branding when asked, as the web does',
+        () {
+      const labels = CategoryTicketEscPosLabels(
+        noItems: 'Kosong',
+        tableNumber: 'No. Meja',
+        queueNumber: 'No. Antrian',
+        finnesiaBranding: 'Finnesia.com\nAplikasi Kasir Otomatis',
+      );
+      final branded = _decode(formatCategoryTicketEscPos(
+        'Makanan',
+        [line()],
+        null,
+        null,
+        labels,
+        null,
+        null,
+        DateTime.utc(2026, 9, 15),
+        32,
+        false,
+        true,
+      ));
+      expect(
+        branded,
+        contains(
+          'x2\n\n${String.fromCharCode(0x1b)}a\u0001'
+          'Finnesia.com\nAplikasi Kasir Otomatis\n',
+        ),
+      );
+
+      final plain = _decode(formatCategoryTicketEscPos(
+        'Makanan',
+        [line()],
+        null,
+        null,
+        labels,
+      ));
+      expect(plain, isNot(contains('Finnesia.com')));
+    });
+
     test('prints an integral quantity without a decimal point', () {
       final text = _decode(formatCategoryTicketEscPos(
         'Makanan',

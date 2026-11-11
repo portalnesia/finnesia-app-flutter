@@ -982,6 +982,14 @@ class L10nId extends L10n {
   String get receiptVoided => '*** TRANSAKSI DIBATALKAN ***';
 
   @override
+  String posPrintCategoryTicket(String category) {
+    return 'Cetak $category';
+  }
+
+  @override
+  String get posUncategorized => 'Tanpa Kategori';
+
+  @override
   String get receiptNoItems => 'Tidak ada rincian barang';
 
   @override

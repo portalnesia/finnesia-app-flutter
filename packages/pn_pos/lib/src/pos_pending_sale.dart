@@ -339,7 +339,12 @@ PendingSale buildPendingSale({
             lineTax: amounts[index].lineTax,
             lineTotal: amounts[index].lineTotal,
             description: null,
-            product: NamedRef(id: line.product.id, name: line.product.name),
+            // The category too, so a queued sale can still print its kitchen tickets.
+            product: SalesInvoiceItemProduct(
+              id: line.product.id,
+              name: line.product.name,
+              category: line.product.category,
+            ),
           ),
       ],
     ),

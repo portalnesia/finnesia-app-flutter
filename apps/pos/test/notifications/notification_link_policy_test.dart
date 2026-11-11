@@ -99,6 +99,80 @@ void main() {
       }
     });
 
+    test('resolves CTA and body links by the web rules', () {
+      final policy = NotificationLinkPolicy(_session());
+
+      final inApp = policy.resolveAction(' /reports/weekly ');
+      expect(
+        inApp?.uri,
+        Uri.parse('https://erp.perusahaan.com/reports/weekly'),
+      );
+      expect(inApp?.inApp, isTrue);
+
+      for (final value in [
+        'https://finnesia.com/promo',
+        'HTTP://finnesia.com/promo',
+        'mailto:cs@finnesia.com',
+        'tel:+62811',
+      ]) {
+        final action = policy.resolveAction(value);
+        expect(action?.uri, Uri.parse(value.trim()), reason: value);
+        expect(action?.inApp, isFalse, reason: value);
+      }
+
+      for (final value in [
+        '',
+        '   ',
+        '//attacker.example/x',
+        '/\\attacker.example',
+        'javascript:alert(1)',
+        'data:text/html,x',
+        'reports/weekly',
+      ]) {
+        expect(policy.resolveAction(value), isNull, reason: value);
+      }
+    });
+
+    test('a relative CTA or body link works on any paired server, as on the web', () {
+      // The web page resolves `/path` against its own origin whatever its scheme, so a
+      // development server on plain HTTP keeps its relative links and buttons.
+      final local = NotificationLinkPolicy(
+        _session(baseUrl: 'http://localhost:4000'),
+      );
+      final action = local.resolveAction('/reports/weekly');
+      expect(action?.uri, Uri.parse('http://localhost:4000/reports/weekly'));
+      expect(action?.inApp, isTrue);
+      expect(local.resolveAction('//localhost:4000/x'), isNull);
+    });
+
+    test('resolves an image the way an <img> on the web page would', () {
+      final policy = NotificationLinkPolicy(_session());
+      expect(
+        policy.resolveMedia('/static/a.png?signature=s&expired=1'),
+        Uri.parse(
+          'https://erp.perusahaan.com/static/a.png?signature=s&expired=1',
+        ),
+      );
+      expect(
+        policy.resolveMedia('https://cdn.finnesia.com/a.png'),
+        Uri.parse('https://cdn.finnesia.com/a.png'),
+      );
+      // A local server during development is plain HTTP; its images still load.
+      expect(
+        NotificationLinkPolicy(_session(baseUrl: 'http://localhost:4000'))
+            .resolveMedia('/static/a.png'),
+        Uri.parse('http://localhost:4000/static/a.png'),
+      );
+      for (final value in [
+        '',
+        '//cdn.example/a.png',
+        'data:image/png;base64,x',
+        'a.png',
+      ]) {
+        expect(policy.resolveMedia(value), isNull, reason: value);
+      }
+    });
+
     test(
       'does not resolve a relative link when the paired origin is not HTTPS',
       () {

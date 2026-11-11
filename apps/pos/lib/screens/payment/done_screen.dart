@@ -9,6 +9,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:pn_pos/src/format.dart';
 import 'package:pn_pos/src/pos_pending_sale.dart';
+import 'package:pn_pos/src/pos_print_category.dart';
 import 'package:pn_types/src/pos.dart';
 import 'package:pn_ui/src/theme/tokens.dart';
 import 'package:pn_ui/src/widgets/ledger_row.dart';
@@ -16,6 +17,8 @@ import 'package:pn_ui/src/widgets/money_text.dart';
 import 'package:pos/app/app_scope.dart';
 import 'package:pos/l10n/app_localizations.dart';
 import 'package:pos/printer/print_receipt.dart';
+import 'package:pos/sale/invoice_item.dart';
+import 'package:pos/screens/common/category_ticket_buttons.dart';
 import 'package:pos/screens/common/print_flow.dart';
 
 /// S7: the change, after the sale is recorded — or after it has been written to the queue but
@@ -105,6 +108,46 @@ class DoneScreen extends StatelessWidget {
     );
   }
 
+  /// The receipt and the kitchen/bar tickets, in one row as on the web. The tickets come from the
+  /// recorded sale or, before the server has it, from the copy taken at payment with the same
+  /// "not sent" marker the temporary receipt carries.
+  Widget _printActions(BuildContext context, L10n l10n) {
+    final recorded = sale;
+    final queued = pending;
+    return CategoryTicketButtons(
+      leading: OutlinedButton(
+        onPressed: () => _print(context),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.print_outlined),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                l10n.receiptPrint,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ),
+      lines: receiptLinesWithCategory(
+        invoiceItems: recorded != null
+            ? recorded.invoice?.items.map(toInvoiceItem).toList()
+            : queued!.receipt.items.map(toInvoiceItem).toList(),
+        fallbackName: l10n.saleDetailUnknownProduct,
+        uncategorizedLabel: l10n.posUncategorized,
+      ),
+      outletId: recorded?.outletId,
+      outletName: queued?.receipt.outletName,
+      saleNumber: recorded?.number ?? l10n.posReceiptTemporary,
+      tableNumber: recorded?.tableNumber ?? queued?.payload.tableNumber,
+      queueNumber: recorded?.queueNumber ?? queued?.payload.queueNumber,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = L10n.of(context);
@@ -180,21 +223,7 @@ class DoneScreen extends StatelessWidget {
                   ],
 
                   const SizedBox(height: 24),
-                  SizedBox(
-                    height: PnTouch.min,
-                    child: OutlinedButton(
-                      onPressed: () => _print(context),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.print_outlined),
-                          const SizedBox(width: 8),
-                          Flexible(child: Text(l10n.receiptPrint)),
-                        ],
-                      ),
-                    ),
-                  ),
+                  _printActions(context, l10n),
                   const SizedBox(height: 12),
                   SizedBox(
                     height: PnTouch.primary,

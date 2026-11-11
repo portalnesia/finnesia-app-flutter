@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pn_pos/src/pos_pending_sale.dart';
+import 'package:pn_types/src/category.dart';
 import 'package:pn_types/src/native/print_queue_fake.dart';
 import 'package:pn_types/src/native/print_queue_port.dart';
 import 'package:pn_types/src/native/printer_fake.dart';
@@ -551,6 +552,77 @@ void main() {
         greaterThanOrEqualTo(PnTouch.min),
       );
       expect(find.text('Transaksi Baru'), findsOneWidget);
+    });
+  });
+
+  // The web's change dialog offers the kitchen/bar tickets next to the receipt.
+  group('category tickets', () {
+    const drinks = Category(
+      id: 'c2',
+      name: 'Teh',
+      parentId: 'c1',
+      parent: Category(id: 'c1', name: 'Minuman'),
+    );
+
+    testWidgets('a recorded sale prints its category ticket', (tester) async {
+      final json = saleJson();
+      final invoice = json['invoice']! as Map<String, Object?>;
+      final item = (invoice['items']! as List).single as Map<String, Object?>;
+      item['product'] = {
+        'id': 'p',
+        'name': 'Kopi Susu',
+        'category': {
+          'id': 'c2',
+          'name': 'Teh',
+          'parent_id': 'c1',
+          'parent': {'id': 'c1', 'name': 'Minuman'},
+        },
+      };
+      final setup = await pumpDone(tester, completed: POSSale.fromJson(json));
+
+      await tester.tap(find.text('Cetak Minuman'));
+      await tester.pumpAndSettle();
+
+      final text = paper(setup.rig);
+      expect(text, contains('Minuman'));
+      expect(text, contains('Kopi Susu'));
+      expect(text, contains('x2'));
+      expect(text, contains('POS-0007'));
+      expect(text, contains('Outlet Pusat'));
+    });
+
+    testWidgets('a queued sale prints it from the copy taken at payment', (
+      tester,
+    ) async {
+      final queued = pendingSale().copyWith(
+        receipt: pendingSale().receipt.copyWith(
+          outletName: 'Outlet Pusat',
+          items: const [
+            SalesInvoiceItem(
+              id: 'l1',
+              quantity: 2,
+              price: 25000,
+              lineSubtotal: 50000,
+              lineTotal: 50000,
+              product: SalesInvoiceItemProduct(
+                id: 'p',
+                name: 'Kopi Susu',
+                category: drinks,
+              ),
+            ),
+          ],
+        ),
+      );
+      final setup = await pumpDone(tester, pending: queued);
+
+      await tester.tap(find.text('Cetak Minuman'));
+      await tester.pumpAndSettle();
+
+      final text = paper(setup.rig);
+      expect(text, contains('Kopi Susu'));
+      expect(text, contains('Outlet Pusat'));
+      // No server number yet: the same marker the temporary receipt carries.
+      expect(text, contains('SEMENTARA'));
     });
   });
 }

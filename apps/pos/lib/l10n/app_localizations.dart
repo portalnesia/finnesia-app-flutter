@@ -1753,6 +1753,18 @@ abstract class L10n {
   /// **'*** TRANSAKSI DIBATALKAN ***'**
   String get receiptVoided;
 
+  /// No description provided for @posPrintCategoryTicket.
+  ///
+  /// In id, this message translates to:
+  /// **'Cetak {category}'**
+  String posPrintCategoryTicket(String category);
+
+  /// No description provided for @posUncategorized.
+  ///
+  /// In id, this message translates to:
+  /// **'Tanpa Kategori'**
+  String get posUncategorized;
+
   /// No description provided for @receiptNoItems.
   ///
   /// In id, this message translates to:

@@ -27,7 +27,7 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 // the ordinary behaviour, because the reversal is the point of the whole port
 // (`plan/offline-queue/README.md` §4.1).
 
-const kopi = NamedRef(id: 'prd_1', name: 'Kopi Susu');
+const kopi = SalesInvoiceItemProduct(id: 'prd_1', name: 'Kopi Susu');
 
 PendingSaleReceipt receipt() => const PendingSaleReceipt(
   outletName: 'Outlet Pusat',

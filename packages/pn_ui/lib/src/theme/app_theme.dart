@@ -5,6 +5,7 @@
  * Written by Putu Aditya <aditya@portalnesia.com>
  */
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'palette.dart';
@@ -45,8 +46,16 @@ extension PnBuildContext on BuildContext {
 /// The typeface is the system's (owner decision K7): identity comes from size and weight, not
 /// from a font file in the APK. Every text style sets figures in **tabular** width, so a total
 /// does not jitter as it changes.
-ThemeData pnTheme(Brightness brightness) {
+///
+/// On Windows that face is Segoe UI. Material's typography otherwise names Roboto on every
+/// platform, and a Windows machine has at most an upright Roboto, so italics were faked by
+/// slanting it. Every other platform keeps the typography it had. [platform] is for tests.
+ThemeData pnTheme(Brightness brightness, {TargetPlatform? platform}) {
   final p = brightness == Brightness.light ? PnPalette.light : PnPalette.dark;
+  final typography =
+      (platform ?? defaultTargetPlatform) == TargetPlatform.windows
+          ? Typography.material2021(platform: TargetPlatform.windows)
+          : Typography.material2021();
 
   final scheme = ColorScheme(
     brightness: brightness,
@@ -112,9 +121,7 @@ ThemeData pnTheme(Brightness brightness) {
     materialTapTargetSize: MaterialTapTargetSize.padded,
     extensions: [PnColors(p)],
     textTheme: _tabular(
-      (brightness == Brightness.light
-              ? Typography.material2021().black
-              : Typography.material2021().white)
+      (brightness == Brightness.light ? typography.black : typography.white)
           .apply(bodyColor: p.ink, displayColor: p.ink),
     ),
     filledButtonTheme: FilledButtonThemeData(

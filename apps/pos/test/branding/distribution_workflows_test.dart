@@ -42,8 +42,13 @@ Directory repoRoot() {
   return dir;
 }
 
+/// The workflow as git stores it, with LF line endings. A Windows checkout with
+/// `core.autocrlf=true` writes CRLF to disk, and the multi-line expectations here are written
+/// with `\n`, so without this they fail on Windows while passing on CI.
 String readWorkflow(String name) =>
-    File('${repoRoot().path}/.github/workflows/$name').readAsStringSync();
+    File('${repoRoot().path}/.github/workflows/$name')
+        .readAsStringSync()
+        .replaceAll('\r\n', '\n');
 
 /// Whether [workflow] uploads a bundle to Play, by either of the two ways it can do that.
 bool uploadsToPlay(String workflow) =>

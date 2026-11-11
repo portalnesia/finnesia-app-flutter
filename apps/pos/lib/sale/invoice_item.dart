@@ -20,7 +20,6 @@ InvoiceItem toInvoiceItem(SalesInvoiceItem item) => (
   discountAmount: item.discountAmount,
   lineSubtotal: item.lineSubtotal,
   lineTotal: item.lineTotal,
-  // The customer receipt ignores the category; only the kitchen ticket reads it, and that is not
-  // built (README D3).
-  category: null,
+  // The customer receipt ignores the category; the kitchen ticket groups by it.
+  category: item.product?.category,
 );

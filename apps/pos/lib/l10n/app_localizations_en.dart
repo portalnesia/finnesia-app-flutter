@@ -989,6 +989,14 @@ class L10nEn extends L10n {
   String get receiptVoided => '*** TRANSACTION VOIDED ***';
 
   @override
+  String posPrintCategoryTicket(String category) {
+    return 'Print $category';
+  }
+
+  @override
+  String get posUncategorized => 'Uncategorized';
+
+  @override
   String get receiptNoItems => 'No item details';
 
   @override

@@ -304,11 +304,15 @@ class CategoryTicketEscPosLabels {
     required this.noItems,
     required this.tableNumber,
     required this.queueNumber,
+    this.finnesiaBranding = '',
   });
 
   final String noItems;
   final String tableNumber;
   final String queueNumber;
+
+  /// Printed under the lines when the ticket is branded, one line per `\n`.
+  final String finnesiaBranding;
 }
 
 /// Builds a kitchen/bar ticket for one top-level category.
@@ -337,6 +341,7 @@ Uint8List formatCategoryTicketEscPos(
   DateTime? now,
   int columns = 32,
   bool autoCutter = false,
+  bool? showBranding,
 ]) {
   final ops = <Uint8List>[
     ..._ticketStart(autoCutter),
@@ -370,6 +375,13 @@ Uint8List formatCategoryTicketEscPos(
       ops.add(
           cmdLineColumns(line.name, 'x${jsNumber(line.quantity)}', columns));
     }
+  }
+
+  // The kitchen ticket has no shop footer, so the branding follows one blank line.
+  if (showBranding == true) {
+    ops.add(cmdText(''));
+    ops.add(cmdAlign(EscPosAlign.center));
+    ops.add(cmdText(labels.finnesiaBranding));
   }
 
   ops.addAll(_ticketEnd(autoCutter));

@@ -49,7 +49,7 @@ Future<void> printReceipt(
       : await PosApi.salesGet(client, (id: sale.id));
   final (settings, outletName) = await (
     readPrintSettings(client),
-    _readOutletName(client, sale.outletId),
+    readOutletName(client, sale.outletId),
   ).wait;
   final printerFormat = await readPrinterFormatSettings(store);
   final receipt = receiptData(complete, outletName: outletName);
@@ -75,7 +75,9 @@ Future<void> printReceipt(
   );
 }
 
-Future<String?> _readOutletName(ApiClient client, String outletId) async {
+/// The outlet's name for a printed header, or null when it cannot be read: a missing name is no
+/// reason to hold back the slip.
+Future<String?> readOutletName(ApiClient client, String outletId) async {
   try {
     return (await TenantApi.outletsGet(client, (id: outletId))).name;
   } on ApiError {

@@ -422,6 +422,15 @@
   "receiptLoadFailed": "The receipt could not be loaded. Try again.",
   "receiptPaymentMethod": "Payment Method",
   "receiptVoided": "*** TRANSACTION VOIDED ***",
+  "posPrintCategoryTicket": "Print {category}",
+  "@posPrintCategoryTicket": {
+    "placeholders": {
+      "category": {
+        "type": "String"
+      }
+    }
+  },
+  "posUncategorized": "Uncategorized",
   "receiptNoItems": "No item details",
   "receiptPaidBy": "Paid ({method})",
   "@receiptPaidBy": {

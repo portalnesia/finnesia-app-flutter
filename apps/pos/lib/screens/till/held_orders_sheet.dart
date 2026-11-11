@@ -10,11 +10,13 @@ import 'package:pn_pos/src/datetime.dart';
 import 'package:pn_pos/src/format.dart';
 import 'package:pn_pos/src/pos_calculations.dart';
 import 'package:pn_pos/src/pos_hold.dart';
+import 'package:pn_pos/src/pos_print_category.dart';
 import 'package:pn_types/src/pos.dart';
 import 'package:pn_ui/src/theme/app_theme.dart';
 import 'package:pn_ui/src/theme/tokens.dart';
 import 'package:pn_ui/src/widgets/state_view.dart';
 import 'package:pos/l10n/app_localizations.dart';
+import 'package:pos/screens/common/category_ticket_buttons.dart';
 import 'package:pos/screens/till/pos_sheet.dart';
 import 'package:pos/till/hold_controller.dart';
 
@@ -170,6 +172,11 @@ class _HeldRow extends StatelessWidget {
                   ),
                 ],
               ),
+            ),
+            // The kitchen should not wait for the basket to be resumed.
+            const SizedBox(height: 8),
+            CategoryTicketButtons(
+              lines: cartLinesWithCategory(order.lines, l10n.posUncategorized),
             ),
           ],
         ),

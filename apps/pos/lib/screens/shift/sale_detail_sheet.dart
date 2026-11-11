@@ -10,18 +10,19 @@ import 'package:flutter/material.dart';
 import 'package:pn_pos/src/datetime.dart';
 import 'package:pn_pos/src/format.dart';
 import 'package:pn_pos/src/js_compat.dart';
+import 'package:pn_pos/src/pos_print_category.dart';
 import 'package:pn_pos/src/pos_receipt.dart';
 import 'package:pn_pos/src/pos_tender.dart';
 import 'package:pn_types/src/api/endpoints/pos.dart';
 import 'package:pn_types/src/pos.dart';
 import 'package:pn_ui/src/theme/app_theme.dart';
-import 'package:pn_ui/src/theme/tokens.dart';
 import 'package:pn_ui/src/widgets/ledger_row.dart';
 import 'package:pn_ui/src/widgets/state_view.dart';
 import 'package:pos/app/app_scope.dart';
 import 'package:pos/l10n/app_localizations.dart';
 import 'package:pos/printer/print_receipt.dart';
 import 'package:pos/sale/invoice_item.dart';
+import 'package:pos/screens/common/category_ticket_buttons.dart';
 import 'package:pos/screens/common/print_flow.dart';
 import 'package:pos/screens/common/tender_label.dart';
 import 'package:pos/screens/till/pos_sheet.dart';
@@ -203,9 +204,9 @@ class _SaleBody extends StatelessWidget {
           Text(notes, style: theme.bodyLarge),
         ],
         const SizedBox(height: 24),
-        SizedBox(
-          height: PnTouch.min,
-          child: OutlinedButton(
+        // The receipt and the kitchen/bar tickets share one row, as on the web.
+        CategoryTicketButtons(
+          leading: OutlinedButton(
             onPressed: () => _print(context),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -213,10 +214,25 @@ class _SaleBody extends StatelessWidget {
               children: [
                 const Icon(Icons.print_outlined),
                 const SizedBox(width: 8),
-                Flexible(child: Text(l10n.receiptPrint)),
+                Flexible(
+                  child: Text(
+                    l10n.receiptPrint,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
               ],
             ),
           ),
+          lines: receiptLinesWithCategory(
+            invoiceItems: sale.invoice?.items.map(toInvoiceItem).toList(),
+            fallbackName: l10n.saleDetailUnknownProduct,
+            uncategorizedLabel: l10n.posUncategorized,
+          ),
+          outletId: sale.outletId,
+          saleNumber: sale.number,
+          tableNumber: table,
+          queueNumber: queue,
         ),
       ],
     );
