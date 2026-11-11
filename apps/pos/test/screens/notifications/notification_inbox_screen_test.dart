@@ -39,6 +39,8 @@ Map<String, Object?> _itemJson({
   String? companyId = 'comp_1',
   String? link,
   String? readAt,
+  String? bodyHtml,
+  String? subtitle,
   List<Object?> buttons = const [],
 }) => {
   'id': id,
@@ -47,6 +49,8 @@ Map<String, Object?> _itemJson({
   'category': 'system',
   'title': 'Laporan siap',
   'body': 'Laporan mingguan dapat dibuka.',
+  'subtitle': subtitle,
+  'body_html': bodyHtml,
   'link': link,
   'ref': null,
   'company_id': companyId,
@@ -144,7 +148,10 @@ void main() {
     testWidgets('shows the server inbox items', (tester) async {
       transport.respond(
         _answer({
-          'items': [_itemJson()],
+          'items': [
+            _itemJson(subtitle: 'Laporan penjualan siap.'),
+            _itemJson(id: 'recipient_fallback'),
+          ],
           'next_cursor': '',
         }),
       );
@@ -156,7 +163,8 @@ void main() {
       await tester.pump();
 
       expect(find.text('Kotak Masuk Notifikasi'), findsOneWidget);
-      expect(find.text('Laporan siap'), findsOneWidget);
+      expect(find.text('Laporan siap'), findsNWidgets(2));
+      expect(find.text('Laporan penjualan siap.'), findsOneWidget);
       expect(find.text('Laporan mingguan dapat dibuka.'), findsOneWidget);
       final headerBottom = tester.getBottomLeft(find.byType(ScreenHeader)).dy;
       final firstCardTop = tester.getTopLeft(find.byType(Card).first).dy;
@@ -403,6 +411,95 @@ void main() {
       await tester.pump();
 
       expect(opener.opened, ['https://erp.perusahaan.com/reports/weekly']);
+    });
+
+    testWidgets(
+      'renders rich notification HTML and opens a trusted body link',
+      (tester) async {
+        final item = _itemJson(
+          bodyHtml:
+              '<h2>Ringkasan</h2><p><strong>Penjualan naik</strong> '
+              '<a href="https://erp.perusahaan.com/reports/weekly">Buka laporan</a></p>',
+        );
+        transport.respond(
+          _answer({
+            'items': [item],
+            'next_cursor': '',
+          }),
+        );
+        transport.respond(
+          _answer({'company_id': 'comp_1', 'link': '', 'item': item}),
+        );
+        transport.respond(_answer({'items': [], 'next_cursor': ''}));
+        transport.respond(_answer({'total': 0}));
+
+        await tester.pumpWidget(
+          _screenApp(controller: controller, opener: opener),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Laporan siap'));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.byWidgetPredicate(
+            (widget) =>
+                widget is RichText &&
+                widget.text.toPlainText().contains('Penjualan naik'),
+          ),
+          findsOneWidget,
+        );
+        final link = find.byWidgetPredicate(
+          (widget) =>
+              widget is RichText &&
+              widget.text.toPlainText().contains('Buka laporan'),
+        );
+        expect(link, findsOneWidget);
+        await tester.tap(link);
+        await tester.pump();
+
+        expect(opener.opened, ['https://erp.perusahaan.com/reports/weekly']);
+      },
+    );
+
+    testWidgets('does not open an untrusted link in notification HTML', (
+      tester,
+    ) async {
+      final item = _itemJson(
+        bodyHtml: '<p><a href="https://attacker.example/steal">Link eksternal</a></p>',
+      );
+      transport.respond(
+        _answer({
+          'items': [item],
+          'next_cursor': '',
+        }),
+      );
+      transport.respond(
+        _answer({'company_id': 'comp_1', 'link': '', 'item': item}),
+      );
+      transport.respond(_answer({'items': [], 'next_cursor': ''}));
+      transport.respond(_answer({'total': 0}));
+
+      await tester.pumpWidget(
+        _screenApp(controller: controller, opener: opener),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Laporan siap'));
+      await tester.pumpAndSettle();
+
+      final link = find.byWidgetPredicate(
+        (widget) =>
+            widget is RichText &&
+            widget.text.toPlainText().contains('Link eksternal'),
+      );
+      expect(link, findsOneWidget);
+      await tester.tap(link);
+      await tester.pump();
+
+      expect(opener.opened, isEmpty);
+      expect(
+        find.text('Tautan notifikasi tidak aman atau tidak tersedia.'),
+        findsNothing,
+      );
     });
 
     testWidgets('opens a push tap only after the server resolves it', (

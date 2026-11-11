@@ -13,14 +13,14 @@ import 'package:flutter_test/flutter_test.dart';
 //
 //   2026-09-28  Android production -> Play Store AND a GitHub Release asset.
 //               Android staging    -> GitHub Release asset only. No Play upload.
-//               Windows            -> GitHub Release asset only. No Partner Center.
+//               Windows            -> GitHub Release asset; Partner Center manual.
 //   2026-10-05  REVERSED the Play half of the production line. `release-pos.yml` now builds and
 //               attaches only; the single road to Play is `publish-to-store.yml`, which starts when
 //               a human presses Publish on the release page. The two removals have different
 //               reasons, and both are the owner's: staging is an internal artifact a tester installs
-//               from a link, and the Windows upload demanded an Entra tenant + app registration +
-//               Manager role + four secrets for a three-click manual job that happens once per
-//               release.
+//               from a link. Windows originally stayed manual because upload demanded Entra setup.
+//   2026-11-11  Windows Partner Center submission is optional: complete credentials enable it;
+//               any missing value skips it while GitHub artifact and release paths continue.
 //
 // A workflow is configuration nobody compiles, so it rots silently and the failure only shows up
 // on a real tag. These checks are therefore proved on input that is known to be bad before their
@@ -55,6 +55,13 @@ bool uploadsToPartnerCenter(String workflow) =>
     workflow.contains('msstore') ||
     workflow.contains('microsoft-store-apppublisher');
 
+/// Whether Partner Center submission is isolated behind the complete-config output.
+bool optionalPartnerCenterUpload(String workflow) =>
+    uploadsToPartnerCenter(workflow) &&
+    jobBlock(workflow, 'submit-to-partner-center').any(
+      (line) => line.trim() == "if: inputs.draft_release != 'no' && needs.build.outputs.partner_center_upload == 'true'",
+    );
+
 /// Whether [workflow] builds an installable APK rather than a bundle.
 bool buildsAnApk(String workflow) =>
     RegExp(r'flutter build apk\b').hasMatch(workflow);
@@ -79,10 +86,11 @@ List<String> stagingWorkflowProblems({
 
 /// The problems with the Windows workflow, where each argument is what it does.
 List<String> windowsWorkflowProblems({
-  required bool uploadsToPartnerCenter,
+  required bool optionalPartnerCenterUpload,
   required bool attachesToAGitHubRelease,
 }) => [
-  if (uploadsToPartnerCenter) 'Windows uploads to Partner Center, which needs Entra credentials the owner is not setting up',
+  if (!optionalPartnerCenterUpload)
+    'Windows Partner Center upload is not optional when credentials are absent',
   if (!attachesToAGitHubRelease) 'Windows attaches nothing to a GitHub Release, so there is nothing to download',
 ];
 
@@ -578,29 +586,32 @@ void main() {
   });
 
   group('the Windows workflow detector', () {
-    test('accepts a workflow that only publishes to GitHub', () {
-      expect(
-        windowsWorkflowProblems(
-          uploadsToPartnerCenter: false,
-          attachesToAGitHubRelease: true,
-        ),
-        isEmpty,
-      );
-    });
+    test(
+      'accepts an optional Partner Center upload beside GitHub publishing',
+      () {
+        expect(
+          windowsWorkflowProblems(
+            optionalPartnerCenterUpload: true,
+            attachesToAGitHubRelease: true,
+          ),
+          isEmpty,
+        );
+      },
+    );
 
-    test('names a workflow that still uploads to Partner Center', () {
+    test('names a workflow that makes Partner Center upload mandatory', () {
       final problems = windowsWorkflowProblems(
-        uploadsToPartnerCenter: true,
+        optionalPartnerCenterUpload: false,
         attachesToAGitHubRelease: true,
       );
 
       expect(problems, hasLength(1));
-      expect(problems.single, contains('Partner Center'));
+      expect(problems.single, contains('optional'));
     });
 
     test('names a workflow that publishes nothing', () {
       final problems = windowsWorkflowProblems(
-        uploadsToPartnerCenter: false,
+        optionalPartnerCenterUpload: true,
         attachesToAGitHubRelease: false,
       );
 
@@ -675,25 +686,97 @@ void main() {
   group('the Windows workflow', () {
     final workflow = readWorkflow('windows-pos.yml');
 
-    test('publishes only to GitHub, so no Entra tenant is needed', () {
-      expect(
-        windowsWorkflowProblems(
-          uploadsToPartnerCenter: uploadsToPartnerCenter(workflow),
-          attachesToAGitHubRelease: attachesToAGitHubRelease(workflow),
-        ),
-        isEmpty,
-        reason: 'owner decision 2026-09-28: the package is uploaded to Partner Center by hand',
-      );
+    test(
+      'keeps GitHub publishing and makes Partner Center submission optional',
+      () {
+        expect(
+          windowsWorkflowProblems(
+            optionalPartnerCenterUpload: optionalPartnerCenterUpload(workflow),
+            attachesToAGitHubRelease: attachesToAGitHubRelease(workflow),
+          ),
+          isEmpty,
+          reason: 'missing Store credentials must not block the normal Windows release paths',
+        );
+      },
+    );
+
+    test(
+      'skips successfully when any required credential or product ID is absent',
+      () {
+        final configuration = workflowStepBlock(
+          workflow,
+          'Check Partner Center configuration',
+        );
+        const secrets = [
+          'AZURE_AD_TENANT_ID',
+          'AZURE_AD_APPLICATION_CLIENT_ID',
+          'AZURE_AD_APPLICATION_SECRET',
+          'SELLER_ID',
+        ];
+        for (final secret in secrets) {
+          expect(
+            configuration,
+            contains(secret + ': ' + r'${{ secrets.' + secret + ' }}'),
+          );
+          expect(configuration, contains(r'-z "$' + secret + '"'));
+        }
+        expect(
+          configuration,
+          contains(r'MSSTORE_PRODUCT_ID: ${{ vars.MSSTORE_PRODUCT_ID }}'),
+        );
+        expect(configuration, contains(r'-z "$MSSTORE_PRODUCT_ID"'));
+        expect(
+          configuration,
+          contains(r'echo "enabled=false" >> "$GITHUB_OUTPUT"'),
+        );
+        expect(configuration, contains('exit 0'));
+        expect(
+          configuration,
+          contains(r'echo "enabled=true" >> "$GITHUB_OUTPUT"'),
+        );
+      },
+    );
+
+    test('declares Partner Center credentials optional for workflow_call', () {
+      for (final secret in const [
+        'AZURE_AD_TENANT_ID',
+        'AZURE_AD_APPLICATION_CLIENT_ID',
+        'AZURE_AD_APPLICATION_SECRET',
+        'SELLER_ID',
+      ]) {
+        expect(
+          workflow,
+          contains('$secret:\n        required: false'),
+          reason:
+              '$secret must not block a caller that has not configured Store upload',
+        );
+      }
     });
 
-    test('names no Entra secret and no Store product id', () {
-      // Each of these was a setup step that blocked the pipeline. Leaving one behind means the
-      // workflow still cannot run for someone who has not done the Entra setup.
-      expect(workflow, isNot(contains('AZURE_AD_TENANT_ID')));
-      expect(workflow, isNot(contains('AZURE_AD_APPLICATION_CLIENT_ID')));
-      expect(workflow, isNot(contains('AZURE_AD_APPLICATION_SECRET')));
-      expect(workflow, isNot(contains('SELLER_ID')));
-      expect(workflow, isNot(contains('MSSTORE_PRODUCT_ID')));
+    test('submits the built MSIX only in a separate, credential-gated job', () {
+      final submission = jobBlock(
+        workflow,
+        'submit-to-partner-center',
+      ).join('\n');
+      expect(submission, contains('needs: build'));
+      expect(
+        submission,
+        contains(
+          "if: inputs.draft_release != 'no' && needs.build.outputs.partner_center_upload == 'true'",
+        ),
+      );
+      expect(
+        submission,
+        contains('microsoft/microsoft-store-apppublisher@v1.4'),
+      );
+      expect(submission, contains('msstore reconfigure'));
+      expect(submission, contains('msstore publish'));
+      expect(submission, contains('MSSTORE_PRODUCT_ID'));
+      expect(submission, contains('actions/download-artifact@v4'));
+
+      final release = jobBlock(workflow, 'publish').join('\n');
+      expect(release, contains('needs: build'));
+      expect(release, isNot(contains('submit-to-partner-center')));
     });
 
     test('creates a draft GitHub Release and attaches the MSIX to it', () {
@@ -723,18 +806,15 @@ void main() {
       expect(workflow, contains('contents: write'));
     });
 
-    test(
-      'still packages with the Store identity, because the upload is manual',
-      () {
-        // `--store` keeps `publisher` from `pubspec.yaml` and skips signing; the Store re-signs at
-        // certification. The package the owner uploads by hand must still be this one.
-        expect(workflow, contains('msix:create'));
-        expect(workflow, contains('--store'));
+    test('keeps the Store identity whether upload is automatic or manual', () {
+      // `--store` keeps `publisher` from `pubspec.yaml` and skips signing; the Store re-signs at
+      // certification. The package must remain eligible for the configured Partner Center app.
+      expect(workflow, contains('msix:create'));
+      expect(workflow, contains('--store'));
 
-        expect(workflow, contains('PutuAditya.FinnesiaPOS'));
-        expect(workflow, contains('CN=FD977251-3866-4FF0-ABD2-D71AAABF5137'));
-      },
-    );
+      expect(workflow, contains('PutuAditya.FinnesiaPOS'));
+      expect(workflow, contains('CN=FD977251-3866-4FF0-ABD2-D71AAABF5137'));
+    });
 
     test('builds the Shorebird release before MSIX and prevents a stock rebuild', () {
       final pubspec = File('${repoRoot().path}/apps/pos/pubspec.yaml')
@@ -1080,12 +1160,22 @@ void main() {
         'release-pos.yml': [...signing, 'SHOREBIRD_TOKEN'],
         'shorebird-patch.yml': [...signing, 'SHOREBIRD_TOKEN'],
         'shorebird-patch-windows.yml': ['SHOREBIRD_TOKEN'],
-        'windows-pos.yml': ['SHOREBIRD_TOKEN'],
+        'windows-pos.yml': [
+          'SHOREBIRD_TOKEN',
+          'AZURE_AD_TENANT_ID',
+          'AZURE_AD_APPLICATION_CLIENT_ID',
+          'AZURE_AD_APPLICATION_SECRET',
+          'SELLER_ID',
+        ],
       };
       expect(calls.map((c) => c.callee).toSet(), expected.keys.toSet());
       expect(
         calls.where((call) => call.callee == 'release-pos.yml'),
         hasLength(2),
+      );
+      expect(
+        childKeys(readWorkflow('windows-pos.yml'), 'workflow_call', 'secrets'),
+        expected['windows-pos.yml'],
       );
 
       for (final call in calls) {

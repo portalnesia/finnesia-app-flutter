@@ -168,6 +168,10 @@ jobs:
       draft_release: ${{ inputs.draft_release }}
     secrets:
       SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
+      AZURE_AD_TENANT_ID: ${{ secrets.AZURE_AD_TENANT_ID }}
+      AZURE_AD_APPLICATION_CLIENT_ID: ${{ secrets.AZURE_AD_APPLICATION_CLIENT_ID }}
+      AZURE_AD_APPLICATION_SECRET: ${{ secrets.AZURE_AD_APPLICATION_SECRET }}
+      SELLER_ID: ${{ secrets.SELLER_ID }}
 
   # Patch tidak membuat draft: tidak ada berkas untuk dilampirkan. Ketertelusurannya adalah tag
   # `pos-vX.Y.Z-N` itu sendiri, dan tag itu dibuat job di atas.

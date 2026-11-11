@@ -28,13 +28,14 @@ Ada **empat artefak**, dan **tiga** di antaranya rilis:
 | **Rilis native** (`pos-v1.2.0`) | `release-pos.yml`, lalu `publish-to-store.yml` | tablet, lewat Play Store | **ya** — dipromosikan manual |
 | **Patch Dart** (`pos-v1.2.0-5`) | `shorebird-patch.yml` | tablet yang sudah terpasang rilis | tidak (OTA, bukan rilis baru) |
 | **Staging** (`pos-v1.2.0-staging.3`) | `staging-pos.yml` | tim internal | **tidak pernah** |
-| **Windows** (`pos-v1.2.0`) | `windows-pos.yml` | desktop, lewat Microsoft Store | **belum** — paketnya dibangun CI, diunggah manual |
+| **Windows** (`pos-v1.2.0`) | `windows-pos.yml` | desktop, lewat Microsoft Store | **belum** — MSIX dibangun CI; submission otomatis opsional |
 
-**Store hanya untuk production.** Keputusan pemilik 2026-09-28: Android staging dan Windows
-berhenti di GitHub Release saja, dan hanya alur Android production yang mengunggah ke Store
-(Play Store) — dan itu lewat `publish-to-store.yml`, **setelah** draft GitHub Release
-dipublikasikan manusia (§1.5), bukan di run build. Windows tetap dipaketkan dengan identitas
-Store dan diunggah ke Partner Center **oleh pemilik, manual**.
+**Store hanya untuk production.** Android staging berhenti di GitHub Release saja. Android
+production mengunggah ke Play melalui `publish-to-store.yml`, **setelah** draft GitHub Release
+dipublikasikan manusia (§1.5). Windows selalu membangun MSIX dengan identitas Store; pada rilis
+production, `windows-pos.yml` juga dapat mengirimkannya ke Partner Center jika seluruh konfigurasi
+opsional tersedia. Tanpa konfigurasi lengkap, job submission dilewati dan artifact serta draft
+GitHub Release tetap dibuat untuk unggah manual.
 
 Staging punya dokumen sendiri — rencana, alasan, dan angka yang sudah diukur:
 [`plan/staging/README.md`](../plan/staging/README.md). Ringkasnya: ia build type `profile`
@@ -48,13 +49,14 @@ Ringkasnya, dan tiga hal yang membedakannya dari tiga alur di atas:
   kegagalan build Windows tidak memblokir rilis Android dan sebaliknya. Satu nomor versi untuk
   satu produk di dua platform. Build keduanya berjalan paralel; hanya job yang menulis ke **satu**
   GitHub Release bersama yang berbaris lewat `concurrency` group yang sama.
-- **Tidak ada signing, tidak ada secret.** Microsoft Store menandatangani ulang paket MSIX saat
-  sertifikasi, dan `msix:create --store` sendiri tidak menandatangani apa pun. Ini kebalikan
-  total dari `release-pos.yml`.
-- **CI hanya MEMBANGUN.** `windows-pos.yml` berhenti setelah paket `.msix` masuk ke draft
-  GitHub Release; unggahan ke Partner Center dilakukan **manual**, tiga klik. Mengotomatiskan
-  unggah menuntut tenant Entra + app registration + role Manager + 4 secret — untuk pekerjaan
-  yang terjadi sekali per rilis, dan itu yang membuat pemilik memilih jalur manual.
+- **Tidak ada signing.** Microsoft Store menandatangani ulang paket MSIX saat sertifikasi, dan
+  `msix:create --store` sendiri tidak menandatangani apa pun. Entra credentials hanya dipakai oleh
+  job submission terpisah, bukan untuk signing atau membangun paket.
+- **Submission Partner Center opsional.** `windows-pos.yml` selalu membuat Actions artifact dan,
+  untuk rilis, menambahkan MSIX ke draft GitHub Release. Jika empat secret Entra/Partner Center dan
+  repository variable `MSSTORE_PRODUCT_ID` tersedia, job terpisah memakai Microsoft Store CLI untuk
+  mengirim MSIX. Jika ada yang belum disetel, job itu dilewati tanpa menggagalkan build, artifact,
+  atau draft release. Uji-coba `draft release = no` tidak pernah mengirim submission.
 
 > [!NOTE]
 > **Windows tidak punya varian tester.** Package flight ditolak pemilik, karena flight memakai
@@ -461,19 +463,45 @@ Tiga yang pertama sudah ada (keystore yang sama dengan rilis sebelumnya
 `staging-pos.yml` memakai **tiga** yang pertama dan **tidak** memakai
 `PLAY_SERVICE_ACCOUNT_JSON` maupun `SHOREBIRD_TOKEN` — ia tidak menyentuh Store sama sekali.
 
-`windows-pos.yml` dan `shorebird-patch-windows.yml` memakai `SHOREBIRD_TOKEN`. Keduanya tidak
-memerlukan secret Microsoft Store atau Partner Center; rilis MSIX tidak ditandatangani di CI
-karena Store menandatangani ulang dan pengunggahan ke Partner Center tetap manual.
+`windows-pos.yml` dan `shorebird-patch-windows.yml` memakai `SHOREBIRD_TOKEN`. Workflow rilis
+Windows juga memakai submission Partner Center opsional, hanya bila semua secret yang tercantum
+di §2.6 dan repository variable `MSSTORE_PRODUCT_ID` disetel. Rilis MSIX tidak ditandatangani di CI;
+Store menandatangani ulang saat sertifikasi.
 
 `publish-to-store.yml` memakai **hanya** `PLAY_SERVICE_ACCOUNT_JSON`, plus `GITHUB_TOKEN` bawaan
 untuk `gh release download`. Ia tidak memakai `SHOREBIRD_TOKEN`: Shorebird sudah selesai di run
 build, dan tidak ada OTA yang boleh ikut terkirim tanpa dilihat.
 
 > [!NOTE]
-> **Secret Entra tidak lagi dipakai.** `AZURE_AD_TENANT_ID`, `AZURE_AD_APPLICATION_CLIENT_ID`,
-> `AZURE_AD_APPLICATION_SECRET`, `SELLER_ID`, dan variabel `MSSTORE_PRODUCT_ID` hanya dibutuhkan
-> kalau unggah Windows dikembalikan ke otomatis. Kalau belum pernah dibuat, tidak ada yang perlu
-> dikerjakan.
+> `AZURE_AD_TENANT_ID`, `AZURE_AD_APPLICATION_CLIENT_ID`, `AZURE_AD_APPLICATION_SECRET`,
+> `SELLER_ID`, dan repository variable `MSSTORE_PRODUCT_ID` hanya diperlukan bila ingin memakai
+> submission Partner Center otomatis. Semuanya opsional; jika satu pun belum ada, job submission
+> Windows dilewati.
+
+### 2.6 Submission Windows ke Partner Center (opsional)
+
+Untuk mengaktifkannya, simpan nilai ini di GitHub repository **Settings → Secrets and variables →
+Actions**. Jangan menaruh credential di variable biasa, workflow, atau log:
+
+| Jenis | Nama | Isi |
+| --- | --- | --- |
+| Secret | `AZURE_AD_TENANT_ID` | Tenant ID Microsoft Entra yang terhubung ke Partner Center |
+| Secret | `AZURE_AD_APPLICATION_CLIENT_ID` | Application (client) ID dari app registration |
+| Secret | `AZURE_AD_APPLICATION_SECRET` | Client secret app registration |
+| Secret | `SELLER_ID` | Seller ID Partner Center |
+| Repository variable | `MSSTORE_PRODUCT_ID` | Product ID aplikasi di Partner Center |
+
+App registration harus terhubung ke akun Partner Center dan memiliki role **Manager**. Untuk
+rilis production, workflow memeriksa semua nilai sebelum build selesai. Jika salah satu kosong,
+job submission mendapat status skipped dengan sukses; MSIX Actions artifact dan draft GitHub
+Release tetap berjalan. Kalau semuanya tersedia, job terpisah mengunduh MSIX yang sama dan
+mengirimkannya dengan Microsoft Store CLI. Kegagalan submission tidak membatalkan job pembuatan
+artifact atau draft release. Uji-coba `draft release = no` tidak mengirim apa pun ke Store.
+
+Submission pertama aplikasi dan setup awal Partner Center tetap perlu diselesaikan melalui Partner
+Center. Dokumentasi Microsoft saat ini juga menyatakan operasi update CLI hanya didukung untuk
+produk Store gratis. Lihat [panduan GitHub Actions Microsoft Store](https://learn.microsoft.com/en-us/windows/apps/publish/msstore-dev-cli/github-actions)
+dan [dokumentasi Microsoft Store CLI](https://learn.microsoft.com/en-us/windows/apps/publish/msstore-dev-cli/overview).
 
 ---
 
@@ -529,7 +557,7 @@ dan patch masing-masing memicu workflow Android dan Windows yang terpisah.
 | Tag | Workflow | Apa yang terjadi | `versionCode` naik? |
 | --- | -------- | ----------------- | -------------------- |
 | `pos-v1.2.0` (polos) | `release-pos.yml` | Rilis native: APK **dan** AAB → asset **draft** GitHub Release, **dan** `shorebird release android` mendaftarkan versi ini sebagai target patch. Upload AAB ke Play track `internal` **tidak** terjadi di sini: ia berjalan di `publish-to-store.yml` setelah draft dipublikasikan | Ya |
-| `pos-v1.2.0` (polos, job lain) | `windows-pos.yml` | `shorebird release windows` membangun baseline Windows, lalu MSIX memakai build itu → **draft GitHub Release yang sama**; unggah ke Partner Center manual | Ya (nomor sama) |
+| `pos-v1.2.0` (polos, job lain) | `windows-pos.yml` | `shorebird release windows` membangun baseline Windows, lalu MSIX memakai build itu → **draft GitHub Release yang sama**; submission Partner Center opsional jika konfigurasi tersedia | Ya (nomor sama) |
 | `pos-v1.2.0-5` (`-N` nomor patch) | `shorebird-patch.yml` | Kirim patch Dart-only ke rilis `pos-v1.2.0` yang **sudah ada** — tidak ada build native baru, tidak ada upload Play | **Tidak sama sekali** |
 | `pos-v1.2.0-5` (workflow platform lain) | `shorebird-patch-windows.yml` | Kirim patch Dart-only ke baseline Windows `pos-v1.2.0` yang **sudah ada**; Windows beta x64, tanpa draft release | **Tidak sama sekali** |
 | `pos-v1.2.0-staging.3` (`-staging.N`) | `staging-pos.yml` | APK staging (`--profile`) → draft GitHub Release. **Tidak pernah membangun AAB**, jadi tidak ada Play dan tidak ada Shorebird | Nilai sama dengan rilis versi itu |

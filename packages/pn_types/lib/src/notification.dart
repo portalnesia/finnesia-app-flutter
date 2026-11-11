@@ -68,6 +68,8 @@ abstract class NotificationItem with _$NotificationItem {
     required String category,
     required String title,
     required String body,
+    String? subtitle,
+    @JsonKey(name: 'body_html') String? bodyHtml,
     String? link,
     NotificationItemRef? ref,
     @JsonKey(name: 'company_id') String? companyId,
