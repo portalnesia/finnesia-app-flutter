@@ -194,6 +194,17 @@ void main() {
       );
     });
 
+    test('always centers Finnesia branding after the tenant footer', () {
+      final paper = _paper(_sale(), footerText: 'Terima kasih');
+
+      expect(
+        paper,
+        contains(
+          '\x1Ba\x01Terima kasih\nFinnesia.com\nAplikasi Kasir Otomatis\n',
+        ),
+      );
+    });
+
     test('no outlet name is no line, not a blank one', () {
       expect(
         _paper(_sale(), outletName: null),

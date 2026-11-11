@@ -14,6 +14,8 @@ import 'package:pos/l10n/app_localizations.dart';
 import 'package:pos/sale/invoice_item.dart';
 import 'package:pos/screens/common/tender_label.dart';
 
+const receiptBrandingText = 'Finnesia.com\nAplikasi Kasir Otomatis';
+
 /// The customer receipt of [sale], as the bytes for the printer.
 ///
 /// The layout is `formatReceiptEscPos`'s, ported from the web app and checked byte for byte
@@ -22,8 +24,8 @@ import 'package:pos/screens/common/tender_label.dart';
 ///
 /// [sale] must carry its invoice and its payments, which only the single-sale endpoint loads: a
 /// sale without them prints "no item details", which is a receipt that says nothing of what was
-/// bought. [outletName] and [footerText] are the shop's, and the formatter prints no line for
-/// either unless told.
+/// bought. [outletName] and [footerText] are the shop's; the Finnesia branding always follows any
+/// configured footer.
 Uint8List receiptBytes(
   POSSale sale, {
   required L10n l10n,
@@ -73,6 +75,7 @@ Uint8List receiptBytesFor(
   l10n.saleDetailUnknownProduct,
   receiptLabels(l10n),
   footerText,
+  true,
 );
 
 /// Translated labels shared by ESC/POS and PDF receipt renderers.
@@ -92,6 +95,6 @@ ReceiptEscPosLabels receiptLabels(L10n l10n) => ReceiptEscPosLabels(
   noItems: l10n.receiptNoItems,
   tenderMethod: (wire) => tenderMethodLabel(l10n, wire),
   paidByMethod: (wire) => l10n.receiptPaidBy(tenderMethodLabel(l10n, wire)),
-  // Only printed when the formatter is given showBranding, which this app does not enable.
-  finnesiaBranding: '',
+  // The footer is unconditional for Flutter customer receipts, regardless of tenant plan.
+  finnesiaBranding: receiptBrandingText,
 );

@@ -253,6 +253,10 @@ void main() {
       // The words of the shop, read for it: the name of the outlet and the footer.
       expect(text, contains('Outlet Pusat'));
       expect(text, contains('Terima kasih'));
+      expect(
+        text,
+        contains('Terima kasih\nFinnesia.com\nAplikasi Kasir Otomatis\n'),
+      );
       expect(find.text('Struk terkirim ke printer'), findsOneWidget);
     });
 
@@ -318,6 +322,7 @@ void main() {
       await tester.tap(printButton);
       await tester.pumpAndSettle();
 
+      expect(paper(rig), contains('Finnesia.com\nAplikasi Kasir Otomatis\n'));
       expect(rig.analytics.logged.map((e) => e.$1), [
         'tenant_pending_receipt_printed',
       ]);

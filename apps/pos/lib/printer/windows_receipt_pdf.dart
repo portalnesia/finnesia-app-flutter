@@ -21,6 +21,7 @@ import 'package:pn_pos/src/pos_escpos_format.dart';
 import 'package:pn_pos/src/pos_receipt.dart';
 import 'package:pn_pos/src/pos_tender.dart';
 import 'package:pn_types/src/pos.dart';
+import 'package:pos/printer/receipt.dart' show receiptBrandingText;
 
 const _titleStyle = pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold);
 
@@ -59,7 +60,6 @@ Future<Uint8List> renderReceiptPdf({
   required String fallbackProductName,
   required ReceiptEscPosLabels labels,
   String? footerText,
-  String? brandingText,
   PdfPageFormat pageFormat = PdfPageFormat.a4,
 }) async {
   final document = pw.Document(theme: await _receiptFontTheme());
@@ -80,10 +80,9 @@ Future<Uint8List> renderReceiptPdf({
         ..._receiptItems(lines, labels),
         pw.Divider(),
         ..._receiptTotals(sale, payments, labels),
-        ..._receiptFooter(
-          sale,
+        ...buildReceiptFooterWidgets(
+          sale: sale,
           footerText: footerText,
-          brandingText: brandingText,
           labels: labels,
         ),
       ],
@@ -213,10 +212,9 @@ List<pw.Widget> _receiptTotals(
   return widgets;
 }
 
-List<pw.Widget> _receiptFooter(
-  ReceiptSale sale, {
+List<pw.Widget> buildReceiptFooterWidgets({
+  required ReceiptSale sale,
   required String? footerText,
-  required String? brandingText,
   required ReceiptEscPosLabels labels,
 }) {
   final widgets = <pw.Widget>[];
@@ -240,10 +238,9 @@ List<pw.Widget> _receiptFooter(
       widgets.add(pw.Center(child: pw.Text(line, style: _detailStyle)));
     }
   }
-  if (brandingText != null && brandingText.isNotEmpty) {
-    widgets.add(pw.Center(child: pw.Text(brandingText, style: _detailStyle)));
+  for (final line in receiptBrandingText.split('\n')) {
+    widgets.add(pw.Center(child: pw.Text(line, style: _detailStyle)));
   }
-
   return widgets;
 }
 
