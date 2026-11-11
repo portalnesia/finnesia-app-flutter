@@ -40,11 +40,13 @@ void main() {
         final printQueue = FakePrintQueuePort([office]);
         final store = windowsStore();
         var pdfBuilds = 0;
+        WindowsPrintPageSize? builtForPageSize;
 
         await printSelectedDocument(
           bluetoothBytes: escPos,
-          buildWindowsPdf: () async {
+          buildWindowsPdf: (pageSize) async {
             pdfBuilds++;
+            builtForPageSize = pageSize;
             return pdf;
           },
           documentName: 'Receipt',
@@ -55,6 +57,7 @@ void main() {
         );
 
         expect(pdfBuilds, 1);
+        expect(builtForPageSize, printQueue.pageSize);
         expect(bluetooth.operations, isEmpty);
         expect(printQueue.operations, [
           PrintQueueOperation.list,
@@ -73,7 +76,7 @@ void main() {
       await expectLater(
         printSelectedDocument(
           bluetoothBytes: escPos,
-          buildWindowsPdf: () async {
+          buildWindowsPdf: (_) async {
             pdfBuilds++;
             return pdf;
           },
@@ -102,7 +105,7 @@ void main() {
       await expectLater(
         printSelectedDocument(
           bluetoothBytes: escPos,
-          buildWindowsPdf: () async {
+          buildWindowsPdf: (_) async {
             pdfBuilds++;
             return pdf;
           },
@@ -134,7 +137,7 @@ void main() {
       await expectLater(
         printSelectedDocument(
           bluetoothBytes: escPos,
-          buildWindowsPdf: () async => pdf,
+          buildWindowsPdf: (_) async => pdf,
           documentName: 'Receipt',
           bluetooth: FakePrinter(),
           printQueue: printQueue,
@@ -170,7 +173,7 @@ void main() {
 
       await printSelectedDocument(
         bluetoothBytes: escPos,
-        buildWindowsPdf: () async {
+        buildWindowsPdf: (_) async {
           pdfBuilds++;
           return pdf;
         },

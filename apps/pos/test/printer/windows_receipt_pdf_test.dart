@@ -38,6 +38,11 @@ const _labels = ReceiptEscPosLabels(
   finnesiaBranding: 'Finnesia POS',
 );
 
+const _thermalPageFormat = PdfPageFormat(
+  80 * PdfPageFormat.mm,
+  300 * PdfPageFormat.mm,
+);
+
 ReceiptSale _sale({List<InvoiceItem>? items, String? status}) => (
   number: 'POS-0007',
   createdAt: '2026-11-11T01:30:00Z',
@@ -135,6 +140,7 @@ void main() {
         sale: _sale(),
         fallbackProductName: 'Unknown item',
         labels: _labels,
+        pageFormat: _thermalPageFormat,
       );
 
       expect(bytes, isNotEmpty);

@@ -15,6 +15,13 @@ typedef WindowsPrintQueue = ({
   bool isAvailable,
 });
 
+/// Physical page dimensions in PDF points, reported by the selected queue's driver.
+typedef WindowsPrintPageSize = ({double width, double height});
+
+/// Builds a PDF after the Windows queue has supplied its physical page dimensions.
+typedef WindowsPrintPdfBuilder =
+    Future<Uint8List> Function(WindowsPrintPageSize pageSize);
+
 enum PrintQueueFailure {
   unsupported,
   notConfigured,
@@ -45,6 +52,6 @@ abstract interface class PrintQueuePort {
   Future<void> printPdf({
     required String queueId,
     required String name,
-    required Uint8List bytes,
+    required WindowsPrintPdfBuilder buildPdf,
   });
 }

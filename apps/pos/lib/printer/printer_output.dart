@@ -15,7 +15,7 @@ import 'package:pos/printer/printer_service.dart';
 /// generated PDF to a saved Windows system queue. Non-Windows platforms always retain BLE.
 Future<void> printSelectedDocument({
   required Uint8List bluetoothBytes,
-  required Future<Uint8List> Function() buildWindowsPdf,
+  required WindowsPrintPdfBuilder buildWindowsPdf,
   required String documentName,
   required PrinterPort bluetooth,
   required PrintQueuePort printQueue,
@@ -36,10 +36,9 @@ Future<void> printSelectedDocument({
   if (!queues.any((queue) => queue.id == selected.id)) {
     throw const PrintQueueException(PrintQueueFailure.notFound);
   }
-  final pdf = await buildWindowsPdf();
   await printQueue.printPdf(
     queueId: selected.id,
     name: documentName,
-    bytes: pdf,
+    buildPdf: buildWindowsPdf,
   );
 }

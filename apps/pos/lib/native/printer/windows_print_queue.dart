@@ -51,13 +51,14 @@ class WindowsPrintQueueAdapter implements PrintQueuePort {
   Future<void> printPdf({
     required String queueId,
     required String name,
-    required Uint8List bytes,
+    required WindowsPrintPdfBuilder buildPdf,
   }) async {
     _requireWindows();
     try {
       final sent = await Printing.directPrintPdf(
         printer: Printer(url: queueId, name: name),
-        onLayout: (_) async => bytes,
+        onLayout: (format) =>
+            buildPdf((width: format.width, height: format.height)),
         name: name,
         format: PdfPageFormat.a4,
         dynamicLayout: false,

@@ -4,7 +4,7 @@
  * Proprietary and confidential
  * Written by Putu Aditya <aditya@portalnesia.com>
  */
-/// A4-default shift report PDF renderer for ordinary Windows printers.
+/// Shift report renderer for an installed Windows printer queue.
 library;
 
 import 'package:flutter/services.dart';
@@ -15,16 +15,20 @@ import 'package:pn_pos/src/format.dart';
 import 'package:pn_pos/src/js_compat.dart';
 import 'package:pn_pos/src/pos_escpos_format.dart';
 import 'package:pos/printer/receipt.dart' show receiptBrandingText;
+import 'package:pos/printer/windows_print_format.dart';
 
 const _headingStyle = pw.TextStyle(
-  fontSize: 15,
+  fontSize: windowsPrintHeadingFontSize,
   fontWeight: pw.FontWeight.bold,
 );
 const _sectionStyle = pw.TextStyle(
-  fontSize: 11,
+  fontSize: windowsPrintSectionFontSize,
   fontWeight: pw.FontWeight.bold,
 );
-const _detailStyle = pw.TextStyle(fontSize: 9, color: PdfColors.grey700);
+const _detailStyle = pw.TextStyle(
+  fontSize: windowsPrintDetailFontSize,
+  color: PdfColors.grey700,
+);
 
 pw.ThemeData? _fontThemeCache;
 Future<pw.ThemeData>? _fontThemeFuture;
@@ -50,7 +54,9 @@ Future<pw.ThemeData> _loadFontTheme() async {
   final bold = pw.Font.ttf(
     await rootBundle.load('assets/fonts/NotoSans-Bold.ttf'),
   );
-  return pw.ThemeData.withFont(base: regular, bold: bold);
+  return pw.ThemeData.withFont(base: regular, bold: bold).copyWith(
+    defaultTextStyle: const pw.TextStyle(fontSize: windowsPrintBodyFontSize),
+  );
 }
 
 Future<Uint8List> renderShiftReportPdf({
@@ -59,7 +65,7 @@ Future<Uint8List> renderShiftReportPdf({
   required ShiftReportEscPosLabels labels,
   bool showProductSales = false,
   String? footerText,
-  PdfPageFormat pageFormat = PdfPageFormat.a4,
+  required PdfPageFormat pageFormat,
 }) async {
   final document = pw.Document(theme: await _fontTheme());
   final cashSales = summary.salesByMethod['CASH'] ?? 0;
@@ -73,7 +79,7 @@ Future<Uint8List> renderShiftReportPdf({
   document.addPage(
     pw.MultiPage(
       pageFormat: pageFormat,
-      margin: const pw.EdgeInsets.all(36),
+      margin: const pw.EdgeInsets.all(windowsPrintPageMargin),
       build: (_) => [
         pw.Center(child: pw.Text(labels.title, style: _headingStyle)),
         pw.SizedBox(height: 3),

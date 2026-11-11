@@ -16,6 +16,7 @@ import 'package:pos/printer/print_settings.dart';
 import 'package:pos/printer/printer_output.dart';
 import 'package:pos/printer/printer_service.dart';
 import 'package:pos/printer/shift_report.dart';
+import 'package:pos/printer/windows_print_format.dart';
 import 'package:pos/printer/windows_shift_report_pdf.dart';
 
 /// Prints the closing report of [summary] to the selected printer.
@@ -51,12 +52,13 @@ Future<void> printShiftReport(
       columns: printerFormat.columns,
       autoCutter: printerFormat.autoCutter,
     ),
-    buildWindowsPdf: () => renderShiftReportPdf(
+    buildWindowsPdf: (pageSize) => renderShiftReportPdf(
       summary: shiftReportData(summary),
       printedAt: now.toIso8601String(),
       labels: shiftReportLabels(l10n),
       showProductSales: showProductSales,
       footerText: footerText,
+      pageFormat: windowsQueuePageFormat(pageSize),
     ),
     documentName: l10n.posShiftReportTitle,
     bluetooth: printer,

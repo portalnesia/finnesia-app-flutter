@@ -5,10 +5,10 @@
  * Written by Putu Aditya <aditya@portalnesia.com>
  */
 
-/// A4-default receipt renderer for an installed Windows printer queue.
+/// Receipt renderer for an installed Windows printer queue.
 ///
-/// The same normalized receipt fields and translated labels feed this PDF and the legacy ESC/POS
-/// formatter. The Windows queue submits the document through the selected printer driver's path.
+/// The queue supplies physical page dimensions before layout, so a thermal-roll receipt is not
+/// emitted as an A4 page that the driver clips at the roll width.
 library;
 
 import 'package:flutter/services.dart';
@@ -22,10 +22,17 @@ import 'package:pn_pos/src/pos_receipt.dart';
 import 'package:pn_pos/src/pos_tender.dart';
 import 'package:pn_types/src/pos.dart';
 import 'package:pos/printer/receipt.dart' show receiptBrandingText;
+import 'package:pos/printer/windows_print_format.dart';
 
-const _titleStyle = pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold);
+const _titleStyle = pw.TextStyle(
+  fontSize: windowsPrintHeadingFontSize,
+  fontWeight: pw.FontWeight.bold,
+);
 
-const _detailStyle = pw.TextStyle(fontSize: 9, color: PdfColors.grey700);
+const _detailStyle = pw.TextStyle(
+  fontSize: windowsPrintDetailFontSize,
+  color: PdfColors.grey700,
+);
 
 pw.ThemeData? _fontThemeCache;
 Future<pw.ThemeData>? _fontThemeFuture;
@@ -51,16 +58,18 @@ Future<pw.ThemeData> _loadReceiptFontTheme() async {
   final boldFont = pw.Font.ttf(
     await rootBundle.load('assets/fonts/NotoSans-Bold.ttf'),
   );
-  return pw.ThemeData.withFont(base: regularFont, bold: boldFont);
+  return pw.ThemeData.withFont(base: regularFont, bold: boldFont).copyWith(
+    defaultTextStyle: const pw.TextStyle(fontSize: windowsPrintBodyFontSize),
+  );
 }
 
-/// Builds an A4-default PDF while allowing a Windows print queue to supply its page format.
+/// Builds a PDF at the page dimensions reported by the selected Windows queue.
 Future<Uint8List> renderReceiptPdf({
   required ReceiptSale sale,
   required String fallbackProductName,
   required ReceiptEscPosLabels labels,
   String? footerText,
-  PdfPageFormat pageFormat = PdfPageFormat.a4,
+  required PdfPageFormat pageFormat,
 }) async {
   final document = pw.Document(theme: await _receiptFontTheme());
   final lines = posReceiptLines(
@@ -72,7 +81,7 @@ Future<Uint8List> renderReceiptPdf({
   document.addPage(
     pw.MultiPage(
       pageFormat: pageFormat,
-      margin: const pw.EdgeInsets.all(32),
+      margin: const pw.EdgeInsets.all(windowsPrintPageMargin),
       build: (_) => [
         ..._receiptHeader(sale, payments, labels),
         pw.SizedBox(height: 12),

@@ -9,6 +9,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pdf/pdf.dart';
 import 'package:pn_pos/src/pos_pending_sale.dart';
 import 'package:pn_types/src/native/print_queue_fake.dart';
 import 'package:pn_types/src/native/print_queue_port.dart';
@@ -193,6 +194,14 @@ Future<({Rig rig, RoutedHttp http})> pumpDone(
 }
 
 String paper(Rig rig) => String.fromCharCodes(rig.printer.written.single);
+
+double pdfPageWidth(List<int> bytes) {
+  final match = RegExp(
+    r'/MediaBox\s*\[\s*0(?:\.0)?\s+0(?:\.0)?\s+([0-9.]+)\s+([0-9.]+)\s*\]',
+  ).firstMatch(String.fromCharCodes(bytes));
+  if (match == null) throw StateError('PDF page has no MediaBox');
+  return double.parse(match.group(1)!);
+}
 
 int asked(RoutedHttp http, String path) =>
     http.calls.where((c) => c.path.split('?').first == path).length;
@@ -390,6 +399,7 @@ void main() {
       );
       final bytes = rig.printQueue.printed.single.bytes;
       expect(String.fromCharCodes(bytes.take(5)), '%PDF-');
+      expect(pdfPageWidth(bytes), closeTo(PdfPageFormat.roll80.width, 0.01));
       expect(rig.printQueue.printed.single.queueId, office.id);
       expect(rig.printer.operations, isEmpty);
       expect(find.text('Struk terkirim ke printer'), findsOneWidget);

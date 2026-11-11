@@ -21,6 +21,7 @@ import 'package:pos/printer/print_settings.dart';
 import 'package:pos/printer/printer_output.dart';
 import 'package:pos/printer/printer_service.dart';
 import 'package:pos/printer/receipt.dart';
+import 'package:pos/printer/windows_print_format.dart';
 import 'package:pos/printer/windows_receipt_pdf.dart';
 import 'package:pos/sale/invoice_item.dart';
 
@@ -63,11 +64,12 @@ Future<void> printReceipt(
       columns: printerFormat.columns,
       autoCutter: printerFormat.autoCutter,
     ),
-    buildWindowsPdf: () => renderReceiptPdf(
+    buildWindowsPdf: (pageSize) => renderReceiptPdf(
       sale: receipt,
       fallbackProductName: l10n.saleDetailUnknownProduct,
       labels: receiptLabels(l10n),
       footerText: settings?.receiptFooterText,
+      pageFormat: windowsQueuePageFormat(pageSize),
     ),
     documentName: l10n.receiptTitle,
     bluetooth: printer,
@@ -146,10 +148,11 @@ Future<void> printPendingReceipt(
       columns: printerFormat.columns,
       autoCutter: printerFormat.autoCutter,
     ),
-    buildWindowsPdf: () => renderReceiptPdf(
+    buildWindowsPdf: (pageSize) => renderReceiptPdf(
       sale: receipt,
       fallbackProductName: l10n.saleDetailUnknownProduct,
       labels: receiptLabels(l10n),
+      pageFormat: windowsQueuePageFormat(pageSize),
     ),
     documentName: l10n.receiptTitle,
     bluetooth: printer,

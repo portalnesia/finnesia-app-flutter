@@ -56,6 +56,11 @@ final _summary = (
   ],
 );
 
+const _thermalPageFormat = PdfPageFormat(
+  80 * PdfPageFormat.mm,
+  300 * PdfPageFormat.mm,
+);
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUpAll(() async {
@@ -69,6 +74,7 @@ void main() {
       summary: _summary,
       printedAt: '2026-11-11T02:00:00Z',
       labels: _labels,
+      pageFormat: _thermalPageFormat,
     );
     final raw = String.fromCharCodes(bytes);
     expect(String.fromCharCodes(bytes.take(5)), '%PDF-');
@@ -81,13 +87,14 @@ void main() {
       summary: _summary,
       printedAt: '2026-11-11T02:00:00Z',
       labels: _labels,
+      pageFormat: _thermalPageFormat,
     );
     final withProducts = await renderShiftReportPdf(
       summary: _summary,
       printedAt: '2026-11-11T02:00:00Z',
       labels: _labels,
       showProductSales: true,
-      pageFormat: PdfPageFormat.a4,
+      pageFormat: _thermalPageFormat,
     );
     expect(String.fromCharCodes(withoutProducts.take(5)), '%PDF-');
     expect(String.fromCharCodes(withProducts.take(5)), '%PDF-');

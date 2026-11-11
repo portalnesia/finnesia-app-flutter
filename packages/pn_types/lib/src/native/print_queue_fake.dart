@@ -17,6 +17,7 @@ class FakePrintQueuePort implements PrintQueuePort {
     : queues = List.of(queues);
 
   final List<WindowsPrintQueue> queues;
+  WindowsPrintPageSize pageSize = const (width: 226.77165, height: 850.3937);
   final operations = <PrintQueueOperation>[];
   final printed = <({String queueId, String name, Uint8List bytes})>[];
   final _failures = <PrintQueueOperation, List<PrintQueueException>>{};
@@ -45,11 +46,12 @@ class FakePrintQueuePort implements PrintQueuePort {
   Future<void> printPdf({
     required String queueId,
     required String name,
-    required Uint8List bytes,
+    required WindowsPrintPdfBuilder buildPdf,
   }) async {
     operations.add(PrintQueueOperation.print);
     final failure = _takeFailure(PrintQueueOperation.print);
     if (failure != null) throw failure;
+    final bytes = await buildPdf(pageSize);
     printed.add((
       queueId: queueId,
       name: name,
