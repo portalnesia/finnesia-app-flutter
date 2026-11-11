@@ -176,6 +176,21 @@ void main() {
     test('never names a local development host', () {
       expect(manifest.contains('localhost'), isFalse);
     });
+
+    // `app_links` owns the link. Flutter's own deep linking, on by default, also takes it and
+    // calls `pushNamed('/api/auth/mobile/return?...')`; the app has no named routes, so release
+    // builds crash on a null check in `_routeNamed` (seen in Crashlytics).
+    test("turns off Flutter's own deep linking", () {
+      expect(
+        manifest,
+        matches(
+          RegExp(
+            r'android:name="flutter_deeplinking_enabled"\s+'
+            r'android:value="false"',
+          ),
+        ),
+      );
+    });
   });
 
   group('the debug manifest', () {
