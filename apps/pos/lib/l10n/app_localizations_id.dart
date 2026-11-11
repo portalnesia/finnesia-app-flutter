@@ -578,6 +578,99 @@ class L10nId extends L10n {
   String get menuPrinterForgetFailed => 'Gagal melupakan printer. Coba lagi.';
 
   @override
+  String get printerOutputChooseTitle => 'Pilih jenis printer';
+
+  @override
+  String get printerOutputChooseDesc =>
+      'Pilih cara aplikasi Windows ini mencetak.';
+
+  @override
+  String get printerOutputSectionTitle => 'Sambungan printer';
+
+  @override
+  String get printerOutputFlutterModesNote =>
+      'Di aplikasi Flutter ini, yang tersedia adalah Bluetooth dan printer Windows melalui driver sistem (PDF). USB/serial, Print Agent, dan dialog cetak browser belum tersedia di sini.';
+
+  @override
+  String get printerOutputBluetooth => 'Bluetooth';
+
+  @override
+  String get printerOutputWindowsQueue => 'Printer Windows';
+
+  @override
+  String get printerOutputChooseHint =>
+      'Pilih Bluetooth atau printer Windows yang sudah terpasang.';
+
+  @override
+  String get printerOutputSaveFailed =>
+      'Gagal menyimpan pilihan printer. Coba lagi.';
+
+  @override
+  String get printerWindowsQueueTitle => 'Pilih printer Windows';
+
+  @override
+  String get printerWindowsQueueDesc =>
+      'Printer yang terpasang di Windows akan muncul di sini. Dokumen dikirim sebagai PDF melalui driver printer yang dipilih.';
+
+  @override
+  String get printerWindowsQueueChange => 'Pilih printer Windows';
+
+  @override
+  String get printerWindowsQueueForget => 'Lupakan printer Windows';
+
+  @override
+  String get printerWindowsQueueEmpty =>
+      'Belum ada printer terpasang di Windows. Pasang printer dan drivernya, lalu coba lagi.';
+
+  @override
+  String get printerWindowsQueueUnavailable => 'Sedang tidak tersedia';
+
+  @override
+  String get printerWindowsQueueDefault => 'Default';
+
+  @override
+  String get printerWindowsQueueLoadFailed =>
+      'Belum bisa memuat daftar printer Windows. Periksa pengaturan printer lalu coba lagi.';
+
+  @override
+  String get printerWindowsQueueSaveFailed =>
+      'Printer sudah dipilih, tetapi perangkat gagal mengingatnya. Coba lagi.';
+
+  @override
+  String get printerWindowsQueueNotConfigured =>
+      'Pilih printer Windows yang sudah terpasang terlebih dahulu.';
+
+  @override
+  String get printerWindowsQueueNotFound =>
+      'Printer Windows yang dipilih sudah tidak tersedia. Pilih lagi.';
+
+  @override
+  String get printerWindowsQueuePrintFailed =>
+      'PDF belum bisa dikirim ke printer Windows.';
+
+  @override
+  String get printerWindowsQueueCancelled =>
+      'Pekerjaan cetak Windows dibatalkan.';
+
+  @override
+  String get printerWindowsQueueUnsupported =>
+      'Printer Windows hanya tersedia di aplikasi Windows.';
+
+  @override
+  String get printerWindowsQueueForgetTitle => 'Lupakan printer Windows ini?';
+
+  @override
+  String get printerWindowsQueueForgetDesc =>
+      'Queue Windows yang tersimpan akan dihapus. Pengaturan printer Bluetooth tetap seperti semula.';
+
+  @override
+  String get printerWindowsQueueForgetConfirm => 'Ya, lupakan';
+
+  @override
+  String get printerWindowsQueueForgetFailed =>
+      'Gagal melupakan printer Windows. Coba lagi.';
+
+  @override
   String get inspectorTitle => 'Inspector request';
 
   @override

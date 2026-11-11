@@ -5,12 +5,10 @@
  * Written by Putu Aditya <aditya@portalnesia.com>
  */
 
-/// Exploratory PDF renderer for a Windows standard-printer queue.
+/// A4-default receipt renderer for an installed Windows printer queue.
 ///
-/// This is intentionally not connected to the app's print flow: the current BLE/ESC/POS
-/// path remains unchanged while the ordinary-printer format is evaluated. A Windows adapter
-/// can pass the selected driver's page format here and submit the returned PDF through the
-/// Windows print queue API.
+/// The same normalized receipt fields and translated labels feed this PDF and the legacy ESC/POS
+/// formatter. The Windows queue submits the document through the selected printer driver's path.
 library;
 
 import 'package:flutter/services.dart';
@@ -28,10 +26,22 @@ const _titleStyle = pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold);
 
 const _detailStyle = pw.TextStyle(fontSize: 9, color: PdfColors.grey700);
 
+pw.ThemeData? _fontThemeCache;
 Future<pw.ThemeData>? _fontThemeFuture;
 
-Future<pw.ThemeData> _receiptFontTheme() =>
-    _fontThemeFuture ??= _loadReceiptFontTheme();
+Future<pw.ThemeData> _receiptFontTheme() async {
+  final cached = _fontThemeCache;
+  if (cached != null) return cached;
+
+  final loading = _fontThemeFuture ??= _loadReceiptFontTheme();
+  try {
+    final theme = await loading;
+    _fontThemeCache = theme;
+    return theme;
+  } finally {
+    if (identical(_fontThemeFuture, loading)) _fontThemeFuture = null;
+  }
+}
 
 Future<pw.ThemeData> _loadReceiptFontTheme() async {
   final regularFont = pw.Font.ttf(

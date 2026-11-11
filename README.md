@@ -1,8 +1,14 @@
 # Finnesia POS (Flutter)
 
-Aplikasi **POS (Kasir) Finnesia** untuk **tablet Android**, ditulis dengan Flutter. Ia client tambahan di
-samping web app: logika bisnis ada di backend Go (`finnesia-monorepo/apps/api`), repo ini menyajikan UI,
-transport, dan integrasi perangkat (printer BLE, antrian offline).
+Aplikasi **POS (Kasir) Finnesia** untuk **tablet Android dan desktop Windows**, ditulis dengan Flutter.
+Ia client tambahan di samping web app: logika bisnis ada di backend Go (`finnesia-monorepo/apps/api`),
+repo ini menyajikan UI, transport, dan integrasi perangkat (printer BLE, printer Windows melalui
+driver sistem, antrian offline).
+
+Pada Android, printer tetap menggunakan Bluetooth BLE. Di Windows, pengguna dapat memilih Bluetooth
+atau printer biasa yang terpasang sebagai Windows print queue; struk dan laporan dikirim sebagai PDF
+melalui driver printer. USB/serial langsung, Print Agent, dan dialog cetak browser belum tersedia di
+Flutter. Rincian dan batas validasinya ada di [`docs/windows-printer-output.md`](./docs/windows-printer-output.md).
 
 Dokumen ini untuk **developer yang mau berkontribusi**: dari clone sampai menjalankan dan membangun app.
 Aturan kode, arsitektur, dan alasan di baliknya ada di [`AGENTS.md`](./AGENTS.md) dan
@@ -14,7 +20,7 @@ Aturan kode, arsitektur, dan alasan di baliknya ada di [`AGENTS.md`](./AGENTS.md
 
 ```
 finnesia-pos-flutter/
-├── apps/pos/        aplikasi POS (Android; folder windows/ ada, belum dipakai)
+├── apps/pos/        aplikasi POS (Android BLE + Windows BLE/driver queue)
 ├── packages/
 │   ├── pn_types/    tipe dan client API murni     → diuji dengan `dart test`
 │   ├── pn_pos/      logika POS murni (uang, ESC/POS) → `dart test`, DILARANG mengimpor flutter

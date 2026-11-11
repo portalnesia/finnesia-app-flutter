@@ -80,6 +80,7 @@ Future<void> main() async {
         deviceInfo: deviceInfo,
         appInfo: appInfo,
         printer: printer,
+        printQueue: printQueue,
         scanner: scanner,
         holdStore: holdStore,
         pendingSaleStore: pendingSaleStoreFor,

@@ -12,7 +12,7 @@ import 'package:pn_pos/src/format.dart';
 import 'package:pn_pos/src/pos_escpos_format.dart';
 import 'package:pn_pos/src/pos_receipt.dart';
 import 'package:pn_types/src/pos.dart';
-import 'package:pos/printer/windows_receipt_pdf_poc.dart';
+import 'package:pos/printer/windows_receipt_pdf.dart';
 
 String _tenderMethod(String method) => method;
 
@@ -80,7 +80,7 @@ void main() {
     useFixedLocalZone(Duration.zero);
   });
 
-  group('Windows ordinary-printer PDF receipt prototype', () {
+  group('Windows ordinary-printer PDF receipt', () {
     test('renders a normal sale into a valid PDF document', () async {
       final bytes = await renderReceiptPdf(
         sale: _sale(),

@@ -5,6 +5,7 @@
  * Written by Putu Aditya <aditya@portalnesia.com>
  */
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:pn_pos/src/format.dart';
 import 'package:pn_pos/src/pos_pending_sale.dart';
@@ -80,8 +81,10 @@ class DoneScreen extends StatelessWidget {
         print: () => printPendingReceipt(
           pending!,
           printer: services.printer,
+          printQueue: services.printQueue,
           store: services.store,
           l10n: l10n,
+          platform: defaultTargetPlatform,
         ),
       );
     }
@@ -94,8 +97,10 @@ class DoneScreen extends StatelessWidget {
         recorded,
         client: services.client,
         printer: services.printer,
+        printQueue: services.printQueue,
         store: services.store,
         l10n: l10n,
+        platform: defaultTargetPlatform,
       ),
     );
   }

@@ -19,6 +19,7 @@ import 'package:pn_types/src/native/app_info_port.dart';
 import 'package:pn_types/src/native/device_info_port.dart';
 import 'package:pn_types/src/native/link_port.dart';
 import 'package:pn_types/src/native/opener_port.dart';
+import 'package:pn_types/src/native/print_queue_port.dart';
 import 'package:pn_types/src/native/printer_port.dart';
 import 'package:pn_types/src/native/public_http_port.dart';
 import 'package:pn_types/src/native/push_messaging_port.dart';
@@ -51,6 +52,7 @@ class AppServices extends ChangeNotifier {
     required this.deviceInfo,
     required this.appInfo,
     required this.printer,
+    required this.printQueue,
     required this.scanner,
     required this.holdStore,
     required PendingSaleStore Function(String companyId) pendingSaleStore,
@@ -141,6 +143,9 @@ class AppServices extends ChangeNotifier {
 
   /// The thermal printer: paired from the Menu, written to by the reports.
   final PrinterPort printer;
+
+  /// The installed Windows print queue used for ordinary-driver PDF output.
+  final PrintQueuePort printQueue;
 
   /// The camera that reads the pairing QR.
   final ScannerPort scanner;
@@ -350,6 +355,7 @@ Future<BootResult> bootstrap({
   required DeviceInfoPort deviceInfo,
   required AppInfoPort appInfo,
   required PrinterPort printer,
+  required PrintQueuePort printQueue,
   required ScannerPort scanner,
   required HoldOrderStore holdStore,
 
@@ -410,6 +416,7 @@ Future<BootResult> bootstrap({
       deviceInfo: deviceInfo,
       appInfo: appInfo,
       printer: printer,
+      printQueue: printQueue,
       scanner: scanner,
       holdStore: holdStore,
       pendingSaleStore: pendingSaleStore,

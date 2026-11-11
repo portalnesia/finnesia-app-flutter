@@ -584,6 +584,99 @@ class L10nEn extends L10n {
       'Could not forget the printer. Try again.';
 
   @override
+  String get printerOutputChooseTitle => 'Choose printer type';
+
+  @override
+  String get printerOutputChooseDesc =>
+      'Select how this Windows app should print.';
+
+  @override
+  String get printerOutputSectionTitle => 'Printer connection';
+
+  @override
+  String get printerOutputFlutterModesNote =>
+      'In this Flutter app, available modes are Bluetooth and installed Windows printers via the system driver (PDF). USB/serial, Print Agent, and browser print dialogs are not available here yet.';
+
+  @override
+  String get printerOutputBluetooth => 'Bluetooth';
+
+  @override
+  String get printerOutputWindowsQueue => 'Windows printer';
+
+  @override
+  String get printerOutputChooseHint =>
+      'Choose Bluetooth or an installed Windows printer.';
+
+  @override
+  String get printerOutputSaveFailed =>
+      'Could not save the printer selection. Try again.';
+
+  @override
+  String get printerWindowsQueueTitle => 'Select a Windows printer';
+
+  @override
+  String get printerWindowsQueueDesc =>
+      'Installed Windows printers appear here. Documents are sent as PDF through the selected printer driver.';
+
+  @override
+  String get printerWindowsQueueChange => 'Choose Windows printer';
+
+  @override
+  String get printerWindowsQueueForget => 'Forget Windows printer';
+
+  @override
+  String get printerWindowsQueueEmpty =>
+      'No printers are installed in Windows. Install the printer and its driver, then try again.';
+
+  @override
+  String get printerWindowsQueueUnavailable => 'Not currently available';
+
+  @override
+  String get printerWindowsQueueDefault => 'Default';
+
+  @override
+  String get printerWindowsQueueLoadFailed =>
+      'Could not list Windows printers. Check the printer setup and try again.';
+
+  @override
+  String get printerWindowsQueueSaveFailed =>
+      'The printer was selected, but this device could not remember it. Try again.';
+
+  @override
+  String get printerWindowsQueueNotConfigured =>
+      'Choose an installed Windows printer first.';
+
+  @override
+  String get printerWindowsQueueNotFound =>
+      'The selected Windows printer is no longer available. Choose it again.';
+
+  @override
+  String get printerWindowsQueuePrintFailed =>
+      'Could not send the PDF to the Windows printer.';
+
+  @override
+  String get printerWindowsQueueCancelled =>
+      'The Windows print job was cancelled.';
+
+  @override
+  String get printerWindowsQueueUnsupported =>
+      'Windows printer queues are only available in the Windows app.';
+
+  @override
+  String get printerWindowsQueueForgetTitle => 'Forget this Windows printer?';
+
+  @override
+  String get printerWindowsQueueForgetDesc =>
+      'The saved Windows queue will be removed. Your Bluetooth printer setting will remain unchanged.';
+
+  @override
+  String get printerWindowsQueueForgetConfirm => 'Yes, forget it';
+
+  @override
+  String get printerWindowsQueueForgetFailed =>
+      'Could not forget the Windows printer. Try again.';
+
+  @override
   String get inspectorTitle => 'Request inspector';
 
   @override
