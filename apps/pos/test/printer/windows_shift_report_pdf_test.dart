@@ -69,31 +69,57 @@ void main() {
     useFixedLocalZone(Duration.zero);
   });
 
-  test('renders a valid PDF with embedded NotoSans fonts', () async {
-    final bytes = await renderShiftReportPdf(
-      summary: _summary,
-      printedAt: '2026-11-11T02:00:00Z',
-      labels: _labels,
-      pageFormat: _thermalPageFormat,
-    );
-    final raw = String.fromCharCodes(bytes);
-    expect(String.fromCharCodes(bytes.take(5)), '%PDF-');
-    expect(raw, contains('NotoSans-Regular'));
-    expect(bytes.length, greaterThan(1000));
-  });
+  test(
+    'renders a valid PDF with embedded fixed-width Noto Sans Mono fonts',
+    () async {
+      final bytes = await renderShiftReportPdf(
+        escPosBytes: formatShiftReportEscPos(
+          _summary,
+          '2026-11-11T02:00:00Z',
+          _labels,
+          false,
+          'Terima kasih',
+          true,
+          32,
+        ),
+        columns: 32,
+        pageFormat: _thermalPageFormat,
+      );
+      final raw = String.fromCharCodes(bytes);
+      expect(String.fromCharCodes(bytes.take(5)), '%PDF-');
+      expect(raw, contains('NotoSansMono-Regular'));
+      expect(raw, contains('NotoSansMono-Bold'));
+      expect(bytes.length, greaterThan(1000));
+    },
+  );
 
   test('product section can be enabled or disabled', () async {
+    final withoutProductsBytes = formatShiftReportEscPos(
+      _summary,
+      '2026-11-11T02:00:00Z',
+      _labels,
+      false,
+      null,
+      true,
+      32,
+    );
+    final withProductsBytes = formatShiftReportEscPos(
+      _summary,
+      '2026-11-11T02:00:00Z',
+      _labels,
+      true,
+      null,
+      true,
+      32,
+    );
     final withoutProducts = await renderShiftReportPdf(
-      summary: _summary,
-      printedAt: '2026-11-11T02:00:00Z',
-      labels: _labels,
+      escPosBytes: withoutProductsBytes,
+      columns: 32,
       pageFormat: _thermalPageFormat,
     );
     final withProducts = await renderShiftReportPdf(
-      summary: _summary,
-      printedAt: '2026-11-11T02:00:00Z',
-      labels: _labels,
-      showProductSales: true,
+      escPosBytes: withProductsBytes,
+      columns: 32,
       pageFormat: _thermalPageFormat,
     );
     expect(String.fromCharCodes(withoutProducts.take(5)), '%PDF-');

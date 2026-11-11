@@ -38,26 +38,21 @@ Future<void> printShiftReport(
   final settings = await readPrintSettings(client);
   final showProductSales = settings?.showProductSalesSummary ?? false;
   final footerText = settings?.receiptFooterText;
-  final outputMode = await readPrinterMode(store, platform: platform);
-  final printerFormat = outputMode == PrinterMode.windowsQueue
-      ? defaultPrinterFormatSettings
-      : await readPrinterFormatSettings(store);
+  final printerFormat = await readPrinterFormatSettings(store);
+  final bluetoothBytes = shiftReportBytes(
+    summary,
+    l10n: l10n,
+    printedAt: now,
+    showProductSales: showProductSales,
+    footerText: footerText,
+    columns: printerFormat.columns,
+    autoCutter: printerFormat.autoCutter,
+  );
   await printSelectedDocument(
-    bluetoothBytes: shiftReportBytes(
-      summary,
-      l10n: l10n,
-      printedAt: now,
-      showProductSales: showProductSales,
-      footerText: footerText,
-      columns: printerFormat.columns,
-      autoCutter: printerFormat.autoCutter,
-    ),
+    bluetoothBytes: bluetoothBytes,
     buildWindowsPdf: (pageSize) => renderShiftReportPdf(
-      summary: shiftReportData(summary),
-      printedAt: now.toIso8601String(),
-      labels: shiftReportLabels(l10n),
-      showProductSales: showProductSales,
-      footerText: footerText,
+      escPosBytes: bluetoothBytes,
+      columns: printerFormat.columns,
       pageFormat: windowsQueuePageFormat(pageSize),
     ),
     documentName: l10n.posShiftReportTitle,

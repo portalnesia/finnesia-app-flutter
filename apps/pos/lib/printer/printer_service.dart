@@ -21,7 +21,7 @@ const printerOutputModeKey = 'printer_output_mode';
 /// The installed Windows queue, stored separately from the legacy BLE identity.
 const windowsPrinterQueueKey = 'printer_windows_queue';
 
-/// ESC/POS formatting settings are local to this device and do not affect Windows PDF queues.
+/// Saved text columns are shared by Bluetooth and Windows PDF output; auto-cutter applies only to BLE.
 const printerFormatSettingsKey = 'printer_format_settings';
 const printerColumnOptions = [32, 33, 40, 42, 48];
 typedef PrinterFormatSettings = ({int columns, bool autoCutter});
@@ -29,7 +29,7 @@ const defaultPrinterFormatSettings = (columns: 32, autoCutter: false);
 
 enum PrinterMode { bluetooth, windowsQueue }
 
-/// Reads BLE formatting preferences; unknown or malformed values use the legacy 32-column mode.
+/// Reads saved text-column and BLE cutter preferences; malformed values use the legacy defaults.
 Future<PrinterFormatSettings> readPrinterFormatSettings(StorePort store) async {
   final raw = await store.read(printerFormatSettingsKey);
   if (raw == null) return defaultPrinterFormatSettings;
@@ -51,7 +51,7 @@ Future<PrinterFormatSettings> readPrinterFormatSettings(StorePort store) async {
   }
 }
 
-/// Persists the BLE formatter controls on this device.
+/// Persists local printer formatting preferences used by both output layouts.
 Future<void> savePrinterFormatSettings(
   PrinterFormatSettings settings,
   StorePort store,

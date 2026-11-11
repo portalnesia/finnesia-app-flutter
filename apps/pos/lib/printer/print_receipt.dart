@@ -34,7 +34,7 @@ import 'package:pos/sale/invoice_item.dart';
 ///
 /// The name of the outlet and the footer are the shop's, and optional: neither can be read
 /// without the network, and neither is a reason to send the customer away with no receipt. Windows
-/// renders the shared receipt data into PDF; all other platforms keep the existing ESC/POS bytes.
+/// renders the exact ESC/POS bytes used by Bluetooth into a PDF for the selected queue.
 Future<void> printReceipt(
   POSSale sale, {
   required ApiClient client,
@@ -51,24 +51,20 @@ Future<void> printReceipt(
     readPrintSettings(client),
     _readOutletName(client, sale.outletId),
   ).wait;
-  final outputMode = await readPrinterMode(store, platform: platform);
-  final printerFormat = outputMode == PrinterMode.windowsQueue
-      ? defaultPrinterFormatSettings
-      : await readPrinterFormatSettings(store);
+  final printerFormat = await readPrinterFormatSettings(store);
   final receipt = receiptData(complete, outletName: outletName);
+  final bluetoothBytes = receiptBytesFor(
+    receipt,
+    l10n: l10n,
+    footerText: settings?.receiptFooterText,
+    columns: printerFormat.columns,
+    autoCutter: printerFormat.autoCutter,
+  );
   await printSelectedDocument(
-    bluetoothBytes: receiptBytesFor(
-      receipt,
-      l10n: l10n,
-      footerText: settings?.receiptFooterText,
-      columns: printerFormat.columns,
-      autoCutter: printerFormat.autoCutter,
-    ),
+    bluetoothBytes: bluetoothBytes,
     buildWindowsPdf: (pageSize) => renderReceiptPdf(
-      sale: receipt,
-      fallbackProductName: l10n.saleDetailUnknownProduct,
-      labels: receiptLabels(l10n),
-      footerText: settings?.receiptFooterText,
+      escPosBytes: bluetoothBytes,
+      columns: printerFormat.columns,
       pageFormat: windowsQueuePageFormat(pageSize),
     ),
     documentName: l10n.receiptTitle,
@@ -116,10 +112,7 @@ Future<void> printPendingReceipt(
   required L10n l10n,
   required TargetPlatform platform,
 }) async {
-  final outputMode = await readPrinterMode(store, platform: platform);
-  final printerFormat = outputMode == PrinterMode.windowsQueue
-      ? defaultPrinterFormatSettings
-      : await readPrinterFormatSettings(store);
+  final printerFormat = await readPrinterFormatSettings(store);
   final receipt = (
     number: l10n.posReceiptTemporary,
     createdAt: entry.paidAt,
@@ -141,17 +134,17 @@ Future<void> printPendingReceipt(
         (method: payment.method.wire, amount: payment.amount),
     ],
   );
+  final bluetoothBytes = receiptBytesFor(
+    receipt,
+    l10n: l10n,
+    columns: printerFormat.columns,
+    autoCutter: printerFormat.autoCutter,
+  );
   await printSelectedDocument(
-    bluetoothBytes: receiptBytesFor(
-      receipt,
-      l10n: l10n,
-      columns: printerFormat.columns,
-      autoCutter: printerFormat.autoCutter,
-    ),
+    bluetoothBytes: bluetoothBytes,
     buildWindowsPdf: (pageSize) => renderReceiptPdf(
-      sale: receipt,
-      fallbackProductName: l10n.saleDetailUnknownProduct,
-      labels: receiptLabels(l10n),
+      escPosBytes: bluetoothBytes,
+      columns: printerFormat.columns,
       pageFormat: windowsQueuePageFormat(pageSize),
     ),
     documentName: l10n.receiptTitle,

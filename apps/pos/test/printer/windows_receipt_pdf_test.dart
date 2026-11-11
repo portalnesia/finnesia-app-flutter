@@ -7,8 +7,9 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pdf/pdf.dart';
-import 'package:pdf/widgets.dart' as pw;
 import 'package:pn_pos/src/datetime.dart';
+import 'package:pn_pos/src/escpos.dart';
+import 'package:pn_pos/src/escpos_pdf_layout.dart';
 import 'package:pn_pos/src/format.dart';
 import 'package:pn_pos/src/pos_escpos_format.dart';
 import 'package:pn_pos/src/pos_receipt.dart';
@@ -96,11 +97,6 @@ ReceiptSale _pendingSale() => (
   payments: const [(method: 'CASH', amount: 50000)],
 );
 
-List<String> _footerText(List<pw.Widget> widgets) => [
-  for (final widget in widgets)
-    if (widget is pw.Center) (widget.child as pw.Text).text.toPlainText(),
-];
-
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -111,41 +107,53 @@ void main() {
   });
 
   group('Windows ordinary-printer PDF receipt', () {
-    test('centers both Finnesia branding lines after tenant footer', () {
-      for (final sale in [_sale(), _pendingSale()]) {
-        final footer = buildReceiptFooterWidgets(
-          sale: sale,
-          footerText: 'Terima kasih\nSampai jumpa',
-          labels: _labels,
-        );
+    test(
+      'keeps the centered tenant footer and branding gap from Bluetooth',
+      () {
+        for (final sale in [_sale(), _pendingSale()]) {
+          final lines = parseEscPosPdfLayout(
+            formatReceiptEscPos(
+              sale,
+              'Unknown item',
+              _labels,
+              'Terima kasih\nSampai jumpa',
+              true,
+              32,
+            ),
+          );
+          final footerStart = lines.indexWhere(
+            (line) => line.text == 'Terima kasih',
+          );
 
-        expect(footer, hasLength(5));
-        expect(footer[0], isA<pw.Center>());
-        expect(footer[1], isA<pw.Center>());
-        expect(footer[2], isA<pw.SizedBox>());
-        expect((footer[2] as pw.SizedBox).height, 8);
-        expect(footer[3], isA<pw.Center>());
-        expect(footer[4], isA<pw.Center>());
-        expect(_footerText(footer), [
-          'Terima kasih',
-          'Sampai jumpa',
-          'Finnesia.com',
-          'Aplikasi Kasir Otomatis',
-        ]);
-      }
-    });
+          expect(footerStart, greaterThanOrEqualTo(0));
+          expect(lines[footerStart].alignment, EscPosAlign.center);
+          expect(lines[footerStart].bold, isFalse);
+          expect(lines[footerStart + 1].text, 'Sampai jumpa');
+          expect(lines[footerStart + 2].text, '');
+          expect(lines[footerStart + 3].text, 'Finnesia POS');
+          expect(lines[footerStart + 3].alignment, EscPosAlign.center);
+        }
+      },
+    );
 
     test('renders a normal sale into a valid PDF document', () async {
       final bytes = await renderReceiptPdf(
-        sale: _sale(),
-        fallbackProductName: 'Unknown item',
-        labels: _labels,
+        escPosBytes: formatReceiptEscPos(
+          _sale(),
+          'Unknown item',
+          _labels,
+          'Terima kasih\nSampai jumpa',
+          true,
+          32,
+        ),
+        columns: 32,
         pageFormat: _thermalPageFormat,
       );
 
       expect(bytes, isNotEmpty);
       expect(String.fromCharCodes(bytes.take(5)), '%PDF-');
-      expect(String.fromCharCodes(bytes), contains('NotoSans-Regular'));
+      expect(String.fromCharCodes(bytes), contains('NotoSansMono-Regular'));
+      expect(String.fromCharCodes(bytes), contains('NotoSansMono-Bold'));
       expect(bytes.length, greaterThan(1000));
     });
 
@@ -153,9 +161,15 @@ void main() {
       'renders empty and voided sales without requiring printer hardware',
       () async {
         final bytes = await renderReceiptPdf(
-          sale: _sale(items: const [], status: POSSaleStatus.voided.wire),
-          fallbackProductName: 'Unknown item',
-          labels: _labels,
+          escPosBytes: formatReceiptEscPos(
+            _sale(items: const [], status: POSSaleStatus.voided.wire),
+            'Unknown item',
+            _labels,
+            null,
+            true,
+            32,
+          ),
+          columns: 32,
           pageFormat: PdfPageFormat.a4,
         );
 

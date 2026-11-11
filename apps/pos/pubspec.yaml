@@ -92,6 +92,8 @@ flutter:
     - assets/logo/finnesia.png
     - assets/fonts/NotoSans-Regular.ttf
     - assets/fonts/NotoSans-Bold.ttf
+    - assets/fonts/NotoSansMono-Regular.ttf
+    - assets/fonts/NotoSansMono-Bold.ttf
     - shorebird.yaml
 
 # MSIX packaging — two jobs, and the second one is why the values below are what they are.
