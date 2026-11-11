@@ -44,7 +44,10 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('Sambungan printer'), findsOneWidget);
-        expect(find.textContaining('Print Agent'), findsOneWidget);
+        expect(
+          find.text('Printer Windows mencetak lewat driver sistem (PDF).'),
+          findsOneWidget,
+        );
         expect(find.text('Pilih printer Windows'), findsOneWidget);
         expect(find.text('Office Laser'), findsOneWidget);
         expect(find.text('Sedang tidak tersedia'), findsOneWidget);
@@ -94,7 +97,10 @@ void main() {
       );
       expect(find.text('Bluetooth'), findsOneWidget);
       expect(find.text('Dapur'), findsOneWidget);
-      expect(find.textContaining('USB/serial'), findsOneWidget);
+      expect(
+        find.text('Printer Windows mencetak lewat driver sistem (PDF).'),
+        findsOneWidget,
+      );
       expect(rig.printQueue.operations, isEmpty);
     });
 
