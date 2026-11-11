@@ -158,6 +158,10 @@ msix_config:
   # adaptive icon does, so the transparent-background glyph would be white on white in light mode.
   # Same source and reasoning as the Windows `.ico` (`tool/generate_windows_icon.dart`).
   logo_path: assets/icon/icon.png
+  # Keep the logo's margin. By default the tool `trim()`s the logo first, cutting every border the
+  # colour of its top-left pixel; on this full-bleed orange icon that removed the orange margin,
+  # and the glyph filled the taskbar icon edge to edge.
+  trim_logo: false
   # Sideload: sign with a self-signed test certificate. The certificate lands next to the .msix
   # and must be installed to Local Machine > Trusted People before the package opens.
   sign_msix: true
