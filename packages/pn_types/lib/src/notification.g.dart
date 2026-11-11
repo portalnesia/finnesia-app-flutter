@@ -72,6 +72,8 @@ _NotificationItem _$NotificationItemFromJson(Map<String, dynamic> json) =>
       category: json['category'] as String,
       title: json['title'] as String,
       body: json['body'] as String,
+      subtitle: json['subtitle'] as String?,
+      bodyHtml: json['body_html'] as String?,
       link: json['link'] as String?,
       ref: json['ref'] == null
           ? null
@@ -109,6 +111,8 @@ Map<String, dynamic> _$NotificationItemToJson(_NotificationItem instance) =>
       'category': instance.category,
       'title': instance.title,
       'body': instance.body,
+      'subtitle': instance.subtitle,
+      'body_html': instance.bodyHtml,
       'link': instance.link,
       'ref': instance.ref,
       'company_id': instance.companyId,

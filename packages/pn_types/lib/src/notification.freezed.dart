@@ -1117,7 +1117,7 @@ as String,
 /// @nodoc
 mixin _$NotificationItem {
 
- String get id;@JsonKey(name: 'notification_id') String get notificationId; String get type; String get category; String get title; String get body; String? get link; NotificationItemRef? get ref;@JsonKey(name: 'company_id') String? get companyId; NotificationItemActor? get actor; NotificationItemIcon? get icon; String? get image;@JsonKey(name: 'image_ratio') String? get imageRatio; List<NotificationItemButton> get buttons;@JsonKey(name: 'read_at') DateTime? get readAt;@JsonKey(name: 'created_at') DateTime get createdAt;
+ String get id;@JsonKey(name: 'notification_id') String get notificationId; String get type; String get category; String get title; String get body; String? get subtitle;@JsonKey(name: 'body_html') String? get bodyHtml; String? get link; NotificationItemRef? get ref;@JsonKey(name: 'company_id') String? get companyId; NotificationItemActor? get actor; NotificationItemIcon? get icon; String? get image;@JsonKey(name: 'image_ratio') String? get imageRatio; List<NotificationItemButton> get buttons;@JsonKey(name: 'read_at') DateTime? get readAt;@JsonKey(name: 'created_at') DateTime get createdAt;
 /// Create a copy of NotificationItem
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -1131,20 +1131,20 @@ $NotificationItemCopyWith<NotificationItem> get copyWith => _$NotificationItemCo
 @override
 bool operator ==(Object other) {
   final _this = this as NotificationItem;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is NotificationItem&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.notificationId, _this.notificationId) || other.notificationId == _this.notificationId)&&(identical(other.type, _this.type) || other.type == _this.type)&&(identical(other.category, _this.category) || other.category == _this.category)&&(identical(other.title, _this.title) || other.title == _this.title)&&(identical(other.body, _this.body) || other.body == _this.body)&&(identical(other.link, _this.link) || other.link == _this.link)&&(identical(other.ref, _this.ref) || other.ref == _this.ref)&&(identical(other.companyId, _this.companyId) || other.companyId == _this.companyId)&&(identical(other.actor, _this.actor) || other.actor == _this.actor)&&(identical(other.icon, _this.icon) || other.icon == _this.icon)&&(identical(other.image, _this.image) || other.image == _this.image)&&(identical(other.imageRatio, _this.imageRatio) || other.imageRatio == _this.imageRatio)&&const DeepCollectionEquality().equals(other.buttons, _this.buttons)&&(identical(other.readAt, _this.readAt) || other.readAt == _this.readAt)&&(identical(other.createdAt, _this.createdAt) || other.createdAt == _this.createdAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is NotificationItem&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.notificationId, _this.notificationId) || other.notificationId == _this.notificationId)&&(identical(other.type, _this.type) || other.type == _this.type)&&(identical(other.category, _this.category) || other.category == _this.category)&&(identical(other.title, _this.title) || other.title == _this.title)&&(identical(other.body, _this.body) || other.body == _this.body)&&(identical(other.subtitle, _this.subtitle) || other.subtitle == _this.subtitle)&&(identical(other.bodyHtml, _this.bodyHtml) || other.bodyHtml == _this.bodyHtml)&&(identical(other.link, _this.link) || other.link == _this.link)&&(identical(other.ref, _this.ref) || other.ref == _this.ref)&&(identical(other.companyId, _this.companyId) || other.companyId == _this.companyId)&&(identical(other.actor, _this.actor) || other.actor == _this.actor)&&(identical(other.icon, _this.icon) || other.icon == _this.icon)&&(identical(other.image, _this.image) || other.image == _this.image)&&(identical(other.imageRatio, _this.imageRatio) || other.imageRatio == _this.imageRatio)&&const DeepCollectionEquality().equals(other.buttons, _this.buttons)&&(identical(other.readAt, _this.readAt) || other.readAt == _this.readAt)&&(identical(other.createdAt, _this.createdAt) || other.createdAt == _this.createdAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
   final _this = this as NotificationItem;
-  return Object.hash(runtimeType,_this.id,_this.notificationId,_this.type,_this.category,_this.title,_this.body,_this.link,_this.ref,_this.companyId,_this.actor,_this.icon,_this.image,_this.imageRatio,const DeepCollectionEquality().hash(_this.buttons),_this.readAt,_this.createdAt);
+  return Object.hash(runtimeType,_this.id,_this.notificationId,_this.type,_this.category,_this.title,_this.body,_this.subtitle,_this.bodyHtml,_this.link,_this.ref,_this.companyId,_this.actor,_this.icon,_this.image,_this.imageRatio,const DeepCollectionEquality().hash(_this.buttons),_this.readAt,_this.createdAt);
 }
 
 @override
 String toString() {
   final _this = this as NotificationItem;
-  return 'NotificationItem(id: ${_this.id}, notificationId: ${_this.notificationId}, type: ${_this.type}, category: ${_this.category}, title: ${_this.title}, body: ${_this.body}, link: ${_this.link}, ref: ${_this.ref}, companyId: ${_this.companyId}, actor: ${_this.actor}, icon: ${_this.icon}, image: ${_this.image}, imageRatio: ${_this.imageRatio}, buttons: ${_this.buttons}, readAt: ${_this.readAt}, createdAt: ${_this.createdAt})';
+  return 'NotificationItem(id: ${_this.id}, notificationId: ${_this.notificationId}, type: ${_this.type}, category: ${_this.category}, title: ${_this.title}, body: ${_this.body}, subtitle: ${_this.subtitle}, bodyHtml: ${_this.bodyHtml}, link: ${_this.link}, ref: ${_this.ref}, companyId: ${_this.companyId}, actor: ${_this.actor}, icon: ${_this.icon}, image: ${_this.image}, imageRatio: ${_this.imageRatio}, buttons: ${_this.buttons}, readAt: ${_this.readAt}, createdAt: ${_this.createdAt})';
 }
 
 
@@ -1155,7 +1155,7 @@ abstract mixin class $NotificationItemCopyWith<$Res>  {
   factory $NotificationItemCopyWith(NotificationItem value, $Res Function(NotificationItem) _then) = _$NotificationItemCopyWithImpl;
 @useResult
 $Res call({
- String id,@JsonKey(name: 'notification_id') String notificationId, String type, String category, String title, String body, String? link, NotificationItemRef? ref,@JsonKey(name: 'company_id') String? companyId, NotificationItemActor? actor, NotificationItemIcon? icon, String? image,@JsonKey(name: 'image_ratio') String? imageRatio, List<NotificationItemButton> buttons,@JsonKey(name: 'read_at') DateTime? readAt,@JsonKey(name: 'created_at') DateTime createdAt
+ String id,@JsonKey(name: 'notification_id') String notificationId, String type, String category, String title, String body, String? subtitle,@JsonKey(name: 'body_html') String? bodyHtml, String? link, NotificationItemRef? ref,@JsonKey(name: 'company_id') String? companyId, NotificationItemActor? actor, NotificationItemIcon? icon, String? image,@JsonKey(name: 'image_ratio') String? imageRatio, List<NotificationItemButton> buttons,@JsonKey(name: 'read_at') DateTime? readAt,@JsonKey(name: 'created_at') DateTime createdAt
 });
 
 
@@ -1172,7 +1172,7 @@ class _$NotificationItemCopyWithImpl<$Res>
 
 /// Create a copy of NotificationItem
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? notificationId = null,Object? type = null,Object? category = null,Object? title = null,Object? body = null,Object? link = freezed,Object? ref = freezed,Object? companyId = freezed,Object? actor = freezed,Object? icon = freezed,Object? image = freezed,Object? imageRatio = freezed,Object? buttons = null,Object? readAt = freezed,Object? createdAt = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? notificationId = null,Object? type = null,Object? category = null,Object? title = null,Object? body = null,Object? subtitle = freezed,Object? bodyHtml = freezed,Object? link = freezed,Object? ref = freezed,Object? companyId = freezed,Object? actor = freezed,Object? icon = freezed,Object? image = freezed,Object? imageRatio = freezed,Object? buttons = null,Object? readAt = freezed,Object? createdAt = null,}) {
   return _then(NotificationItem(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,notificationId: null == notificationId ? _self.notificationId : notificationId // ignore: cast_nullable_to_non_nullable
@@ -1180,7 +1180,9 @@ as String,type: null == type ? _self.type : type // ignore: cast_nullable_to_non
 as String,category: null == category ? _self.category : category // ignore: cast_nullable_to_non_nullable
 as String,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
 as String,body: null == body ? _self.body : body // ignore: cast_nullable_to_non_nullable
-as String,link: freezed == link ? _self.link : link // ignore: cast_nullable_to_non_nullable
+as String,subtitle: freezed == subtitle ? _self.subtitle : subtitle // ignore: cast_nullable_to_non_nullable
+as String?,bodyHtml: freezed == bodyHtml ? _self.bodyHtml : bodyHtml // ignore: cast_nullable_to_non_nullable
+as String?,link: freezed == link ? _self.link : link // ignore: cast_nullable_to_non_nullable
 as String?,ref: freezed == ref ? _self.ref : ref // ignore: cast_nullable_to_non_nullable
 as NotificationItemRef?,companyId: freezed == companyId ? _self.companyId : companyId // ignore: cast_nullable_to_non_nullable
 as String?,actor: freezed == actor ? _self.actor : actor // ignore: cast_nullable_to_non_nullable
@@ -1311,10 +1313,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id, @JsonKey(name: 'notification_id')  String notificationId,  String type,  String category,  String title,  String body,  String? link,  NotificationItemRef? ref, @JsonKey(name: 'company_id')  String? companyId,  NotificationItemActor? actor,  NotificationItemIcon? icon,  String? image, @JsonKey(name: 'image_ratio')  String? imageRatio,  List<NotificationItemButton> buttons, @JsonKey(name: 'read_at')  DateTime? readAt, @JsonKey(name: 'created_at')  DateTime createdAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id, @JsonKey(name: 'notification_id')  String notificationId,  String type,  String category,  String title,  String body,  String? subtitle, @JsonKey(name: 'body_html')  String? bodyHtml,  String? link,  NotificationItemRef? ref, @JsonKey(name: 'company_id')  String? companyId,  NotificationItemActor? actor,  NotificationItemIcon? icon,  String? image, @JsonKey(name: 'image_ratio')  String? imageRatio,  List<NotificationItemButton> buttons, @JsonKey(name: 'read_at')  DateTime? readAt, @JsonKey(name: 'created_at')  DateTime createdAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _NotificationItem() when $default != null:
-return $default(_that.id,_that.notificationId,_that.type,_that.category,_that.title,_that.body,_that.link,_that.ref,_that.companyId,_that.actor,_that.icon,_that.image,_that.imageRatio,_that.buttons,_that.readAt,_that.createdAt);case _:
+return $default(_that.id,_that.notificationId,_that.type,_that.category,_that.title,_that.body,_that.subtitle,_that.bodyHtml,_that.link,_that.ref,_that.companyId,_that.actor,_that.icon,_that.image,_that.imageRatio,_that.buttons,_that.readAt,_that.createdAt);case _:
   return orElse();
 
 }
@@ -1332,10 +1334,10 @@ return $default(_that.id,_that.notificationId,_that.type,_that.category,_that.ti
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id, @JsonKey(name: 'notification_id')  String notificationId,  String type,  String category,  String title,  String body,  String? link,  NotificationItemRef? ref, @JsonKey(name: 'company_id')  String? companyId,  NotificationItemActor? actor,  NotificationItemIcon? icon,  String? image, @JsonKey(name: 'image_ratio')  String? imageRatio,  List<NotificationItemButton> buttons, @JsonKey(name: 'read_at')  DateTime? readAt, @JsonKey(name: 'created_at')  DateTime createdAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id, @JsonKey(name: 'notification_id')  String notificationId,  String type,  String category,  String title,  String body,  String? subtitle, @JsonKey(name: 'body_html')  String? bodyHtml,  String? link,  NotificationItemRef? ref, @JsonKey(name: 'company_id')  String? companyId,  NotificationItemActor? actor,  NotificationItemIcon? icon,  String? image, @JsonKey(name: 'image_ratio')  String? imageRatio,  List<NotificationItemButton> buttons, @JsonKey(name: 'read_at')  DateTime? readAt, @JsonKey(name: 'created_at')  DateTime createdAt)  $default,) {final _that = this;
 switch (_that) {
 case _NotificationItem():
-return $default(_that.id,_that.notificationId,_that.type,_that.category,_that.title,_that.body,_that.link,_that.ref,_that.companyId,_that.actor,_that.icon,_that.image,_that.imageRatio,_that.buttons,_that.readAt,_that.createdAt);case _:
+return $default(_that.id,_that.notificationId,_that.type,_that.category,_that.title,_that.body,_that.subtitle,_that.bodyHtml,_that.link,_that.ref,_that.companyId,_that.actor,_that.icon,_that.image,_that.imageRatio,_that.buttons,_that.readAt,_that.createdAt);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -1352,10 +1354,10 @@ return $default(_that.id,_that.notificationId,_that.type,_that.category,_that.ti
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id, @JsonKey(name: 'notification_id')  String notificationId,  String type,  String category,  String title,  String body,  String? link,  NotificationItemRef? ref, @JsonKey(name: 'company_id')  String? companyId,  NotificationItemActor? actor,  NotificationItemIcon? icon,  String? image, @JsonKey(name: 'image_ratio')  String? imageRatio,  List<NotificationItemButton> buttons, @JsonKey(name: 'read_at')  DateTime? readAt, @JsonKey(name: 'created_at')  DateTime createdAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id, @JsonKey(name: 'notification_id')  String notificationId,  String type,  String category,  String title,  String body,  String? subtitle, @JsonKey(name: 'body_html')  String? bodyHtml,  String? link,  NotificationItemRef? ref, @JsonKey(name: 'company_id')  String? companyId,  NotificationItemActor? actor,  NotificationItemIcon? icon,  String? image, @JsonKey(name: 'image_ratio')  String? imageRatio,  List<NotificationItemButton> buttons, @JsonKey(name: 'read_at')  DateTime? readAt, @JsonKey(name: 'created_at')  DateTime createdAt)?  $default,) {final _that = this;
 switch (_that) {
 case _NotificationItem() when $default != null:
-return $default(_that.id,_that.notificationId,_that.type,_that.category,_that.title,_that.body,_that.link,_that.ref,_that.companyId,_that.actor,_that.icon,_that.image,_that.imageRatio,_that.buttons,_that.readAt,_that.createdAt);case _:
+return $default(_that.id,_that.notificationId,_that.type,_that.category,_that.title,_that.body,_that.subtitle,_that.bodyHtml,_that.link,_that.ref,_that.companyId,_that.actor,_that.icon,_that.image,_that.imageRatio,_that.buttons,_that.readAt,_that.createdAt);case _:
   return null;
 
 }
@@ -1367,7 +1369,7 @@ return $default(_that.id,_that.notificationId,_that.type,_that.category,_that.ti
 @JsonSerializable()
 
 class _NotificationItem implements NotificationItem {
-  const _NotificationItem({required this.id, @JsonKey(name: 'notification_id') required this.notificationId, required this.type, required this.category, required this.title, required this.body, this.link, this.ref, @JsonKey(name: 'company_id') this.companyId, this.actor, this.icon, this.image, @JsonKey(name: 'image_ratio') this.imageRatio,  List<NotificationItemButton> buttons = const <NotificationItemButton>[], @JsonKey(name: 'read_at') this.readAt, @JsonKey(name: 'created_at') required this.createdAt}): _buttons = buttons;
+  const _NotificationItem({required this.id, @JsonKey(name: 'notification_id') required this.notificationId, required this.type, required this.category, required this.title, required this.body, this.subtitle, @JsonKey(name: 'body_html') this.bodyHtml, this.link, this.ref, @JsonKey(name: 'company_id') this.companyId, this.actor, this.icon, this.image, @JsonKey(name: 'image_ratio') this.imageRatio,  List<NotificationItemButton> buttons = const <NotificationItemButton>[], @JsonKey(name: 'read_at') this.readAt, @JsonKey(name: 'created_at') required this.createdAt}): _buttons = buttons;
   factory _NotificationItem.fromJson(Map<String, dynamic> json) => _$NotificationItemFromJson(json);
 
 @override final  String id;
@@ -1376,6 +1378,8 @@ class _NotificationItem implements NotificationItem {
 @override final  String category;
 @override final  String title;
 @override final  String body;
+@override final  String? subtitle;
+@override@JsonKey(name: 'body_html') final  String? bodyHtml;
 @override final  String? link;
 @override final  NotificationItemRef? ref;
 @override@JsonKey(name: 'company_id') final  String? companyId;
@@ -1406,18 +1410,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _NotificationItem&&(identical(other.id, id) || other.id == id)&&(identical(other.notificationId, notificationId) || other.notificationId == notificationId)&&(identical(other.type, type) || other.type == type)&&(identical(other.category, category) || other.category == category)&&(identical(other.title, title) || other.title == title)&&(identical(other.body, body) || other.body == body)&&(identical(other.link, link) || other.link == link)&&(identical(other.ref, ref) || other.ref == ref)&&(identical(other.companyId, companyId) || other.companyId == companyId)&&(identical(other.actor, actor) || other.actor == actor)&&(identical(other.icon, icon) || other.icon == icon)&&(identical(other.image, image) || other.image == image)&&(identical(other.imageRatio, imageRatio) || other.imageRatio == imageRatio)&&const DeepCollectionEquality().equals(other.buttons, _buttons)&&(identical(other.readAt, readAt) || other.readAt == readAt)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _NotificationItem&&(identical(other.id, id) || other.id == id)&&(identical(other.notificationId, notificationId) || other.notificationId == notificationId)&&(identical(other.type, type) || other.type == type)&&(identical(other.category, category) || other.category == category)&&(identical(other.title, title) || other.title == title)&&(identical(other.body, body) || other.body == body)&&(identical(other.subtitle, subtitle) || other.subtitle == subtitle)&&(identical(other.bodyHtml, bodyHtml) || other.bodyHtml == bodyHtml)&&(identical(other.link, link) || other.link == link)&&(identical(other.ref, ref) || other.ref == ref)&&(identical(other.companyId, companyId) || other.companyId == companyId)&&(identical(other.actor, actor) || other.actor == actor)&&(identical(other.icon, icon) || other.icon == icon)&&(identical(other.image, image) || other.image == image)&&(identical(other.imageRatio, imageRatio) || other.imageRatio == imageRatio)&&const DeepCollectionEquality().equals(other.buttons, _buttons)&&(identical(other.readAt, readAt) || other.readAt == readAt)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,id,notificationId,type,category,title,body,link,ref,companyId,actor,icon,image,imageRatio,const DeepCollectionEquality().hash(_buttons),readAt,createdAt);
+    return Object.hash(runtimeType,id,notificationId,type,category,title,body,subtitle,bodyHtml,link,ref,companyId,actor,icon,image,imageRatio,const DeepCollectionEquality().hash(_buttons),readAt,createdAt);
 }
 
 @override
 String toString() {
-    return 'NotificationItem(id: $id, notificationId: $notificationId, type: $type, category: $category, title: $title, body: $body, link: $link, ref: $ref, companyId: $companyId, actor: $actor, icon: $icon, image: $image, imageRatio: $imageRatio, buttons: $buttons, readAt: $readAt, createdAt: $createdAt)';
+    return 'NotificationItem(id: $id, notificationId: $notificationId, type: $type, category: $category, title: $title, body: $body, subtitle: $subtitle, bodyHtml: $bodyHtml, link: $link, ref: $ref, companyId: $companyId, actor: $actor, icon: $icon, image: $image, imageRatio: $imageRatio, buttons: $buttons, readAt: $readAt, createdAt: $createdAt)';
 }
 
 
@@ -1428,7 +1432,7 @@ abstract mixin class _$NotificationItemCopyWith<$Res> implements $NotificationIt
   factory _$NotificationItemCopyWith(_NotificationItem value, $Res Function(_NotificationItem) _then) = __$NotificationItemCopyWithImpl;
 @override @useResult
 $Res call({
- String id,@JsonKey(name: 'notification_id') String notificationId, String type, String category, String title, String body, String? link, NotificationItemRef? ref,@JsonKey(name: 'company_id') String? companyId, NotificationItemActor? actor, NotificationItemIcon? icon, String? image,@JsonKey(name: 'image_ratio') String? imageRatio, List<NotificationItemButton> buttons,@JsonKey(name: 'read_at') DateTime? readAt,@JsonKey(name: 'created_at') DateTime createdAt
+ String id,@JsonKey(name: 'notification_id') String notificationId, String type, String category, String title, String body, String? subtitle,@JsonKey(name: 'body_html') String? bodyHtml, String? link, NotificationItemRef? ref,@JsonKey(name: 'company_id') String? companyId, NotificationItemActor? actor, NotificationItemIcon? icon, String? image,@JsonKey(name: 'image_ratio') String? imageRatio, List<NotificationItemButton> buttons,@JsonKey(name: 'read_at') DateTime? readAt,@JsonKey(name: 'created_at') DateTime createdAt
 });
 
 
@@ -1445,7 +1449,7 @@ class __$NotificationItemCopyWithImpl<$Res>
 
 /// Create a copy of NotificationItem
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? notificationId = null,Object? type = null,Object? category = null,Object? title = null,Object? body = null,Object? link = freezed,Object? ref = freezed,Object? companyId = freezed,Object? actor = freezed,Object? icon = freezed,Object? image = freezed,Object? imageRatio = freezed,Object? buttons = null,Object? readAt = freezed,Object? createdAt = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? notificationId = null,Object? type = null,Object? category = null,Object? title = null,Object? body = null,Object? subtitle = freezed,Object? bodyHtml = freezed,Object? link = freezed,Object? ref = freezed,Object? companyId = freezed,Object? actor = freezed,Object? icon = freezed,Object? image = freezed,Object? imageRatio = freezed,Object? buttons = null,Object? readAt = freezed,Object? createdAt = null,}) {
   return _then(_NotificationItem(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,notificationId: null == notificationId ? _self.notificationId : notificationId // ignore: cast_nullable_to_non_nullable
@@ -1453,7 +1457,9 @@ as String,type: null == type ? _self.type : type // ignore: cast_nullable_to_non
 as String,category: null == category ? _self.category : category // ignore: cast_nullable_to_non_nullable
 as String,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
 as String,body: null == body ? _self.body : body // ignore: cast_nullable_to_non_nullable
-as String,link: freezed == link ? _self.link : link // ignore: cast_nullable_to_non_nullable
+as String,subtitle: freezed == subtitle ? _self.subtitle : subtitle // ignore: cast_nullable_to_non_nullable
+as String?,bodyHtml: freezed == bodyHtml ? _self.bodyHtml : bodyHtml // ignore: cast_nullable_to_non_nullable
+as String?,link: freezed == link ? _self.link : link // ignore: cast_nullable_to_non_nullable
 as String?,ref: freezed == ref ? _self.ref : ref // ignore: cast_nullable_to_non_nullable
 as NotificationItemRef?,companyId: freezed == companyId ? _self.companyId : companyId // ignore: cast_nullable_to_non_nullable
 as String?,actor: freezed == actor ? _self.actor : actor // ignore: cast_nullable_to_non_nullable

@@ -36,6 +36,8 @@ Map<String, Object?> _itemJson({
   String? link = '/reports/weekly',
   Object? buttons = const <Object?>[],
   Object? readAt,
+  String? bodyHtml,
+  String? subtitle,
 }) => {
   'id': id,
   'notification_id': notificationId,
@@ -43,6 +45,8 @@ Map<String, Object?> _itemJson({
   'category': 'system',
   'title': 'Laporan siap',
   'body': 'Laporan mingguan dapat dibuka.',
+  'subtitle': subtitle,
+  'body_html': bodyHtml,
   'link': link,
   'ref': null,
   'company_id': 'comp_1',
@@ -79,6 +83,18 @@ void main() {
       expect(item.readAt, DateTime.utc(2026, 10, 28, 2));
       expect(item.buttons.single.label, 'Lihat laporan');
       expect(item.buttons.single.link, '/reports/weekly');
+    });
+
+    test('preserves optional subtitle and server-sanitized HTML', () {
+      const bodyHtml =
+          '<h2>Ringkasan</h2><p><strong>Penjualan naik</strong></p>';
+      const subtitle = 'Laporan penjualan sudah siap.';
+      final item = NotificationItem.fromJson(
+        _itemJson(bodyHtml: bodyHtml, subtitle: subtitle),
+      );
+
+      expect(item.toJson()['subtitle'], subtitle);
+      expect(item.toJson()['body_html'], bodyHtml);
     });
 
     test('accepts a nil buttons slice and an empty cursor', () {
