@@ -1054,7 +1054,7 @@ abstract class L10n {
   /// No description provided for @printerOutputFlutterModesNote.
   ///
   /// In id, this message translates to:
-  /// **'Di aplikasi Flutter ini, yang tersedia adalah Bluetooth dan printer Windows melalui driver sistem (PDF). USB/serial, Print Agent, dan dialog cetak browser belum tersedia di sini.'**
+  /// **'Printer Windows mencetak lewat driver sistem (PDF).'**
   String get printerOutputFlutterModesNote;
 
   /// No description provided for @printerOutputBluetooth.

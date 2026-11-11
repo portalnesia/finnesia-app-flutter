@@ -298,7 +298,7 @@
   "printerOutputChooseTitle": "Choose printer type",
   "printerOutputChooseDesc": "Select how this Windows app should print.",
   "printerOutputSectionTitle": "Printer connection",
-  "printerOutputFlutterModesNote": "In this Flutter app, available modes are Bluetooth and installed Windows printers via the system driver (PDF). USB/serial, Print Agent, and browser print dialogs are not available here yet.",
+  "printerOutputFlutterModesNote": "Windows printing uses the system printer driver (PDF).",
   "printerOutputBluetooth": "Bluetooth",
   "printerOutputWindowsQueue": "Windows printer",
   "printerOutputChooseHint": "Choose Bluetooth or an installed Windows printer.",

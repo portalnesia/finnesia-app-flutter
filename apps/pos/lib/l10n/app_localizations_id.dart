@@ -589,7 +589,7 @@ class L10nId extends L10n {
 
   @override
   String get printerOutputFlutterModesNote =>
-      'Di aplikasi Flutter ini, yang tersedia adalah Bluetooth dan printer Windows melalui driver sistem (PDF). USB/serial, Print Agent, dan dialog cetak browser belum tersedia di sini.';
+      'Printer Windows mencetak lewat driver sistem (PDF).';
 
   @override
   String get printerOutputBluetooth => 'Bluetooth';

@@ -595,7 +595,7 @@ class L10nEn extends L10n {
 
   @override
   String get printerOutputFlutterModesNote =>
-      'In this Flutter app, available modes are Bluetooth and installed Windows printers via the system driver (PDF). USB/serial, Print Agent, and browser print dialogs are not available here yet.';
+      'Windows printing uses the system printer driver (PDF).';
 
   @override
   String get printerOutputBluetooth => 'Bluetooth';
