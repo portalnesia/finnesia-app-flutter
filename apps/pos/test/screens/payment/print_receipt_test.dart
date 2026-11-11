@@ -255,7 +255,7 @@ void main() {
       expect(text, contains('Terima kasih'));
       expect(
         text,
-        contains('Terima kasih\nFinnesia.com\nAplikasi Kasir Otomatis\n'),
+        contains('Terima kasih\n\nFinnesia.com\nAplikasi Kasir Otomatis\n'),
       );
       expect(find.text('Struk terkirim ke printer'), findsOneWidget);
     });

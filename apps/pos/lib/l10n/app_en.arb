@@ -303,6 +303,25 @@
   "printerOutputWindowsQueue": "Windows printer",
   "printerOutputChooseHint": "Choose Bluetooth or an installed Windows printer.",
   "printerOutputSaveFailed": "Could not save the printer selection. Try again.",
+  "printerLineColumns": "Characters per line",
+  "printerLineColumnsHelp": "Choose the width that fits your paper. Print the ruler to check it.",
+  "printerLineColumnsOption": "{columns} characters",
+  "@printerLineColumnsOption": {
+    "placeholders": {
+      "columns": {
+        "type": "int"
+      }
+    }
+  },
+  "printerAutoCutter": "This printer has an automatic cutter",
+  "printerAutoCutterHelp": "Turn this off for manual tear-off printers.",
+  "printerFormatLoadFailed": "Could not read the printer formatting settings.",
+  "printerFormatSaveFailed": "Could not save the printer formatting settings. Try again.",
+  "printerTestPrint": "Print test page",
+  "printerTestPrintTitle": "PRINTER TEST",
+  "printerTestPrintSent": "Test page sent to the printer.",
+  "printerTestPrintFailed": "Could not send the test page to the printer.",
+  "printerWindowsQueueFormattingNote": "Paper width and cutting are controlled by the Windows printer driver.",
   "printerWindowsQueueTitle": "Select a Windows printer",
   "printerWindowsQueueDesc": "Installed Windows printers appear here. Documents are sent as PDF through the selected printer driver.",
   "printerWindowsQueueChange": "Choose Windows printer",

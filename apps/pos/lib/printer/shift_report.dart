@@ -11,6 +11,7 @@ import 'package:pn_pos/src/pos_escpos_format.dart'
     show ShiftReportEscPosLabels, ShiftReportSummary, formatShiftReportEscPos;
 import 'package:pn_types/src/pos_shift.dart';
 import 'package:pos/l10n/app_localizations.dart';
+import 'package:pos/printer/receipt.dart' show receiptBrandingText;
 import 'package:pos/screens/common/tender_label.dart';
 
 /// The normalized report fields shared by the ESC/POS and Windows PDF renderers.
@@ -62,8 +63,7 @@ ShiftReportEscPosLabels shiftReportLabels(L10n l10n) => ShiftReportEscPosLabels(
   noTenders: l10n.posNoNonCashPayments,
   productsSoldTitle: l10n.posProductsSoldTitle,
   productsSoldTotal: l10n.posProductsSoldTotal,
-  // The tablet does not enable the optional Finnesia branding line.
-  finnesiaBranding: '',
+  finnesiaBranding: receiptBrandingText,
 );
 
 /// The closing report of a shift, as the bytes for the printer.
@@ -77,10 +77,15 @@ Uint8List shiftReportBytes(
   required DateTime printedAt,
   bool showProductSales = false,
   String? footerText,
+  int columns = 32,
+  bool autoCutter = false,
 }) => formatShiftReportEscPos(
   shiftReportData(summary),
   printedAt.toIso8601String(),
   shiftReportLabels(l10n),
   showProductSales,
   footerText,
+  true,
+  columns,
+  autoCutter,
 );

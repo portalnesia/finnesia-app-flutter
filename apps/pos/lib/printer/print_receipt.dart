@@ -19,6 +19,7 @@ import 'package:pn_types/src/pos.dart';
 import 'package:pos/l10n/app_localizations.dart';
 import 'package:pos/printer/print_settings.dart';
 import 'package:pos/printer/printer_output.dart';
+import 'package:pos/printer/printer_service.dart';
 import 'package:pos/printer/receipt.dart';
 import 'package:pos/printer/windows_receipt_pdf.dart';
 import 'package:pos/sale/invoice_item.dart';
@@ -49,12 +50,18 @@ Future<void> printReceipt(
     readPrintSettings(client),
     _readOutletName(client, sale.outletId),
   ).wait;
+  final outputMode = await readPrinterMode(store, platform: platform);
+  final printerFormat = outputMode == PrinterMode.windowsQueue
+      ? defaultPrinterFormatSettings
+      : await readPrinterFormatSettings(store);
   final receipt = receiptData(complete, outletName: outletName);
   await printSelectedDocument(
     bluetoothBytes: receiptBytesFor(
       receipt,
       l10n: l10n,
       footerText: settings?.receiptFooterText,
+      columns: printerFormat.columns,
+      autoCutter: printerFormat.autoCutter,
     ),
     buildWindowsPdf: () => renderReceiptPdf(
       sale: receipt,
@@ -106,7 +113,11 @@ Future<void> printPendingReceipt(
   required StorePort store,
   required L10n l10n,
   required TargetPlatform platform,
-}) {
+}) async {
+  final outputMode = await readPrinterMode(store, platform: platform);
+  final printerFormat = outputMode == PrinterMode.windowsQueue
+      ? defaultPrinterFormatSettings
+      : await readPrinterFormatSettings(store);
   final receipt = (
     number: l10n.posReceiptTemporary,
     createdAt: entry.paidAt,
@@ -128,8 +139,13 @@ Future<void> printPendingReceipt(
         (method: payment.method.wire, amount: payment.amount),
     ],
   );
-  return printSelectedDocument(
-    bluetoothBytes: receiptBytesFor(receipt, l10n: l10n),
+  await printSelectedDocument(
+    bluetoothBytes: receiptBytesFor(
+      receipt,
+      l10n: l10n,
+      columns: printerFormat.columns,
+      autoCutter: printerFormat.autoCutter,
+    ),
     buildWindowsPdf: () => renderReceiptPdf(
       sale: receipt,
       fallbackProductName: l10n.saleDetailUnknownProduct,

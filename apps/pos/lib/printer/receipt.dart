@@ -31,10 +31,14 @@ Uint8List receiptBytes(
   required L10n l10n,
   String? outletName,
   String? footerText,
+  int columns = 32,
+  bool autoCutter = false,
 }) => receiptBytesFor(
   receiptData(sale, outletName: outletName),
   l10n: l10n,
   footerText: footerText,
+  columns: columns,
+  autoCutter: autoCutter,
 );
 
 /// The normalized receipt fields shared by the ESC/POS and Windows PDF renderers.
@@ -70,12 +74,16 @@ Uint8List receiptBytesFor(
   ReceiptSale sale, {
   required L10n l10n,
   String? footerText,
+  int columns = 32,
+  bool autoCutter = false,
 }) => formatReceiptEscPos(
   sale,
   l10n.saleDetailUnknownProduct,
   receiptLabels(l10n),
   footerText,
   true,
+  columns,
+  autoCutter,
 );
 
 /// Translated labels shared by ESC/POS and PDF receipt renderers.

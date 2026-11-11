@@ -200,7 +200,7 @@ void main() {
       expect(
         paper,
         contains(
-          '\x1Ba\x01Terima kasih\nFinnesia.com\nAplikasi Kasir Otomatis\n',
+          '\x1Ba\x01Terima kasih\n\nFinnesia.com\nAplikasi Kasir Otomatis\n',
         ),
       );
     });

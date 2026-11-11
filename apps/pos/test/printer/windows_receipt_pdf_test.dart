@@ -114,7 +114,13 @@ void main() {
           labels: _labels,
         );
 
-        expect(footer, everyElement(isA<pw.Center>()));
+        expect(footer, hasLength(5));
+        expect(footer[0], isA<pw.Center>());
+        expect(footer[1], isA<pw.Center>());
+        expect(footer[2], isA<pw.SizedBox>());
+        expect((footer[2] as pw.SizedBox).height, 8);
+        expect(footer[3], isA<pw.Center>());
+        expect(footer[4], isA<pw.Center>());
         expect(_footerText(footer), [
           'Terima kasih',
           'Sampai jumpa',

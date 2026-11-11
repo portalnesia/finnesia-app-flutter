@@ -14,6 +14,7 @@ import 'package:pn_pos/src/datetime.dart';
 import 'package:pn_pos/src/format.dart';
 import 'package:pn_pos/src/js_compat.dart';
 import 'package:pn_pos/src/pos_escpos_format.dart';
+import 'package:pos/printer/receipt.dart' show receiptBrandingText;
 
 const _headingStyle = pw.TextStyle(
   fontSize: 15,
@@ -147,6 +148,10 @@ Future<Uint8List> renderShiftReportPdf({
             if (line.isNotEmpty)
               pw.Center(child: pw.Text(line, style: _detailStyle)),
         ],
+        if ((footerText ?? '').split('\n').any((line) => line.isNotEmpty))
+          pw.SizedBox(height: 8),
+        for (final line in receiptBrandingText.split('\n'))
+          pw.Center(child: pw.Text(line, style: _detailStyle)),
       ],
     ),
   );

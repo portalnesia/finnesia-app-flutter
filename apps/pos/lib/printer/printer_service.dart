@@ -21,7 +21,56 @@ const printerOutputModeKey = 'printer_output_mode';
 /// The installed Windows queue, stored separately from the legacy BLE identity.
 const windowsPrinterQueueKey = 'printer_windows_queue';
 
+/// ESC/POS formatting settings are local to this device and do not affect Windows PDF queues.
+const printerFormatSettingsKey = 'printer_format_settings';
+const printerColumnOptions = [32, 33, 40, 42, 48];
+typedef PrinterFormatSettings = ({int columns, bool autoCutter});
+const defaultPrinterFormatSettings = (columns: 32, autoCutter: false);
+
 enum PrinterMode { bluetooth, windowsQueue }
+
+/// Reads BLE formatting preferences; unknown or malformed values use the legacy 32-column mode.
+Future<PrinterFormatSettings> readPrinterFormatSettings(StorePort store) async {
+  final raw = await store.read(printerFormatSettingsKey);
+  if (raw == null) return defaultPrinterFormatSettings;
+  try {
+    final value = jsonDecode(raw);
+    if (value is! Map) return defaultPrinterFormatSettings;
+    final columns = value['columns'];
+    final autoCutter = value['autoCutter'];
+    return (
+      columns: columns is int && printerColumnOptions.contains(columns)
+          ? columns
+          : defaultPrinterFormatSettings.columns,
+      autoCutter: autoCutter is bool
+          ? autoCutter
+          : defaultPrinterFormatSettings.autoCutter,
+    );
+  } on FormatException {
+    return defaultPrinterFormatSettings;
+  }
+}
+
+/// Persists the BLE formatter controls on this device.
+Future<void> savePrinterFormatSettings(
+  PrinterFormatSettings settings,
+  StorePort store,
+) async {
+  if (!printerColumnOptions.contains(settings.columns)) {
+    throw ArgumentError.value(
+      settings.columns,
+      'columns',
+      'Unsupported printer width',
+    );
+  }
+  await store.write(
+    printerFormatSettingsKey,
+    jsonEncode({
+      'columns': settings.columns,
+      'autoCutter': settings.autoCutter,
+    }),
+  );
+}
 
 /// Reads the output mode, keeping all non-Windows platforms on the existing BLE route.
 ///

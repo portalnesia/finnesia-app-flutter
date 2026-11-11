@@ -612,6 +612,50 @@ class L10nEn extends L10n {
       'Could not save the printer selection. Try again.';
 
   @override
+  String get printerLineColumns => 'Characters per line';
+
+  @override
+  String get printerLineColumnsHelp =>
+      'Choose the width that fits your paper. Print the ruler to check it.';
+
+  @override
+  String printerLineColumnsOption(int columns) {
+    return '$columns characters';
+  }
+
+  @override
+  String get printerAutoCutter => 'This printer has an automatic cutter';
+
+  @override
+  String get printerAutoCutterHelp =>
+      'Turn this off for manual tear-off printers.';
+
+  @override
+  String get printerFormatLoadFailed =>
+      'Could not read the printer formatting settings.';
+
+  @override
+  String get printerFormatSaveFailed =>
+      'Could not save the printer formatting settings. Try again.';
+
+  @override
+  String get printerTestPrint => 'Print test page';
+
+  @override
+  String get printerTestPrintTitle => 'PRINTER TEST';
+
+  @override
+  String get printerTestPrintSent => 'Test page sent to the printer.';
+
+  @override
+  String get printerTestPrintFailed =>
+      'Could not send the test page to the printer.';
+
+  @override
+  String get printerWindowsQueueFormattingNote =>
+      'Paper width and cutting are controlled by the Windows printer driver.';
+
+  @override
   String get printerWindowsQueueTitle => 'Select a Windows printer';
 
   @override

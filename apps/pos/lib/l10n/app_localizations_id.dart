@@ -606,6 +606,49 @@ class L10nId extends L10n {
       'Gagal menyimpan pilihan printer. Coba lagi.';
 
   @override
+  String get printerLineColumns => 'Karakter per baris';
+
+  @override
+  String get printerLineColumnsHelp =>
+      'Pilih lebar yang sesuai dengan kertas. Cetak ruler untuk mengeceknya.';
+
+  @override
+  String printerLineColumnsOption(int columns) {
+    return '$columns karakter';
+  }
+
+  @override
+  String get printerAutoCutter => 'Printer ini memiliki pemotong otomatis';
+
+  @override
+  String get printerAutoCutterHelp =>
+      'Matikan untuk printer yang kertasnya disobek manual.';
+
+  @override
+  String get printerFormatLoadFailed =>
+      'Gagal membaca pengaturan format printer.';
+
+  @override
+  String get printerFormatSaveFailed =>
+      'Gagal menyimpan pengaturan format printer. Coba lagi.';
+
+  @override
+  String get printerTestPrint => 'Cetak halaman tes';
+
+  @override
+  String get printerTestPrintTitle => 'TES PRINTER';
+
+  @override
+  String get printerTestPrintSent => 'Halaman tes terkirim ke printer.';
+
+  @override
+  String get printerTestPrintFailed => 'Gagal mengirim halaman tes ke printer.';
+
+  @override
+  String get printerWindowsQueueFormattingNote =>
+      'Lebar kertas dan pemotongan diatur oleh driver printer Windows.';
+
+  @override
   String get printerWindowsQueueTitle => 'Pilih printer Windows';
 
   @override

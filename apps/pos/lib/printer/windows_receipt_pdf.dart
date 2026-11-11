@@ -238,6 +238,9 @@ List<pw.Widget> buildReceiptFooterWidgets({
       widgets.add(pw.Center(child: pw.Text(line, style: _detailStyle)));
     }
   }
+  if (lines.any((line) => line.isNotEmpty)) {
+    widgets.add(pw.SizedBox(height: 8));
+  }
   for (final line in receiptBrandingText.split('\n')) {
     widgets.add(pw.Center(child: pw.Text(line, style: _detailStyle)));
   }

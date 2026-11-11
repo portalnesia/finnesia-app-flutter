@@ -1081,6 +1081,78 @@ abstract class L10n {
   /// **'Gagal menyimpan pilihan printer. Coba lagi.'**
   String get printerOutputSaveFailed;
 
+  /// No description provided for @printerLineColumns.
+  ///
+  /// In id, this message translates to:
+  /// **'Karakter per baris'**
+  String get printerLineColumns;
+
+  /// No description provided for @printerLineColumnsHelp.
+  ///
+  /// In id, this message translates to:
+  /// **'Pilih lebar yang sesuai dengan kertas. Cetak ruler untuk mengeceknya.'**
+  String get printerLineColumnsHelp;
+
+  /// No description provided for @printerLineColumnsOption.
+  ///
+  /// In id, this message translates to:
+  /// **'{columns} karakter'**
+  String printerLineColumnsOption(int columns);
+
+  /// No description provided for @printerAutoCutter.
+  ///
+  /// In id, this message translates to:
+  /// **'Printer ini memiliki pemotong otomatis'**
+  String get printerAutoCutter;
+
+  /// No description provided for @printerAutoCutterHelp.
+  ///
+  /// In id, this message translates to:
+  /// **'Matikan untuk printer yang kertasnya disobek manual.'**
+  String get printerAutoCutterHelp;
+
+  /// No description provided for @printerFormatLoadFailed.
+  ///
+  /// In id, this message translates to:
+  /// **'Gagal membaca pengaturan format printer.'**
+  String get printerFormatLoadFailed;
+
+  /// No description provided for @printerFormatSaveFailed.
+  ///
+  /// In id, this message translates to:
+  /// **'Gagal menyimpan pengaturan format printer. Coba lagi.'**
+  String get printerFormatSaveFailed;
+
+  /// No description provided for @printerTestPrint.
+  ///
+  /// In id, this message translates to:
+  /// **'Cetak halaman tes'**
+  String get printerTestPrint;
+
+  /// No description provided for @printerTestPrintTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'TES PRINTER'**
+  String get printerTestPrintTitle;
+
+  /// No description provided for @printerTestPrintSent.
+  ///
+  /// In id, this message translates to:
+  /// **'Halaman tes terkirim ke printer.'**
+  String get printerTestPrintSent;
+
+  /// No description provided for @printerTestPrintFailed.
+  ///
+  /// In id, this message translates to:
+  /// **'Gagal mengirim halaman tes ke printer.'**
+  String get printerTestPrintFailed;
+
+  /// No description provided for @printerWindowsQueueFormattingNote.
+  ///
+  /// In id, this message translates to:
+  /// **'Lebar kertas dan pemotongan diatur oleh driver printer Windows.'**
+  String get printerWindowsQueueFormattingNote;
+
   /// No description provided for @printerWindowsQueueTitle.
   ///
   /// In id, this message translates to:

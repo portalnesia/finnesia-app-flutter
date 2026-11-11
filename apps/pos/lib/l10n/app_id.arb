@@ -303,6 +303,25 @@
   "printerOutputWindowsQueue": "Printer Windows",
   "printerOutputChooseHint": "Pilih Bluetooth atau printer Windows yang sudah terpasang.",
   "printerOutputSaveFailed": "Gagal menyimpan pilihan printer. Coba lagi.",
+  "printerLineColumns": "Karakter per baris",
+  "printerLineColumnsHelp": "Pilih lebar yang sesuai dengan kertas. Cetak ruler untuk mengeceknya.",
+  "printerLineColumnsOption": "{columns} karakter",
+  "@printerLineColumnsOption": {
+    "placeholders": {
+      "columns": {
+        "type": "int"
+      }
+    }
+  },
+  "printerAutoCutter": "Printer ini memiliki pemotong otomatis",
+  "printerAutoCutterHelp": "Matikan untuk printer yang kertasnya disobek manual.",
+  "printerFormatLoadFailed": "Gagal membaca pengaturan format printer.",
+  "printerFormatSaveFailed": "Gagal menyimpan pengaturan format printer. Coba lagi.",
+  "printerTestPrint": "Cetak halaman tes",
+  "printerTestPrintTitle": "TES PRINTER",
+  "printerTestPrintSent": "Halaman tes terkirim ke printer.",
+  "printerTestPrintFailed": "Gagal mengirim halaman tes ke printer.",
+  "printerWindowsQueueFormattingNote": "Lebar kertas dan pemotongan diatur oleh driver printer Windows.",
   "printerWindowsQueueTitle": "Pilih printer Windows",
   "printerWindowsQueueDesc": "Printer yang terpasang di Windows akan muncul di sini. Dokumen dikirim sebagai PDF melalui driver printer yang dipilih.",
   "printerWindowsQueueChange": "Pilih printer Windows",

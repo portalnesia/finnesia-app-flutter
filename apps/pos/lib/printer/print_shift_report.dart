@@ -14,6 +14,7 @@ import 'package:pn_types/src/pos_shift.dart';
 import 'package:pos/l10n/app_localizations.dart';
 import 'package:pos/printer/print_settings.dart';
 import 'package:pos/printer/printer_output.dart';
+import 'package:pos/printer/printer_service.dart';
 import 'package:pos/printer/shift_report.dart';
 import 'package:pos/printer/windows_shift_report_pdf.dart';
 
@@ -36,6 +37,10 @@ Future<void> printShiftReport(
   final settings = await readPrintSettings(client);
   final showProductSales = settings?.showProductSalesSummary ?? false;
   final footerText = settings?.receiptFooterText;
+  final outputMode = await readPrinterMode(store, platform: platform);
+  final printerFormat = outputMode == PrinterMode.windowsQueue
+      ? defaultPrinterFormatSettings
+      : await readPrinterFormatSettings(store);
   await printSelectedDocument(
     bluetoothBytes: shiftReportBytes(
       summary,
@@ -43,6 +48,8 @@ Future<void> printShiftReport(
       printedAt: now,
       showProductSales: showProductSales,
       footerText: footerText,
+      columns: printerFormat.columns,
+      autoCutter: printerFormat.autoCutter,
     ),
     buildWindowsPdf: () => renderShiftReportPdf(
       summary: shiftReportData(summary),

@@ -92,9 +92,10 @@ int _clampSize(num value) {
 /// "corrected" into a clamp, which would diverge from the web app.
 Uint8List cmdFeed([int lines = 1]) => Uint8List.fromList([_esc, 0x64, lines]);
 
-/// Partial cut (`m=1`): a full cut (`m=0`) on a printer with no partial-cut blade jams
-/// instead of cutting, which is the more common failure of the two to get wrong.
-Uint8List cmdCut() => Uint8List.fromList([_gs, 0x56, 1]);
+/// Feeds the last printed line past the printer's blade, then performs a partial cut.
+/// This avoids slicing the last line on printers such as the TM-U220, whose cutter sits
+/// further from the print head than a thermal printer's.
+Uint8List cmdCut() => Uint8List.fromList([_gs, 0x56, 66, 0]);
 
 /// Encodes [text] as UTF-8 with a trailing newline.
 Uint8List cmdText(String text) => Uint8List.fromList(utf8.encode('$text\n'));

@@ -15,6 +15,7 @@ import 'package:pn_ui/src/widgets/top_notice.dart';
 import 'package:pos/app/app_scope.dart';
 import 'package:pos/l10n/app_localizations.dart';
 import 'package:pos/printer/printer_service.dart';
+import 'package:pos/screens/menu/printer_format_controls.dart';
 import 'package:pos/screens/menu/printer_pairing_sheet.dart';
 import 'package:pos/screens/menu/windows_printer_queue_sheet.dart';
 
@@ -226,6 +227,8 @@ class _PrinterCardState extends State<PrinterCard> {
                   ),
                 ),
               ],
+              const SizedBox(height: 16),
+              PrinterFormatControls(showTestPrint: saved != null),
             ],
           ),
         );
@@ -302,6 +305,8 @@ class _PrinterCardState extends State<PrinterCard> {
           ),
         ),
       ],
+      const SizedBox(height: 16),
+      PrinterFormatControls(showTestPrint: saved != null),
     ],
   );
 
@@ -309,6 +314,11 @@ class _PrinterCardState extends State<PrinterCard> {
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       Text(queue?.name ?? l10n.menuPrinterNone),
+      const SizedBox(height: 8),
+      Text(
+        l10n.printerWindowsQueueFormattingNote,
+        style: Theme.of(context).textTheme.bodySmall,
+      ),
       const SizedBox(height: 12),
       SizedBox(
         height: PnTouch.min,
