@@ -19,6 +19,7 @@ import 'package:pn_types/src/native/public_http_port.dart';
 import 'package:pn_types/src/native/store_fake.dart';
 import 'package:pn_types/src/native/store_port.dart';
 import 'package:pn_types/src/pos.dart';
+import 'package:pn_types/src/pos_shift.dart';
 import 'package:pn_types/src/session.dart';
 import 'package:pn_ui/src/theme/tokens.dart';
 import 'package:pos/app/app_scope.dart';
@@ -777,6 +778,47 @@ void main() {
       expect(find.text('Keluar dari akun ini?'), findsOneWidget);
       // The sentence is the only place a cashier can learn they will not have to pair again.
       expect(find.textContaining('tidak perlu pairing ulang'), findsOneWidget);
+    });
+
+    // Signing out is a way out of the till the app itself offers, so it carries the same
+    // open-shift reminder as the back press and the window close — inside the confirmation it
+    // already asks, rather than as a second dialog in front of it.
+    testWidgets('reminds of the open shift the cashier holds', (tester) async {
+      await pumpMenu(tester);
+      AppScope.of(tester.element(find.byType(MenuScreen)))
+          .shiftLeaveReminder
+          .value = const POSShift(
+        id: 's1',
+        number: 'SH-0001',
+        cashierId: 'user_1',
+        outletId: 'out_1',
+        openedAt: '2026-09-20T01:00:00Z',
+        openingCash: 150000,
+        totalSales: 0,
+        totalTransactions: 0,
+      );
+
+      await tester.ensureVisible(signOutButton);
+      await tester.tap(signOutButton);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Keluar dari akun ini?'), findsOneWidget);
+      expect(
+        find.textContaining('Shift SH-0001 belum ditutup'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('mentions no shift when there is none to remind of', (
+      tester,
+    ) async {
+      await pumpMenu(tester);
+
+      await tester.ensureVisible(signOutButton);
+      await tester.tap(signOutButton);
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('belum ditutup'), findsNothing);
     });
 
     testWidgets('cancelling leaves the cashier signed in', (tester) async {

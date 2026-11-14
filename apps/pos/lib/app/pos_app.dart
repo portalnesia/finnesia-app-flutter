@@ -17,12 +17,14 @@ import 'package:pn_ui/src/theme/app_theme.dart';
 import 'package:pos/app/app_scope.dart';
 import 'package:pos/app/boot_screens.dart';
 import 'package:pos/app/gate.dart';
+import 'package:pos/app/shift_leave_guard.dart';
 import 'package:pos/bootstrap.dart';
 import 'package:pos/l10n/app_localizations.dart';
 import 'package:pos/notifications/notification_inbox_controller.dart';
 import 'package:pos/preferences/app_preferences.dart';
 import 'package:pos/preferences/enum_preference.dart';
 import 'package:pos/screens/notifications/notification_inbox_screen.dart';
+import 'package:pos/screens/shift/shift_leave_dialog.dart';
 
 /// Paints the Android status bar and navigation bar to match the theme in force: the screen's
 /// own background behind them, and icons that contrast with that background.
@@ -416,9 +418,20 @@ class _PosAppState extends State<PosApp> with WidgetsBindingObserver {
     }
   }
 
-  void _installNativeUpdate() {
+  Future<void> _installNativeUpdate() async {
     final nativeUpdate = widget.nativeUpdate;
     if (nativeUpdate == null) return;
+    // Installing restarts the app, so it is a way out like any other: the cashier holding an
+    // open shift is reminded first (`shift_leave_guard.dart`). The banner sits above the
+    // Navigator, so the dialog is shown through the navigator's own context.
+    final result = _result;
+    final shift = result is BootReady
+        ? result.services.shiftLeaveReminder.value
+        : null;
+    final navigatorContext = _navigatorKey.currentContext;
+    if (shift != null && navigatorContext != null) {
+      if (!await showShiftLeaveReminder(navigatorContext, shift)) return;
+    }
     // The install itself restarts the app; nothing here needs to react to its result.
     unawaited(nativeUpdate.completeUpdate());
   }
@@ -478,7 +491,7 @@ class _PosAppState extends State<PosApp> with WidgetsBindingObserver {
         home: switch (result) {
           null => const BootScreen(),
           BootFailed() => BootFailedScreen(onRetry: _retry),
-          BootReady() => Gate(screens: widget.screens),
+          BootReady() => ShiftLeaveGuard(child: Gate(screens: widget.screens)),
         },
       ),
     );

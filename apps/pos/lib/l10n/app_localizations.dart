@@ -3168,6 +3168,48 @@ abstract class L10n {
   /// In id, this message translates to:
   /// **'Pasang'**
   String get nativeUpdateAction;
+
+  /// No description provided for @shiftLeaveTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Shift masih aktif'**
+  String get shiftLeaveTitle;
+
+  /// No description provided for @shiftLeaveDesc.
+  ///
+  /// In id, this message translates to:
+  /// **'Shift {number} belum ditutup. Anda tetap boleh keluar dari aplikasi, tapi tutup shift di akhir jam kerja agar kas laci cocok dengan laporan.'**
+  String shiftLeaveDesc(String number);
+
+  /// No description provided for @shiftLeaveStay.
+  ///
+  /// In id, this message translates to:
+  /// **'Kembali ke kasir'**
+  String get shiftLeaveStay;
+
+  /// No description provided for @shiftLeaveConfirm.
+  ///
+  /// In id, this message translates to:
+  /// **'Tetap keluar'**
+  String get shiftLeaveConfirm;
+
+  /// No description provided for @menuSignOutShiftOpen.
+  ///
+  /// In id, this message translates to:
+  /// **'Shift {number} belum ditutup. Bila jam kerja Anda sudah selesai, tutup shift dulu agar kas laci cocok dengan laporan.'**
+  String menuSignOutShiftOpen(String number);
+
+  /// No description provided for @shiftLeaveExitFailed.
+  ///
+  /// In id, this message translates to:
+  /// **'Aplikasi tidak bisa ditutup. Coba lagi.'**
+  String get shiftLeaveExitFailed;
+
+  /// No description provided for @shiftLeaveNoticeBody.
+  ///
+  /// In id, this message translates to:
+  /// **'Shift {number} belum ditutup. Tutup shift di akhir jam kerja agar kas laci cocok dengan laporan.'**
+  String shiftLeaveNoticeBody(String number);
 }
 
 class _L10nDelegate extends LocalizationsDelegate<L10n> {

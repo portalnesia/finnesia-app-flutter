@@ -1761,4 +1761,31 @@ class L10nId extends L10n {
 
   @override
   String get nativeUpdateAction => 'Pasang';
+
+  @override
+  String get shiftLeaveTitle => 'Shift masih aktif';
+
+  @override
+  String shiftLeaveDesc(String number) {
+    return 'Shift $number belum ditutup. Anda tetap boleh keluar dari aplikasi, tapi tutup shift di akhir jam kerja agar kas laci cocok dengan laporan.';
+  }
+
+  @override
+  String get shiftLeaveStay => 'Kembali ke kasir';
+
+  @override
+  String get shiftLeaveConfirm => 'Tetap keluar';
+
+  @override
+  String menuSignOutShiftOpen(String number) {
+    return 'Shift $number belum ditutup. Bila jam kerja Anda sudah selesai, tutup shift dulu agar kas laci cocok dengan laporan.';
+  }
+
+  @override
+  String get shiftLeaveExitFailed => 'Aplikasi tidak bisa ditutup. Coba lagi.';
+
+  @override
+  String shiftLeaveNoticeBody(String number) {
+    return 'Shift $number belum ditutup. Tutup shift di akhir jam kerja agar kas laci cocok dengan laporan.';
+  }
 }
