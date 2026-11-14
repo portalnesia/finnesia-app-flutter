@@ -20,6 +20,7 @@ import 'package:pn_types/src/native/store_port.dart';
 import 'package:pn_types/src/native/updater_fake.dart';
 import 'package:pn_types/src/native/updater_port.dart';
 import 'package:pn_types/src/pos.dart';
+import 'package:pn_types/src/pos_shift.dart';
 import 'package:pn_types/src/session.dart';
 import 'package:pn_ui/src/theme/app_theme.dart';
 import 'package:pn_ui/src/theme/contrast.dart';
@@ -96,6 +97,18 @@ TransportResponse saleResponse() => TransportResponse(
       'created_at': '2026-09-22T03:00:00Z',
     },
   }),
+);
+
+/// An open shift held by the cashier at the till, for the reminder on the way out.
+const _openShift = POSShift(
+  id: 's1',
+  number: 'SH-0001',
+  cashierId: 'user_1',
+  outletId: 'out_1',
+  openedAt: '2026-09-20T01:00:00Z',
+  openingCash: 150000,
+  totalSales: 0,
+  totalTransactions: 0,
 );
 
 const _screens = (pairing: _pairing, login: _login, till: _till);
@@ -502,6 +515,53 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(nativeUpdate.completeCount, 1);
+    });
+
+    // Installing restarts the app, so it is a way out the app itself offers: the cashier holding
+    // an open shift is reminded first, and the install still happens on "Tetap keluar".
+    testWidgets('reminds of an open shift first, then installs', (
+      tester,
+    ) async {
+      final nativeUpdate = FakeNativeUpdate(
+        status: NativeUpdateStatus.readyToInstall,
+      );
+      await tester.pumpWidget(
+        appOver(Rig(storedSession(paired)), nativeUpdate: nativeUpdate),
+      );
+      await tester.pumpAndSettle();
+      AppScope.of(tester.element(find.byType(Gate))).shiftLeaveReminder.value =
+          _openShift;
+
+      await tester.tap(find.text('Pasang'));
+      await tester.pumpAndSettle();
+      expect(find.text('Shift masih aktif'), findsOneWidget);
+      expect(nativeUpdate.completeCount, 0);
+
+      await tester.tap(find.text('Tetap keluar'));
+      await tester.pumpAndSettle();
+      expect(nativeUpdate.completeCount, 1);
+    });
+
+    testWidgets('does not install when the cashier goes back to the till', (
+      tester,
+    ) async {
+      final nativeUpdate = FakeNativeUpdate(
+        status: NativeUpdateStatus.readyToInstall,
+      );
+      await tester.pumpWidget(
+        appOver(Rig(storedSession(paired)), nativeUpdate: nativeUpdate),
+      );
+      await tester.pumpAndSettle();
+      AppScope.of(tester.element(find.byType(Gate))).shiftLeaveReminder.value =
+          _openShift;
+
+      await tester.tap(find.text('Pasang'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Kembali ke kasir'));
+      await tester.pumpAndSettle();
+
+      expect(nativeUpdate.completeCount, 0);
+      expect(find.text('Shift masih aktif'), findsNothing);
     });
 
     testWidgets('says nothing while the app is already up to date', (

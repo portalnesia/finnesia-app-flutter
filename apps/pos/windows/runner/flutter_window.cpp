@@ -28,6 +28,8 @@ bool FlutterWindow::OnCreate() {
   windows_wns_push_messaging_ = std::make_unique<WindowsWnsPushMessaging>(
       flutter_controller_->engine()->messenger());
   WindowsWnsPushMessaging::SetWindowHandle(GetHandle());
+  windows_exit_notice_ = std::make_unique<WindowsExitNotice>(
+      flutter_controller_->engine()->messenger(), GetHandle());
   SetChildContent(flutter_controller_->view()->GetNativeWindow());
 
   flutter_controller_->engine()->SetNextFrameCallback([&]() {
@@ -45,6 +47,7 @@ bool FlutterWindow::OnCreate() {
 void FlutterWindow::OnDestroy() {
   WindowsWnsPushMessaging::SetWindowHandle(nullptr);
   windows_wns_push_messaging_ = nullptr;
+  windows_exit_notice_ = nullptr;
   if (flutter_controller_) {
     flutter_controller_ = nullptr;
   }
@@ -58,6 +61,14 @@ FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
                               LPARAM const lparam) noexcept {
   if (WindowsWnsPushMessaging::HandleWindowMessage(message)) {
     return 0;
+  }
+
+  // Windows is shutting down or signing out while the cashier holds an open shift: answer "not
+  // yet", so Windows shows its own screen with the reminder as the reason
+  // (`windows_exit_notice.h`). "Shut down anyway" stays the cashier's choice.
+  if (message == WM_QUERYENDSESSION && windows_exit_notice_ &&
+      windows_exit_notice_->HoldsEndSession()) {
+    return FALSE;
   }
 
   // Give Flutter, including plugins, an opportunity to handle window messages.
