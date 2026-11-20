@@ -54,6 +54,8 @@ class PushLifecycleController {
   String? _registeredToken;
   String? _registeredSessionToken;
   bool _available = false;
+  bool _started = false;
+  bool _askedForPermission = false;
   bool _unregistering = false;
   bool _disposed = false;
 
@@ -94,6 +96,8 @@ class PushLifecycleController {
     _unsubscribeSession = session.subscribe(_sessionChanged);
 
     await refreshPermissionStatus();
+    _started = true;
+    await _askForPermissionOnce();
     await _readInitialMessage();
   }
 
@@ -122,9 +126,17 @@ class PushLifecycleController {
     }
   }
 
-  /// Requests OS permission only after an explicit cashier action.
+  /// Shows the system's permission dialog: by itself once someone is signed in
+  /// ([_askForPermissionOnce]), and again from the inbox button for a cashier who changes their
+  /// mind.
   Future<PushAuthorizationStatus> requestPermission() async {
     await start();
+    return _showPermissionDialog();
+  }
+
+  /// The request itself, without waiting for [start]: [_askForPermissionOnce] runs from inside
+  /// it, and waiting there would wait for itself.
+  Future<PushAuthorizationStatus> _showPermissionDialog() async {
     if (!_available || _disposed) {
       return PushAuthorizationStatus.unsupported;
     }
@@ -138,6 +150,27 @@ class PushLifecycleController {
       logPushDebug('permission request failed (${error.runtimeType})');
       return authorizationStatus.value;
     }
+  }
+
+  /// Asks for notification permission by itself, once per run, as soon as someone is signed in.
+  ///
+  /// The owner's decision (2026-11-20): a cashier cannot be expected to find the button in the
+  /// notification inbox, and without the permission neither push nor the open-shift reminder
+  /// (`ShiftReminderService`) can be shown. Asked after sign-in rather than at launch, because
+  /// the token is only registered for a signed-in session. Android reports a permission it never
+  /// asked for as "denied", so that is asked too; Android stops showing the dialog by itself once
+  /// the cashier has refused it for good. Once per run, so signing out and in again does not
+  /// nag.
+  Future<void> _askForPermissionOnce() async {
+    if (_askedForPermission || !_started || !_available || _disposed) return;
+    if (!_isSignedIn(session.current)) return;
+    final status = authorizationStatus.value;
+    if (status.canReceivePush ||
+        status == PushAuthorizationStatus.unsupported) {
+      return;
+    }
+    _askedForPermission = true;
+    await _showPermissionDialog();
   }
 
   /// Removes the current token before the caller clears the bearer session.
@@ -204,6 +237,7 @@ class PushLifecycleController {
     if (_unregistering) return;
     _flushPendingOpens();
     unawaited(_queueRegistration());
+    unawaited(_askForPermissionOnce());
   }
 
   void _flushPendingOpens() {

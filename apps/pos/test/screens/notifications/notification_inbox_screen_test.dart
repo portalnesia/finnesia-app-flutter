@@ -103,11 +103,13 @@ void main() {
     tearDown(() => controller.dispose());
 
     testWidgets(
-      'asks for push permission only after the inbox action is tapped',
+      // Permission is asked by itself once someone is signed in (`PushLifecycleController`);
+      // the inbox button is what a cashier who said no uses to say yes.
+      'offers to ask again after a refusal, and registers after grant',
       (tester) async {
         final pushTransport = FakeApiTransport();
         final messaging = FakePushMessaging()
-          ..permissionResult = PushAuthorizationStatus.authorized;
+          ..permissionResult = PushAuthorizationStatus.denied;
         final pushStore = FakeStorePort(storedSession(paired));
         final sessionHolder = SessionHolder(pushStore);
         await sessionHolder.hydrate();
@@ -132,9 +134,10 @@ void main() {
           ),
         );
         await tester.pump();
-        expect(messaging.requestPermissionCalls, 0);
+        expect(messaging.requestPermissionCalls, 1);
         expect(find.text('Aktifkan notifikasi'), findsOneWidget);
 
+        messaging.permissionResult = PushAuthorizationStatus.authorized;
         pushTransport.respond(
           TransportResponse(status: 204, headers: const {}, body: null),
         );
@@ -142,7 +145,7 @@ void main() {
         await tester.pump();
         await tester.pump();
 
-        expect(messaging.requestPermissionCalls, 1);
+        expect(messaging.requestPermissionCalls, 2);
         expect(pushTransport.requests.single.path, '/api/v1/push-tokens');
       },
     );

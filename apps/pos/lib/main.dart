@@ -41,7 +41,8 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Firebase must be ready before the Android background FCM callback is registered. This
-  // installs handling only; the cashier is asked for notification permission from the inbox.
+  // installs handling only; the cashier is asked for notification permission once signed in
+  // (`PushLifecycleController`).
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   registerPushBackgroundHandler();
   // Everything the framework catches on its own — a build error, a gesture callback that
