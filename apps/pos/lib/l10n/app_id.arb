@@ -810,5 +810,33 @@
   },
   "updateReadyMessage": "Pembaruan siap. Restart aplikasi untuk menerapkannya.",
   "nativeUpdateReadyMessage": "Versi baru siap dipasang.",
-  "nativeUpdateAction": "Pasang"
+  "nativeUpdateAction": "Pasang",
+  "shiftLeaveTitle": "Shift masih aktif",
+  "shiftLeaveDesc": "Shift {number} belum ditutup. Anda tetap boleh keluar dari aplikasi, tapi tutup shift di akhir jam kerja agar kas laci cocok dengan laporan.",
+  "@shiftLeaveDesc": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "shiftLeaveStay": "Kembali ke kasir",
+  "shiftLeaveConfirm": "Tetap keluar",
+  "menuSignOutShiftOpen": "Shift {number} belum ditutup. Bila jam kerja Anda sudah selesai, tutup shift dulu agar kas laci cocok dengan laporan.",
+  "@menuSignOutShiftOpen": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "shiftLeaveExitFailed": "Aplikasi tidak bisa ditutup. Coba lagi.",
+  "shiftLeaveNoticeBody": "Shift {number} belum ditutup. Tutup shift di akhir jam kerja agar kas laci cocok dengan laporan.",
+  "@shiftLeaveNoticeBody": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  }
 }

@@ -7,6 +7,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:pn_pos/src/shift_gate.dart';
+import 'package:pn_pos/src/shift_leave_reminder.dart';
 import 'package:pn_types/src/pos.dart';
 import 'package:pn_types/src/pos_shift.dart';
 import 'package:pn_ui/src/widgets/state_view.dart';
@@ -46,6 +47,7 @@ class _ShiftGateScreenState extends State<ShiftGateScreen> {
   ShiftController? _controller;
   ValueNotifier<int>? _shiftClosed;
   ValueNotifier<POSShift?>? _activeShift;
+  ValueNotifier<POSShift?>? _leaveReminder;
 
   @override
   void didChangeDependencies() {
@@ -64,6 +66,7 @@ class _ShiftGateScreenState extends State<ShiftGateScreen> {
     // — which cannot see `controller` itself — knows whether there is a shift to show a detail
     // of. Registered before `load()`, so the first answer is reported too.
     _activeShift = services.activeShift;
+    _leaveReminder = services.shiftLeaveReminder;
     controller.addListener(_reportActiveShift);
     controller.load();
     // A shift closed from inside the app: the drawer this gate let the cashier into no longer
@@ -73,7 +76,24 @@ class _ShiftGateScreenState extends State<ShiftGateScreen> {
 
   void _onShiftClosed() => _controller?.load();
 
-  void _reportActiveShift() => _activeShift?.value = _controller?.activeShift;
+  void _reportActiveShift() {
+    final controller = _controller;
+    final shift = controller?.activeShift;
+    _activeShift?.value = shift;
+    // The app's exit paths remind the cashier of this shift before letting them go. Whether the
+    // shift was resumed does not matter: a shift left at the "already open" panel is still an
+    // open drawer.
+    final remind =
+        controller != null &&
+        shouldWarnOnLeave(
+          requireShift: controller.preferences?.requireShift ?? true,
+          shiftStateKnown: controller.state is Ready<ShiftContext>,
+          shiftId: shift?.id,
+          shiftOwnerId: shift?.cashierId,
+          currentUserId: controller.userId,
+        );
+    _leaveReminder?.value = remind ? shift : null;
+  }
 
   @override
   void dispose() {
@@ -82,6 +102,8 @@ class _ShiftGateScreenState extends State<ShiftGateScreen> {
     // This gate is gone — a sign-out, most likely — so there is no longer a shift to show a
     // detail of, whatever the last one read was.
     _activeShift?.value = null;
+    // Signed out, so nobody at the till holds a shift to be reminded of.
+    _leaveReminder?.value = null;
     _controller?.dispose();
     super.dispose();
   }

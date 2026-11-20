@@ -202,6 +202,12 @@ class AppServices extends ChangeNotifier {
   /// it to decide whether the shift detail action has anything to show.
   final activeShift = ValueNotifier<POSShift?>(null);
 
+  /// The open shift the cashier at the till should be reminded of before leaving the app, or
+  /// null when there is nothing to remind (no shift, another cashier's shift, shifts switched off,
+  /// or a read that has not answered). The gate keeps this current with `shouldWarnOnLeave`;
+  /// the app's exit paths read it.
+  final shiftLeaveReminder = ValueNotifier<POSShift?>(null);
+
   /// The language and theme the cashier picked. The root reads them to build the app, the menu
   /// changes them, and the API client asks in the language on every request.
   final EnumPreference<AppLanguage> language;
@@ -237,6 +243,7 @@ class AppServices extends ChangeNotifier {
     pushController?.dispose();
     shiftClosed.dispose();
     activeShift.dispose();
+    shiftLeaveReminder.dispose();
     super.dispose();
   }
 

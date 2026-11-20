@@ -503,11 +503,24 @@ class _SignOutButton extends StatelessWidget {
   }
 
   Future<void> _confirm(BuildContext context, L10n l10n) async {
+    // Signing out leaves the till, so it carries the open-shift reminder every other way out
+    // does (`shift_leave_guard.dart`) — inside this confirmation, not as a second dialog.
+    final openShift = services.shiftLeaveReminder.value;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: Text(l10n.menuSignOutTitle),
-        content: Text(l10n.menuSignOutDesc),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(l10n.menuSignOutDesc),
+            if (openShift != null) ...[
+              const SizedBox(height: 12),
+              Text(l10n.menuSignOutShiftOpen(openShift.number)),
+            ],
+          ],
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),

@@ -103,6 +103,14 @@
                     android:pathPrefix="/api/auth/mobile/return"/>
             </intent-filter>
         </activity>
+        <!-- Posts the open-shift reminder when the app is swiped away from Recents
+             (`ShiftReminderService.kt`). `stopWithTask="false"` is what makes Android call its
+             onTaskRemoved instead of stopping it silently with the task. Not exported: only the
+             app starts it. -->
+        <service
+            android:name=".ShiftReminderService"
+            android:exported="false"
+            android:stopWithTask="false"/>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

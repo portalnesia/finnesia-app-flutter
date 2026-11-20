@@ -730,5 +730,33 @@
   },
   "updateReadyMessage": "Update ready. Restart the app to apply it.",
   "nativeUpdateReadyMessage": "New version ready to install.",
-  "nativeUpdateAction": "Install"
+  "nativeUpdateAction": "Install",
+  "shiftLeaveTitle": "Shift still active",
+  "shiftLeaveDesc": "Shift {number} has not been closed. You can still leave the app, but close the shift at the end of your working hours so the drawer cash matches the report.",
+  "@shiftLeaveDesc": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "shiftLeaveStay": "Back to till",
+  "shiftLeaveConfirm": "Leave anyway",
+  "menuSignOutShiftOpen": "Shift {number} has not been closed. If your working hours are over, close the shift first so the drawer cash matches the report.",
+  "@menuSignOutShiftOpen": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  },
+  "shiftLeaveExitFailed": "The app could not be closed. Try again.",
+  "shiftLeaveNoticeBody": "Shift {number} has not been closed. Close the shift at the end of your working hours so the drawer cash matches the report.",
+  "@shiftLeaveNoticeBody": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      }
+    }
+  }
 }

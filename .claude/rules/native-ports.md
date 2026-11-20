@@ -60,6 +60,8 @@ tanpa perangkat, dan logika uang yang kebetulan lewat jalur itu ikut tidak bisa 
 | Patch OTA | `shorebird_code_push` | `UpdaterPort` | `pn_types` |
 | Update Play Store | `in_app_update` | `NativeUpdatePort` | `pn_types` |
 | HTTP tanpa sesi | `dio` | `PublicHttpPort` | `pn_types` |
+| Keluar dari app | `SystemNavigator` / `exitApplication` | `AppExitPort` | `pn_types` |
+| Pesan saat app ditutup dari luar (swipe Recents, shutdown Windows) | channel `pos/exit_notice` | `ExitNoticePort` | `pn_types` |
 | Keranjang tertahan | `sqflite` | `HoldOrderStore` | `pn_pos` |
 | Antrian penjualan | `sqflite` | `PendingSaleStore` | `pn_pos` |
 | Scan barcode | `mobile_scanner` | `ScannerPort` | `apps/pos` — butuh `Widget` |

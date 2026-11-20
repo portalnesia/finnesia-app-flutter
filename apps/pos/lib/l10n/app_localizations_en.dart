@@ -1772,4 +1772,31 @@ class L10nEn extends L10n {
 
   @override
   String get nativeUpdateAction => 'Install';
+
+  @override
+  String get shiftLeaveTitle => 'Shift still active';
+
+  @override
+  String shiftLeaveDesc(String number) {
+    return 'Shift $number has not been closed. You can still leave the app, but close the shift at the end of your working hours so the drawer cash matches the report.';
+  }
+
+  @override
+  String get shiftLeaveStay => 'Back to till';
+
+  @override
+  String get shiftLeaveConfirm => 'Leave anyway';
+
+  @override
+  String menuSignOutShiftOpen(String number) {
+    return 'Shift $number has not been closed. If your working hours are over, close the shift first so the drawer cash matches the report.';
+  }
+
+  @override
+  String get shiftLeaveExitFailed => 'The app could not be closed. Try again.';
+
+  @override
+  String shiftLeaveNoticeBody(String number) {
+    return 'Shift $number has not been closed. Close the shift at the end of your working hours so the drawer cash matches the report.';
+  }
 }
