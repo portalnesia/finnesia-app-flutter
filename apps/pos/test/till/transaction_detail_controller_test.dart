@@ -14,6 +14,7 @@ import 'package:pn_types/src/api/client.dart';
 import 'package:pn_types/src/api/transport.dart';
 import 'package:pn_types/src/api/transport_fake.dart';
 import 'package:pos/state/loadable.dart';
+import 'package:pos/till/quick_create.dart';
 import 'package:pos/till/transaction_detail_controller.dart';
 
 // Written new. The detail and the picker's two reads are one component's state, so there is no
@@ -355,17 +356,15 @@ void main() {
         name: 'Sari',
         phone: '0812',
         email: '',
-        companyName: '',
-        address: '',
       );
 
-      expect(result, isA<CreateContactOk>());
-      expect(jsonDecode(transport.requests.last.body!), {
-        'name': 'Sari',
-        'type': 'CUSTOMER',
-        'is_active': true,
-        'phone': '0812',
-      });
+      expect(result, isA<QuickCreateOk>());
+      // The till's own route, which `pos.quick_create` reaches: `/master/contacts` needs
+      // `master.contact.manage`, which the cashier role no longer holds.
+      final sent = transport.requests.last;
+      expect(sent.method.wire, 'POST');
+      expect(uriOf(sent).path, '/api/v1/pos/customers');
+      expect(jsonDecode(sent.body!), {'name': 'Sari', 'phone': '0812'});
     });
 
     test(
@@ -379,16 +378,12 @@ void main() {
         await controller.create(
           name: '  Sari  ',
           phone: '   ',
-          email: '',
-          companyName: '  Toko Sari ',
-          address: '',
+          email: ' sari@contoh.id ',
         );
 
         expect(jsonDecode(transport.requests.last.body!), {
           'name': 'Sari',
-          'type': 'CUSTOMER',
-          'is_active': true,
-          'company_name': 'Toko Sari',
+          'email': 'sari@contoh.id',
         });
       },
     );
@@ -398,15 +393,9 @@ void main() {
       opening(transport);
       await controller.open();
 
-      final result = await controller.create(
-        name: '   ',
-        phone: '',
-        email: '',
-        companyName: '',
-        address: '',
-      );
+      final result = await controller.create(name: '   ', phone: '', email: '');
 
-      expect(result, isA<CreateContactInvalid>());
+      expect(result, isA<QuickCreateInvalid>());
       // Nothing was sent: a request with no name would be refused by the server anyway, and
       // this way the cashier is told before it leaves.
       expect(transport.requests.where((r) => r.method.wire == 'POST'), isEmpty);
@@ -430,12 +419,10 @@ void main() {
         name: 'Sari',
         phone: '',
         email: '',
-        companyName: '',
-        address: '',
       );
 
-      expect(result, isA<CreateContactRejected>());
-      expect((result as CreateContactRejected).message, 'Nama sudah dipakai');
+      expect(result, isA<QuickCreateRejected>());
+      expect((result as QuickCreateRejected).message, 'Nama sudah dipakai');
     });
 
     test('no answer at all is a different answer from a refusal', () async {
@@ -448,11 +435,9 @@ void main() {
         name: 'Sari',
         phone: '',
         email: '',
-        companyName: '',
-        address: '',
       );
 
-      expect(result, isA<CreateContactUnavailable>());
+      expect(result, isA<QuickCreateUnavailable>());
     });
 
     test('a created customer is offered at the top of the list', () async {
@@ -463,13 +448,7 @@ void main() {
       await controller.open();
       transport.respond(ok(contactJson('c9', 'Sari')));
 
-      await controller.create(
-        name: 'Sari',
-        phone: '',
-        email: '',
-        companyName: '',
-        address: '',
-      );
+      await controller.create(name: 'Sari', phone: '', email: '');
 
       final shown = switch (controller.state) {
         Ready(:final data) => data.map((d) => d.customerName).toList(),
@@ -483,22 +462,10 @@ void main() {
       opening(transport, customers: [contactJson('c1', 'Budi')]);
       await controller.open();
       transport.respond(ok(contactJson('c9', 'Sari')));
-      await controller.create(
-        name: 'Sari',
-        phone: '',
-        email: '',
-        companyName: '',
-        address: '',
-      );
+      await controller.create(name: 'Sari', phone: '', email: '');
       transport.respond(ok(contactJson('c9', 'Sari')));
 
-      await controller.create(
-        name: 'Sari',
-        phone: '',
-        email: '',
-        companyName: '',
-        address: '',
-      );
+      await controller.create(name: 'Sari', phone: '', email: '');
 
       final shown = switch (controller.state) {
         Ready(:final data) => data.map((d) => d.customerId).toList(),
@@ -513,20 +480,8 @@ void main() {
       await controller.open();
       transport.respond(ok(contactJson('c9', 'Sari')));
 
-      final first = controller.create(
-        name: 'Sari',
-        phone: '',
-        email: '',
-        companyName: '',
-        address: '',
-      );
-      final second = controller.create(
-        name: 'Sari',
-        phone: '',
-        email: '',
-        companyName: '',
-        address: '',
-      );
+      final first = controller.create(name: 'Sari', phone: '', email: '');
+      final second = controller.create(name: 'Sari', phone: '', email: '');
       await Future.wait([first, second]);
 
       expect(
@@ -730,15 +685,36 @@ void main() {
   });
 
   group('whether a customer may be created here', () {
-    // `POST /master/contacts` needs `master.contact.manage`, and the seeded cashier role does
-    // not have it (`rbac_and_membership.sql`). A button drawn for a cashier would be refused by
-    // the server, so it is not drawn at all (R-26). The owner has said the permission will be
-    // granted later; when it is, this gate loosens without the screen changing.
+    // `POST /pos/customers` needs `pos.quick_create` or `master.contact.manage`. A button drawn
+    // for someone holding neither would be refused by the server, so it is not drawn at all
+    // (R-26).
 
     test('is asked of the caller, not decided here', () {
       final (:controller, :transport) = rig(canCreateContact: false);
 
       expect(controller.canCreateContact, isFalse);
+    });
+
+    test('can be changed once the caller knows, and the picker hears it', () {
+      // The till reads the cashier's permissions after it is built, so the answer arrives late.
+      final (:controller, :transport) = rig(canCreateContact: false);
+      var heard = 0;
+      controller.addListener(() => heard++);
+
+      controller.canCreateContact = true;
+
+      expect(controller.canCreateContact, isTrue);
+      expect(heard, 1);
+    });
+
+    test('setting the same answer again tells nobody', () {
+      final (:controller, :transport) = rig(canCreateContact: true);
+      var heard = 0;
+      controller.addListener(() => heard++);
+
+      controller.canCreateContact = true;
+
+      expect(heard, 0);
     });
 
     test('defaults to allowed when the caller does not say', () {

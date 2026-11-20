@@ -301,47 +301,47 @@ as String?,
 
 
 /// @nodoc
-mixin _$CreateContactDTO {
+mixin _$Unit {
 
- String get name; ContactType get type;@JsonKey(name: 'is_active') bool get isActive; String? get phone; String? get email;@JsonKey(name: 'company_name') String? get companyName; String? get address;
-/// Create a copy of CreateContactDTO
+ String get id; String get name; String get symbol;
+/// Create a copy of Unit
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
-$CreateContactDTOCopyWith<CreateContactDTO> get copyWith => _$CreateContactDTOCopyWithImpl<CreateContactDTO>(this as CreateContactDTO, _$identity);
+$UnitCopyWith<Unit> get copyWith => _$UnitCopyWithImpl<Unit>(this as Unit, _$identity);
 
-  /// Serializes this CreateContactDTO to a JSON map.
+  /// Serializes this Unit to a JSON map.
   Map<String, dynamic> toJson();
 
 
 @override
 bool operator ==(Object other) {
-  final _this = this as CreateContactDTO;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CreateContactDTO&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.type, _this.type) || other.type == _this.type)&&(identical(other.isActive, _this.isActive) || other.isActive == _this.isActive)&&(identical(other.phone, _this.phone) || other.phone == _this.phone)&&(identical(other.email, _this.email) || other.email == _this.email)&&(identical(other.companyName, _this.companyName) || other.companyName == _this.companyName)&&(identical(other.address, _this.address) || other.address == _this.address));
+  final _this = this as Unit;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Unit&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.symbol, _this.symbol) || other.symbol == _this.symbol));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-  final _this = this as CreateContactDTO;
-  return Object.hash(runtimeType,_this.name,_this.type,_this.isActive,_this.phone,_this.email,_this.companyName,_this.address);
+  final _this = this as Unit;
+  return Object.hash(runtimeType,_this.id,_this.name,_this.symbol);
 }
 
 @override
 String toString() {
-  final _this = this as CreateContactDTO;
-  return 'CreateContactDTO(name: ${_this.name}, type: ${_this.type}, isActive: ${_this.isActive}, phone: ${_this.phone}, email: ${_this.email}, companyName: ${_this.companyName}, address: ${_this.address})';
+  final _this = this as Unit;
+  return 'Unit(id: ${_this.id}, name: ${_this.name}, symbol: ${_this.symbol})';
 }
 
 
 }
 
 /// @nodoc
-abstract mixin class $CreateContactDTOCopyWith<$Res>  {
-  factory $CreateContactDTOCopyWith(CreateContactDTO value, $Res Function(CreateContactDTO) _then) = _$CreateContactDTOCopyWithImpl;
+abstract mixin class $UnitCopyWith<$Res>  {
+  factory $UnitCopyWith(Unit value, $Res Function(Unit) _then) = _$UnitCopyWithImpl;
 @useResult
 $Res call({
- String name, ContactType type,@JsonKey(name: 'is_active') bool isActive, String? phone, String? email,@JsonKey(name: 'company_name') String? companyName, String? address
+ String id, String name, String symbol
 });
 
 
@@ -349,33 +349,29 @@ $Res call({
 
 }
 /// @nodoc
-class _$CreateContactDTOCopyWithImpl<$Res>
-    implements $CreateContactDTOCopyWith<$Res> {
-  _$CreateContactDTOCopyWithImpl(this._self, this._then);
+class _$UnitCopyWithImpl<$Res>
+    implements $UnitCopyWith<$Res> {
+  _$UnitCopyWithImpl(this._self, this._then);
 
-  final CreateContactDTO _self;
-  final $Res Function(CreateContactDTO) _then;
+  final Unit _self;
+  final $Res Function(Unit) _then;
 
-/// Create a copy of CreateContactDTO
+/// Create a copy of Unit
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? name = null,Object? type = null,Object? isActive = null,Object? phone = freezed,Object? email = freezed,Object? companyName = freezed,Object? address = freezed,}) {
-  return _then(CreateContactDTO(
-name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
-as String,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
-as ContactType,isActive: null == isActive ? _self.isActive : isActive // ignore: cast_nullable_to_non_nullable
-as bool,phone: freezed == phone ? _self.phone : phone // ignore: cast_nullable_to_non_nullable
-as String?,email: freezed == email ? _self.email : email // ignore: cast_nullable_to_non_nullable
-as String?,companyName: freezed == companyName ? _self.companyName : companyName // ignore: cast_nullable_to_non_nullable
-as String?,address: freezed == address ? _self.address : address // ignore: cast_nullable_to_non_nullable
-as String?,
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? symbol = null,}) {
+  return _then(Unit(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,symbol: null == symbol ? _self.symbol : symbol // ignore: cast_nullable_to_non_nullable
+as String,
   ));
 }
 
 }
 
 
-/// Adds pattern-matching-related methods to [CreateContactDTO].
-extension CreateContactDTOPatterns on CreateContactDTO {
+/// Adds pattern-matching-related methods to [Unit].
+extension UnitPatterns on Unit {
 /// A variant of `map` that fallback to returning `orElse`.
 ///
 /// It is equivalent to doing:
@@ -388,10 +384,10 @@ extension CreateContactDTOPatterns on CreateContactDTO {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _CreateContactDTO value)?  $default,{required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _Unit value)?  $default,{required TResult orElse(),}){
 final _that = this;
 switch (_that) {
-case _CreateContactDTO() when $default != null:
+case _Unit() when $default != null:
 return $default(_that);case _:
   return orElse();
 
@@ -410,10 +406,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _CreateContactDTO value)  $default,){
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _Unit value)  $default,){
 final _that = this;
 switch (_that) {
-case _CreateContactDTO():
+case _Unit():
 return $default(_that);case _:
   throw StateError('Unexpected subclass');
 
@@ -431,10 +427,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _CreateContactDTO value)?  $default,){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _Unit value)?  $default,){
 final _that = this;
 switch (_that) {
-case _CreateContactDTO() when $default != null:
+case _Unit() when $default != null:
 return $default(_that);case _:
   return null;
 
@@ -452,10 +448,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String name,  ContactType type, @JsonKey(name: 'is_active')  bool isActive,  String? phone,  String? email, @JsonKey(name: 'company_name')  String? companyName,  String? address)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String name,  String symbol)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
-case _CreateContactDTO() when $default != null:
-return $default(_that.name,_that.type,_that.isActive,_that.phone,_that.email,_that.companyName,_that.address);case _:
+case _Unit() when $default != null:
+return $default(_that.id,_that.name,_that.symbol);case _:
   return orElse();
 
 }
@@ -473,10 +469,10 @@ return $default(_that.name,_that.type,_that.isActive,_that.phone,_that.email,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String name,  ContactType type, @JsonKey(name: 'is_active')  bool isActive,  String? phone,  String? email, @JsonKey(name: 'company_name')  String? companyName,  String? address)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String name,  String symbol)  $default,) {final _that = this;
 switch (_that) {
-case _CreateContactDTO():
-return $default(_that.name,_that.type,_that.isActive,_that.phone,_that.email,_that.companyName,_that.address);case _:
+case _Unit():
+return $default(_that.id,_that.name,_that.symbol);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -493,10 +489,10 @@ return $default(_that.name,_that.type,_that.isActive,_that.phone,_that.email,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String name,  ContactType type, @JsonKey(name: 'is_active')  bool isActive,  String? phone,  String? email, @JsonKey(name: 'company_name')  String? companyName,  String? address)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String name,  String symbol)?  $default,) {final _that = this;
 switch (_that) {
-case _CreateContactDTO() when $default != null:
-return $default(_that.name,_that.type,_that.isActive,_that.phone,_that.email,_that.companyName,_that.address);case _:
+case _Unit() when $default != null:
+return $default(_that.id,_that.name,_that.symbol);case _:
   return null;
 
 }
@@ -505,56 +501,52 @@ return $default(_that.name,_that.type,_that.isActive,_that.phone,_that.email,_th
 }
 
 /// @nodoc
+@JsonSerializable()
 
-@JsonSerializable(includeIfNull: false)
-class _CreateContactDTO implements CreateContactDTO {
-  const _CreateContactDTO({required this.name, required this.type, @JsonKey(name: 'is_active') this.isActive = true, this.phone, this.email, @JsonKey(name: 'company_name') this.companyName, this.address});
-  factory _CreateContactDTO.fromJson(Map<String, dynamic> json) => _$CreateContactDTOFromJson(json);
+class _Unit implements Unit {
+  const _Unit({required this.id, required this.name, required this.symbol});
+  factory _Unit.fromJson(Map<String, dynamic> json) => _$UnitFromJson(json);
 
+@override final  String id;
 @override final  String name;
-@override final  ContactType type;
-@override@JsonKey(name: 'is_active') final  bool isActive;
-@override final  String? phone;
-@override final  String? email;
-@override@JsonKey(name: 'company_name') final  String? companyName;
-@override final  String? address;
+@override final  String symbol;
 
-/// Create a copy of CreateContactDTO
+/// Create a copy of Unit
 /// with the given fields replaced by the non-null parameter values.
 @override @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
-_$CreateContactDTOCopyWith<_CreateContactDTO> get copyWith => __$CreateContactDTOCopyWithImpl<_CreateContactDTO>(this, _$identity);
+_$UnitCopyWith<_Unit> get copyWith => __$UnitCopyWithImpl<_Unit>(this, _$identity);
 
 @override
 Map<String, dynamic> toJson() {
-  return _$CreateContactDTOToJson(this, );
+  return _$UnitToJson(this, );
 }
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _CreateContactDTO&&(identical(other.name, name) || other.name == name)&&(identical(other.type, type) || other.type == type)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.email, email) || other.email == email)&&(identical(other.companyName, companyName) || other.companyName == companyName)&&(identical(other.address, address) || other.address == address));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _Unit&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.symbol, symbol) || other.symbol == symbol));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
 int get hashCode {
-    return Object.hash(runtimeType,name,type,isActive,phone,email,companyName,address);
+    return Object.hash(runtimeType,id,name,symbol);
 }
 
 @override
 String toString() {
-    return 'CreateContactDTO(name: $name, type: $type, isActive: $isActive, phone: $phone, email: $email, companyName: $companyName, address: $address)';
+    return 'Unit(id: $id, name: $name, symbol: $symbol)';
 }
 
 
 }
 
 /// @nodoc
-abstract mixin class _$CreateContactDTOCopyWith<$Res> implements $CreateContactDTOCopyWith<$Res> {
-  factory _$CreateContactDTOCopyWith(_CreateContactDTO value, $Res Function(_CreateContactDTO) _then) = __$CreateContactDTOCopyWithImpl;
+abstract mixin class _$UnitCopyWith<$Res> implements $UnitCopyWith<$Res> {
+  factory _$UnitCopyWith(_Unit value, $Res Function(_Unit) _then) = __$UnitCopyWithImpl;
 @override @useResult
 $Res call({
- String name, ContactType type,@JsonKey(name: 'is_active') bool isActive, String? phone, String? email,@JsonKey(name: 'company_name') String? companyName, String? address
+ String id, String name, String symbol
 });
 
 
@@ -562,25 +554,21 @@ $Res call({
 
 }
 /// @nodoc
-class __$CreateContactDTOCopyWithImpl<$Res>
-    implements _$CreateContactDTOCopyWith<$Res> {
-  __$CreateContactDTOCopyWithImpl(this._self, this._then);
+class __$UnitCopyWithImpl<$Res>
+    implements _$UnitCopyWith<$Res> {
+  __$UnitCopyWithImpl(this._self, this._then);
 
-  final _CreateContactDTO _self;
-  final $Res Function(_CreateContactDTO) _then;
+  final _Unit _self;
+  final $Res Function(_Unit) _then;
 
-/// Create a copy of CreateContactDTO
+/// Create a copy of Unit
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? name = null,Object? type = null,Object? isActive = null,Object? phone = freezed,Object? email = freezed,Object? companyName = freezed,Object? address = freezed,}) {
-  return _then(_CreateContactDTO(
-name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
-as String,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
-as ContactType,isActive: null == isActive ? _self.isActive : isActive // ignore: cast_nullable_to_non_nullable
-as bool,phone: freezed == phone ? _self.phone : phone // ignore: cast_nullable_to_non_nullable
-as String?,email: freezed == email ? _self.email : email // ignore: cast_nullable_to_non_nullable
-as String?,companyName: freezed == companyName ? _self.companyName : companyName // ignore: cast_nullable_to_non_nullable
-as String?,address: freezed == address ? _self.address : address // ignore: cast_nullable_to_non_nullable
-as String?,
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? symbol = null,}) {
+  return _then(_Unit(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,symbol: null == symbol ? _self.symbol : symbol // ignore: cast_nullable_to_non_nullable
+as String,
   ));
 }
 

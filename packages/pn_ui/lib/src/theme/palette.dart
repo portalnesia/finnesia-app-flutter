@@ -23,7 +23,9 @@ Color _tint(Color colour, Color over, double alpha) =>
 /// Every colour the app draws, per theme.
 ///
 /// Taken from the web app's tokens (owner decision, 2026-09-29), so a tablet and a browser show
-/// the same brand. The two are not identical: a token is kept only where it clears the contrast
+/// the same brand. Since 2026-11-16 those are the platform's one shared theme
+/// (`finnesia-monorepo/packages/ui/src/index.css`, "one shared theme"): navy text and a navy
+/// dark theme around the same amber. The two are not identical: a token is kept only where it clears the contrast
 /// bar this app measures it against, and every difference is written down next to the value.
 /// [requiredChecks] measures every pair it draws.
 final class PnPalette {
@@ -112,20 +114,20 @@ final class PnPalette {
   final Color onPrimaryContainer;
 
   // Neither theme uses pure white or pure black for the page or the text: on a tablet held all
-  // day that is harsh, and it leaves nothing lighter or darker to build depth from. The neutrals
-  // are **warm** (hue 24-38), matching the web app's tokens, so the greys sit with the amber
-  // rather than fighting it. Every pair is measured by `requiredChecks`.
+  // day that is harsh, and it leaves nothing lighter or darker to build depth from. The light
+  // surfaces stay the web app's warm paper; the text is its navy (`--foreground`,
+  // `--muted-foreground`, hue 215). Every pair is measured by `requiredChecks`.
   static final light = PnPalette(
     background: _hsl(38, 30, 97.5),
     surface: _hsl(0, 0, 100),
     surfaceMuted: _hsl(36, 20, 94),
-    ink: _hsl(24, 14, 10),
-    inkMuted: _hsl(28, 9, 40),
-    border: _hsl(30, 14, 87),
+    ink: _hsl(215, 28, 17),
+    inkMuted: _hsl(215, 14, 34),
+    border: _hsl(37, 29, 91),
     // The web app has no token for this: it uses `--border` for an input's edge, which is
-    // 1.27:1 and fails the 3:1 an input edge needs (WCAG 1.4.11). Same warm hue, dark enough
-    // to be seen.
-    outline: _hsl(30, 9, 46),
+    // 1.27:1 and fails the 3:1 an input edge needs (WCAG 1.4.11). The navy of the shared
+    // theme's text, dark enough to be seen (owner decision, 2026-11-20).
+    outline: _hsl(215, 14, 45),
     accent: _hsl(36, 100, 50),
     onAccent: _hsl(24, 14, 10),
     brandInk: _hsl(28, 100, 30),
@@ -135,29 +137,30 @@ final class PnPalette {
     errorText: _hsl(0, 62, 42),
     // The ring is ink: an amber ring would be 2.14:1 on a light page, and invisible on an
     // amber button in any theme.
-    focus: _hsl(24, 14, 10),
+    focus: _hsl(215, 28, 17),
     secondary: _hsl(276, 100, 50),
     onSecondary: _hsl(0, 0, 100),
     // `bg-secondary/10` over the surface, the web app's own tint. At 10% the purple is still
     // legible as words on its own tint (4.65:1), which a deeper tint would break.
     secondaryContainer: _tint(_hsl(276, 100, 50), _hsl(0, 0, 100), 0.10),
-    onSecondaryContainer: _hsl(24, 14, 10),
+    onSecondaryContainer: _hsl(215, 28, 17),
     primaryContainer: _hsl(38, 72, 90),
-    onPrimaryContainer: _hsl(24, 14, 10),
+    onPrimaryContainer: _hsl(215, 28, 17),
   );
 
-  // A charcoal, not black: with a black page a dialog's barrier had nothing left to darken.
+  // The web app's navy dark theme (the landing page's paper, surface and rule), not black: with
+  // a black page a dialog's barrier had nothing left to darken. The web app's card used to be
+  // 12%, which this app raised to 13% for the barrier; the shared theme's card is 14%, so the
+  // web value is taken as it is.
   static final dark = PnPalette(
-    background: _hsl(24, 12, 8),
-    // The web app's card is 12%, and at 12% a dialog's barrier measured 1.23:1 against it,
-    // below the 1.25 this app holds a dialog to. One step lighter, nothing else moved: the
-    // same hue and saturation the web app uses.
-    surface: _hsl(24, 10, 13),
-    surfaceMuted: _hsl(24, 8, 18),
-    ink: _hsl(38, 20, 93),
-    inkMuted: _hsl(30, 12, 70),
-    border: _hsl(24, 8, 23),
-    outline: _hsl(30, 8, 45),
+    background: _hsl(222, 40, 10),
+    surface: _hsl(217, 33, 14),
+    surfaceMuted: _hsl(217, 33, 18),
+    ink: _hsl(210, 40, 96),
+    inkMuted: _hsl(215, 20, 65),
+    border: _hsl(217, 33, 24),
+    // Navy like the light one; light enough to clear 3:1 on the muted panel too.
+    outline: _hsl(217, 16, 52),
     // 52%, not 50%: the web app's dark amber. The extra lightness is what keeps the fill itself
     // visible on a charcoal page.
     accent: _hsl(36, 100, 52),
@@ -169,15 +172,16 @@ final class PnPalette {
     // The bright red works in both roles on a dark page, so one value serves as fill and as text.
     errorText: _hsl(0, 72, 74),
     // Ink in both themes; see `light`.
-    focus: _hsl(38, 20, 93),
+    focus: _hsl(210, 40, 96),
     secondary: _hsl(276, 80, 72),
     onSecondary: _hsl(276, 60, 12),
     // A dark surface swallows a tint, so the dark theme needs more of it for the panel to read
     // as one: the web app raises its own secondary overlays in the dark theme for that reason.
-    secondaryContainer: _tint(_hsl(276, 80, 72), _hsl(24, 10, 13), 0.25),
-    onSecondaryContainer: _hsl(38, 20, 93),
-    primaryContainer: _hsl(36, 28, 18),
-    onPrimaryContainer: _hsl(38, 20, 93),
+    secondaryContainer: _tint(_hsl(276, 80, 72), _hsl(217, 33, 14), 0.25),
+    onSecondaryContainer: _hsl(210, 40, 96),
+    // The web app's dark `--accent`: navy, not an amber tint, which reads as brown over navy.
+    primaryContainer: _hsl(217, 35, 20),
+    onPrimaryContainer: _hsl(210, 40, 96),
   );
 }
 

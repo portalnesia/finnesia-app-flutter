@@ -58,29 +58,27 @@ void main() {
     });
   });
 
-  group('CreateContactDTO', () {
-    test('writes a customer as active, with the wire type', () {
-      const dto = CreateContactDTO(name: 'Budi', type: ContactType.customer);
+  // Replaces `CreateContactDTO`: the till now adds a customer through `POST /pos/customers`
+  // (`POSQuickCustomerDTO` in `pos.dart`), which `pos.quick_create` reaches.
+  group('Unit', () {
+    test('reads the name and symbol the unit picker labels with', () {
+      final u = Unit.fromJson(
+        obj(
+          '{"id":"u1","company_id":"co1","name":"Pieces","symbol":"PCS",'
+          '"conversion_ratio":1,"is_base":true,"base_unit_id":null}',
+        ),
+      );
 
-      expect(dto.toJson(), {
-        'name': 'Budi',
-        'type': 'CUSTOMER',
-        'is_active': true,
-      });
+      expect(u.id, 'u1');
+      expect(u.name, 'Pieces');
+      expect(u.symbol, 'PCS');
     });
 
-    test('sends the optional fields that were filled in, and only those', () {
-      final json = const CreateContactDTO(
-        name: 'Budi',
-        type: ContactType.customer,
-        phone: '0812',
-        companyName: 'CV Maju',
-      ).toJson();
-
-      expect(json['phone'], '0812');
-      expect(json['company_name'], 'CV Maju');
-      expect(json.containsKey('email'), isFalse);
-      expect(json.containsKey('address'), isFalse);
+    test('refuses a unit without a symbol rather than inventing one', () {
+      expect(
+        () => Unit.fromJson(obj('{"id":"u1","name":"Pieces"}')),
+        throwsA(isA<TypeError>()),
+      );
     });
   });
 

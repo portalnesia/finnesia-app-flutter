@@ -40,32 +40,153 @@ void main() {
         // An empty list would make the test above pass for nothing.
         expect(requiredChecks(palette).length, greaterThan(10));
       });
-
-      // The palette follows the web app's tokens (owner decision, 2026-09-29). Those neutrals
-      // are warm: hue 24 to 38, where the greys this app used to draw were cool (hue 220-225).
-      // A tinted neutral that drifted back to blue is a colour that no longer belongs to the
-      // brand, and it is invisible in a contrast check.
-      test('is warm, not the cool grey it used to be', () {
-        final tinted = {
-          'background': palette.background,
-          'surface': palette.surface,
-          'surfaceMuted': palette.surfaceMuted,
-          'ink': palette.ink,
-          'inkMuted': palette.inkMuted,
-          'border': palette.border,
-          'outline': palette.outline,
-        };
-
-        for (final entry in tinted.entries) {
-          final hsl = HSLColor.fromColor(entry.value);
-          // White has no hue to read, so it is not asked for one.
-          if (hsl.saturation < 0.05) continue;
-          expect(hsl.hue, inInclusiveRange(20, 45),
-              reason: '${entry.key} is ${hsl.hue.round()}deg');
-        }
-      });
     });
   }
+
+  // `finnesia-monorepo/packages/ui/src/index.css` since "one shared theme" (680feddf,
+  // 2026-11-16): the navy palette every app of the platform shares. Each Flutter token is
+  // written down with the CSS variable it is taken from, so a value that drifts from the web is
+  // a failing line with both names on it. Tokens the web has no variable for (`outline`) and the
+  // ones this app deliberately sets apart (`focus`) are not in this table.
+  group('follows the web tokens', () {
+    Color hsl(double h, double s, double l) =>
+        HSLColor.fromAHSL(1, h, s / 100, l / 100).toColor();
+
+    final web = <String, (Color, Color, Color, Color)>{
+      // token: (flutter light, web light, flutter dark, web dark)
+      'background <- --background': (
+        PnPalette.light.background,
+        hsl(38, 30, 97.5),
+        PnPalette.dark.background,
+        hsl(222, 40, 10),
+      ),
+      'surface <- --card': (
+        PnPalette.light.surface,
+        hsl(0, 0, 100),
+        PnPalette.dark.surface,
+        hsl(217, 33, 14),
+      ),
+      'surfaceMuted <- --muted': (
+        PnPalette.light.surfaceMuted,
+        hsl(36, 20, 94),
+        PnPalette.dark.surfaceMuted,
+        hsl(217, 33, 18),
+      ),
+      'ink <- --foreground': (
+        PnPalette.light.ink,
+        hsl(215, 28, 17),
+        PnPalette.dark.ink,
+        hsl(210, 40, 96),
+      ),
+      'inkMuted <- --muted-foreground': (
+        PnPalette.light.inkMuted,
+        hsl(215, 14, 34),
+        PnPalette.dark.inkMuted,
+        hsl(215, 20, 65),
+      ),
+      'border <- --border': (
+        PnPalette.light.border,
+        hsl(37, 29, 91),
+        PnPalette.dark.border,
+        hsl(217, 33, 24),
+      ),
+      'accent <- --primary': (
+        PnPalette.light.accent,
+        hsl(36, 100, 50),
+        PnPalette.dark.accent,
+        hsl(36, 100, 52),
+      ),
+      'onAccent <- --primary-foreground': (
+        PnPalette.light.onAccent,
+        hsl(24, 14, 10),
+        PnPalette.dark.onAccent,
+        hsl(24, 30, 10),
+      ),
+      'brandInk <- --brand-ink': (
+        PnPalette.light.brandInk,
+        hsl(28, 100, 30),
+        PnPalette.dark.brandInk,
+        hsl(36, 100, 52),
+      ),
+      'error <- --destructive': (
+        PnPalette.light.error,
+        hsl(0, 62, 42),
+        PnPalette.dark.error,
+        hsl(0, 72, 74),
+      ),
+      'errorText <- --destructive': (
+        PnPalette.light.errorText,
+        hsl(0, 62, 42),
+        PnPalette.dark.errorText,
+        hsl(0, 72, 74),
+      ),
+      'onError <- --destructive-foreground': (
+        PnPalette.light.onError,
+        hsl(0, 0, 98),
+        PnPalette.dark.onError,
+        hsl(24, 30, 10),
+      ),
+      'secondary <- --secondary': (
+        PnPalette.light.secondary,
+        hsl(276, 100, 50),
+        PnPalette.dark.secondary,
+        hsl(276, 80, 72),
+      ),
+      'onSecondary <- --secondary-foreground': (
+        PnPalette.light.onSecondary,
+        hsl(0, 0, 100),
+        PnPalette.dark.onSecondary,
+        hsl(276, 60, 12),
+      ),
+      'onSecondaryContainer <- --foreground': (
+        PnPalette.light.onSecondaryContainer,
+        hsl(215, 28, 17),
+        PnPalette.dark.onSecondaryContainer,
+        hsl(210, 40, 96),
+      ),
+      'primaryContainer <- --accent': (
+        PnPalette.light.primaryContainer,
+        hsl(38, 72, 90),
+        PnPalette.dark.primaryContainer,
+        hsl(217, 35, 20),
+      ),
+      'onPrimaryContainer <- --accent-foreground': (
+        PnPalette.light.onPrimaryContainer,
+        hsl(215, 28, 17),
+        PnPalette.dark.onPrimaryContainer,
+        hsl(210, 40, 96),
+      ),
+    };
+
+    for (final MapEntry(key: token, value: (light, webLight, dark, webDark))
+        in web.entries) {
+      test(token, () {
+        expect(light, webLight, reason: 'light $token');
+        expect(dark, webDark, reason: 'dark $token');
+      });
+    }
+
+    // The web app has no token for an input's edge: it uses `--border`, which fails the 3:1 an
+    // edge needs (WCAG 1.4.11). This app keeps its own, in the navy of the shared theme rather
+    // than the warm grey it had, so it sits with the text and the dark surfaces (owner decision,
+    // 2026-11-20).
+    test('outline is the navy of the shared theme, in both themes', () {
+      expect(PnPalette.light.outline, hsl(215, 14, 45));
+      expect(PnPalette.dark.outline, hsl(217, 16, 52));
+    });
+
+    // A tint of the purple over the surface, the web app's `bg-secondary/10`: it follows the
+    // surface it is laid over, so a dark surface that changed changes it too.
+    test('the secondary container is the purple laid over the surface', () {
+      expect(
+        PnPalette.dark.secondaryContainer,
+        Color.alphaBlend(
+          PnPalette.dark.secondary.withValues(alpha: 0.25),
+          PnPalette.dark.surface,
+        ),
+      );
+    });
+  });
 
   group('the focus ring', () {
     test(
@@ -152,8 +273,9 @@ void main() {
   group('the brand panel', () {
     // `primaryContainer` is what the native-update banner paints and what a `TextButton` on it
     // sits against. Unset it fell back to the full amber, and the button's words (amber) then
-    // measured 1.80:1 on it.
-    test('is a tint of the amber, with words that can be read on it', () {
+    // measured 1.80:1 on it. It is the web app's `--accent`: an amber tint on the light page,
+    // navy in the dark theme, where an amber tint over navy reads as brown.
+    test('is not the full amber, with words that can be read on it', () {
       for (final palette in [PnPalette.light, PnPalette.dark]) {
         expect(palette.primaryContainer, isNot(palette.accent));
         expect(

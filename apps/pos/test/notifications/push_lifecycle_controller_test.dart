@@ -83,6 +83,113 @@ void main() {
       expect(transport.requests, isEmpty);
     });
 
+    // The owner's decision (2026-11-20): a cashier cannot be expected to find the button in the
+    // notification inbox, so the system's own permission dialog is shown as soon as someone is
+    // signed in. The inbox button stays, for a cashier who said no and changes their mind.
+    group('asking for notification permission by itself', () {
+      test(
+        'asks once the cashier signs in, then registers the token',
+        () async {
+          messaging.status = PushAuthorizationStatus.notDetermined;
+          messaging.permissionResult = PushAuthorizationStatus.authorized;
+          transport.respond(_noContent());
+          await controller.start();
+          expect(messaging.requestPermissionCalls, 0);
+
+          await session.save(_signedIn);
+          await _flushEvents();
+
+          expect(messaging.requestPermissionCalls, 1);
+          expect(
+            controller.authorizationStatus.value,
+            PushAuthorizationStatus.authorized,
+          );
+          expect(transport.requests.single.path, '/api/v1/push-tokens');
+        },
+      );
+
+      test(
+        'asks when the app opens with a cashier already signed in',
+        () async {
+          await session.save(_signedIn);
+          messaging.status = PushAuthorizationStatus.notDetermined;
+          messaging.permissionResult = PushAuthorizationStatus.denied;
+
+          await controller.start();
+          await _flushEvents();
+
+          expect(messaging.requestPermissionCalls, 1);
+        },
+      );
+
+      // Android reports a permission it has never asked for as "denied"; asking again is what
+      // brings the dialog up, and Android itself stops showing it once the cashier has refused
+      // it for good.
+      test('asks when the platform reports it as denied', () async {
+        messaging.status = PushAuthorizationStatus.denied;
+        await controller.start();
+
+        await session.save(_signedIn);
+        await _flushEvents();
+
+        expect(messaging.requestPermissionCalls, 1);
+      });
+
+      test('does not ask when notifications are already allowed', () async {
+        messaging.status = PushAuthorizationStatus.authorized;
+        transport.respond(_noContent());
+        await controller.start();
+
+        await session.save(_signedIn);
+        await _flushEvents();
+
+        expect(messaging.requestPermissionCalls, 0);
+      });
+
+      test('does not ask where push is not supported', () async {
+        messaging.initializeResult = false;
+        await controller.start();
+
+        await session.save(_signedIn);
+        await _flushEvents();
+
+        expect(messaging.requestPermissionCalls, 0);
+      });
+
+      test('asks once per run, not on every sign-in', () async {
+        messaging.status = PushAuthorizationStatus.notDetermined;
+        messaging.permissionResult = PushAuthorizationStatus.denied;
+        await controller.start();
+
+        await session.save(_signedIn);
+        await _flushEvents();
+        await session.clear();
+        await _flushEvents();
+        await session.save(_signedIn);
+        await _flushEvents();
+
+        expect(messaging.requestPermissionCalls, 1);
+      });
+
+      test(
+        'a refusal leaves the session usable and registers nothing',
+        () async {
+          messaging.status = PushAuthorizationStatus.notDetermined;
+          messaging.permissionResult = PushAuthorizationStatus.denied;
+          await controller.start();
+
+          await session.save(_signedIn);
+          await _flushEvents();
+
+          expect(
+            controller.authorizationStatus.value,
+            PushAuthorizationStatus.denied,
+          );
+          expect(transport.requests, isEmpty);
+        },
+      );
+    });
+
     test(
       'registers a token only after permission and an authenticated session',
       () async {
@@ -178,20 +285,22 @@ void main() {
     });
 
     test(
-      'asks permission only on explicit request and registers after grant',
+      'the inbox button asks again after a refusal, and registers after grant',
       () async {
         await session.save(_signedIn);
         messaging.status = PushAuthorizationStatus.notDetermined;
+        messaging.permissionResult = PushAuthorizationStatus.denied;
+        await controller.start();
+        await _flushEvents();
+        expect(transport.requests, isEmpty);
+
         messaging.permissionResult = PushAuthorizationStatus.authorized;
         transport.respond(_noContent());
-        await controller.start();
-
-        expect(transport.requests, isEmpty);
         final result = await controller.requestPermission();
         await _flushEvents();
 
         expect(result, PushAuthorizationStatus.authorized);
-        expect(messaging.requestPermissionCalls, 1);
+        expect(messaging.requestPermissionCalls, 2);
         expect(transport.requests.single.path, '/api/v1/push-tokens');
       },
     );

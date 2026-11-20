@@ -9,50 +9,17 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:pn_pos/src/pos_transaction_detail.dart';
-import 'package:pn_types/src/api/api_error.dart';
 import 'package:pn_types/src/api/client.dart';
 import 'package:pn_types/src/api/endpoints/master.dart';
 import 'package:pn_types/src/api/endpoints/pos.dart';
-import 'package:pn_types/src/api/transport.dart';
 import 'package:pn_types/src/master_data.dart';
+import 'package:pn_types/src/pos.dart';
 import 'package:pos/state/loadable.dart';
+import 'package:pos/till/quick_create.dart';
 
 /// One page of the customer picker. The server does the searching, so a shop with more customers
 /// than fit on a screen can still find the one standing at the till.
 const _pageSize = 50;
-
-/// What came of adding a customer from the till.
-///
-/// Sealed, so the screen must name all four. [CreateContactInvalid] is separate from
-/// [CreateContactRejected] because nothing was sent: the cashier is told what to fix without a
-/// round trip that the server would refuse anyway.
-sealed class CreateContactOutcome {
-  const CreateContactOutcome();
-}
-
-/// The customer exists now.
-final class CreateContactOk extends CreateContactOutcome {
-  const CreateContactOk(this.contact);
-
-  final Contact contact;
-}
-
-/// Nothing was sent: the name was empty once trimmed.
-final class CreateContactInvalid extends CreateContactOutcome {
-  const CreateContactInvalid();
-}
-
-/// The server refused it, and [message] is its own sentence about why.
-final class CreateContactRejected extends CreateContactOutcome {
-  const CreateContactRejected(this.message);
-
-  final String message;
-}
-
-/// No answer at all. A different situation from a refusal, and the screen words it differently.
-final class CreateContactUnavailable extends CreateContactOutcome {
-  const CreateContactUnavailable();
-}
 
 /// The transaction detail being filled in, and the customer picker it is filled from.
 ///
@@ -81,11 +48,11 @@ class TransactionDetailController extends ChangeNotifier with RequestGuard {
 
     /// Whether the cashier may create a customer at all.
     ///
-    /// `POST /master/contacts` needs `master.contact.manage`, and the seeded cashier role does
-    /// not hold it (`rbac_and_membership.sql`). Asked of the caller rather than decided here,
-    /// because the answer comes from the permission list the caller already has. Defaults to
-    /// allowed: a caller that has not worked it out is not the same as one that has said no.
-    this.canCreateContact = true,
+    /// `POST /pos/customers` needs `pos.quick_create` or `master.contact.manage`
+    /// (`canQuickAddCustomer`). Asked of the caller rather than decided here, because the answer
+    /// comes from the permission list the caller reads. Defaults to allowed: a caller that has
+    /// not worked it out is not the same as one that has said no.
+    this._canCreateContact = true,
 
     /// The company's `default_customer_id`, when it has one.
     ///
@@ -111,10 +78,10 @@ class TransactionDetailController extends ChangeNotifier with RequestGuard {
   final bool showTableNumber;
   final bool showQueueNumber;
   final bool queueNumberAuto;
-  final bool canCreateContact;
   final Duration debounce;
   final String? defaultCustomerId;
 
+  bool _canCreateContact;
   TransactionDetail _detail = TransactionDetail.empty;
   LoadState<List<TransactionDetail>> _state = const Loading();
   String _search = '';
@@ -130,7 +97,18 @@ class TransactionDetailController extends ChangeNotifier with RequestGuard {
   Timer? _debounceTimer;
   bool _opened = false;
   bool _disposed = false;
-  Future<CreateContactOutcome>? _inFlightCreate;
+  final _creating = QuickCreateRunner<Contact>();
+
+  /// Whether the picker offers "Add customer".
+  bool get canCreateContact => _canCreateContact;
+
+  /// Changed by the caller once it knows: the till reads the cashier's permissions after this
+  /// controller is built, and the picker is drawn from this answer.
+  set canCreateContact(bool value) {
+    if (value == _canCreateContact) return;
+    _canCreateContact = value;
+    notifyListeners();
+  }
 
   /// What the cashier has filled in so far. Read by the till's summary row as well as by the
   /// sheet, which is why it lives here and not in the sheet's own state.
@@ -271,68 +249,36 @@ class TransactionDetailController extends ChangeNotifier with RequestGuard {
     notifyListeners();
   }
 
-  /// Adds a customer from the till, without leaving it.
+  /// Adds a customer from the till, without leaving it, and offers it at the top of the list.
   ///
-  /// While one is in flight another call gets **the same future** and sends nothing, as
-  /// `CheckoutService.submit` does: the form is disabled while saving, so a second call could
-  /// only come from a caller that skipped that, and sending a second customer is not something to
-  /// do on its behalf. A name of nothing but spaces is refused here, before it leaves.
-  Future<CreateContactOutcome> create({
+  /// Name, phone and email only: the three things a cashier can ask across the counter, and all
+  /// `POST /pos/customers` takes. Terms, accounts and addresses stay on the contact page. A name
+  /// of nothing but spaces is refused here, before it leaves; one create goes out at a time
+  /// ([QuickCreateRunner]).
+  Future<QuickCreateOutcome<Contact>> create({
     required String name,
     required String phone,
     required String email,
-    required String companyName,
-    required String address,
-  }) {
-    final running = _inFlightCreate;
-    if (running != null) return running;
-    return _inFlightCreate = _sendCreate(
-      name: name,
-      phone: phone,
-      email: email,
-      companyName: companyName,
-      address: address,
-    ).whenComplete(() => _inFlightCreate = null);
-  }
-
-  Future<CreateContactOutcome> _sendCreate({
-    required String name,
-    required String phone,
-    required String email,
-    required String companyName,
-    required String address,
   }) async {
     final trimmed = name.trim();
-    if (trimmed.isEmpty) return const CreateContactInvalid();
+    if (trimmed.isEmpty) return const QuickCreateInvalid();
 
-    final Contact contact;
-    try {
-      contact = await MasterApi.contactsCreate(
+    final outcome = await _creating.run(
+      () => PosApi.customersCreate(
         client,
-        CreateContactDTO(
+        POSQuickCustomerDTO(
           name: trimmed,
-          type: ContactType.customer,
-          phone: _orAbsent(phone),
-          email: _orAbsent(email),
-          companyName: _orAbsent(companyName),
-          address: _orAbsent(address),
+          phone: orAbsent(phone),
+          email: orAbsent(email),
         ),
-      );
-    } on ApiError catch (failure) {
-      // Only a 4xx is a refusal. A 5xx may have committed, and a 2xx that could not be read means
-      // the customer exists: neither is a sentence to show as the server's.
-      if (failure.status >= 400 && failure.status < 500) {
-        return CreateContactRejected(failure.message);
-      }
-      return const CreateContactUnavailable();
-    } on TransportException {
-      return const CreateContactUnavailable();
-    }
-
-    _offer(
-      TransactionDetail(customerId: contact.id, customerName: contact.name),
+      ),
     );
-    return CreateContactOk(contact);
+    if (outcome case QuickCreateOk(:final created)) {
+      _offer(
+        TransactionDetail(customerId: created.id, customerName: created.name),
+      );
+    }
+    return outcome;
   }
 
   /// Reads the picker's page for whatever is in the search field now.
@@ -433,11 +379,4 @@ class TransactionDetailController extends ChangeNotifier with RequestGuard {
     _debounceTimer?.cancel();
     super.dispose();
   }
-}
-
-/// `x || undefined` for an optional field the cashier left alone: empty means absent, and the
-/// server validates these `omitempty`.
-String? _orAbsent(String value) {
-  final trimmed = value.trim();
-  return trimmed.isEmpty ? null : trimmed;
 }

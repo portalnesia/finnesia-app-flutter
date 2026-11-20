@@ -34,27 +34,17 @@ const _$ContactTypeEnumMap = {
   ContactType.sales: 'SALES',
 };
 
-_CreateContactDTO _$CreateContactDTOFromJson(Map<String, dynamic> json) =>
-    _CreateContactDTO(
-      name: json['name'] as String,
-      type: $enumDecode(_$ContactTypeEnumMap, json['type']),
-      isActive: json['is_active'] as bool? ?? true,
-      phone: json['phone'] as String?,
-      email: json['email'] as String?,
-      companyName: json['company_name'] as String?,
-      address: json['address'] as String?,
-    );
+_Unit _$UnitFromJson(Map<String, dynamic> json) => _Unit(
+  id: json['id'] as String,
+  name: json['name'] as String,
+  symbol: json['symbol'] as String,
+);
 
-Map<String, dynamic> _$CreateContactDTOToJson(_CreateContactDTO instance) =>
-    <String, dynamic>{
-      'name': instance.name,
-      'type': _$ContactTypeEnumMap[instance.type]!,
-      'is_active': instance.isActive,
-      'phone': ?instance.phone,
-      'email': ?instance.email,
-      'company_name': ?instance.companyName,
-      'address': ?instance.address,
-    };
+Map<String, dynamic> _$UnitToJson(_Unit instance) => <String, dynamic>{
+  'id': instance.id,
+  'name': instance.name,
+  'symbol': instance.symbol,
+};
 
 _ChartOfAccount _$ChartOfAccountFromJson(Map<String, dynamic> json) =>
     _ChartOfAccount(

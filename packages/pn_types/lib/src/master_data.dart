@@ -53,27 +53,20 @@ abstract class Contact with _$Contact {
       _$ContactFromJson(json);
 }
 
-/// What `POST /master/contacts` takes when the till adds a customer on the spot.
+/// A unit of measure, as the till's quick-add product form offers it.
 ///
-/// The source (`quick-add-contact-dialog.tsx`) sends `type: 'CUSTOMER'` and `is_active: true`
-/// with the name and whichever of phone, email, company and address the cashier filled in.
-/// [type] is a parameter rather than a constant so this class is not a second, thinner
-/// definition of "a customer only": the till passes [ContactType.customer].
+/// Ported from `Unit` in `finnesia-monorepo/packages/types/src/master-data.ts`, only the fields
+/// the picker reads: the conversion tree (`base_unit_id`, `conversion_ratio`, children) belongs
+/// to the master-data screens, which the till does not have.
 @freezed
-abstract class CreateContactDTO with _$CreateContactDTO {
-  @JsonSerializable(includeIfNull: false)
-  const factory CreateContactDTO({
+abstract class Unit with _$Unit {
+  const factory Unit({
+    required String id,
     required String name,
-    required ContactType type,
-    @JsonKey(name: 'is_active') @Default(true) bool isActive,
-    String? phone,
-    String? email,
-    @JsonKey(name: 'company_name') String? companyName,
-    String? address,
-  }) = _CreateContactDTO;
+    required String symbol,
+  }) = _Unit;
 
-  factory CreateContactDTO.fromJson(Map<String, dynamic> json) =>
-      _$CreateContactDTOFromJson(json);
+  factory Unit.fromJson(Map<String, dynamic> json) => _$UnitFromJson(json);
 }
 
 /// One account in the chart of accounts, as the cash-movement dialog's picker labels it.

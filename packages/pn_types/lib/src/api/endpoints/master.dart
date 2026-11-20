@@ -8,7 +8,6 @@
 import '../../category.dart';
 import '../../master_data.dart';
 import '../endpoint.dart';
-import '../http_method.dart';
 import '../parsers.dart';
 
 /// `finnesia-monorepo/packages/shared/src/api/all-endpoints/master.ts`
@@ -28,15 +27,15 @@ abstract final class MasterApi {
     parseList(Contact.fromJson),
   );
 
-  static final contactsCreate = WriteEndpoint<CreateContactDTO, Contact>(
-    HttpMethod.post,
-    '/api/v1/master/contacts',
-    parseObject(Contact.fromJson),
-    (dto) => dto.toJson(),
-  );
-
   static final contactsGet = ReadEndpointP<ById, Contact>(
     (p) => '/api/v1/master/contacts/${Uri.encodeComponent(p.id)}',
     parseObject(Contact.fromJson),
+  );
+
+  // Read by the quick-add product form: once with `q=PCS` to find the company's own PCS, and
+  // once for the picker's page.
+  static final unitsList = ReadEndpoint<List<Unit>>(
+    '/api/v1/master/units',
+    parseList(Unit.fromJson),
   );
 }

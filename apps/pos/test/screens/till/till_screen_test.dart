@@ -41,6 +41,10 @@ import '../../support/routed_http.dart';
 const categoriesPath = '/api/v1/master/categories';
 const productsPath = '/api/v1/products';
 const stockPath = '/api/v1/pos/stock';
+const permissionsPath = '/api/v1/team/my-permissions';
+const unitsPath = '/api/v1/master/units';
+const quickProductPath = '/api/v1/pos/products';
+const contactsPath = '/api/v1/master/contacts';
 
 Map<String, Object?> product(
   String id,
@@ -138,8 +142,12 @@ Future<void> pumpTill(
   double textScale = 1,
   Duration Function()? clock,
   POSPreferences? preferences,
+  // What `team/my-permissions` answers. The seeded cashier role holds `pos.quick_create`, so the
+  // header carries "New product" in every layout test unless a test says otherwise.
+  List<String> granted = const ['pos.cashier.access', 'pos.quick_create'],
 }) async {
   useSize(tester, size, textScale);
+  http.respond(permissionsPath, ok(granted));
   await tester.pumpWidget(
     appWith(
       rig ?? Rig(storedSession(signedIn)),
@@ -1712,6 +1720,342 @@ void main() {
         });
       }
     }
+  });
+
+  group('adding a product from the till', () {
+    final quickButton = find.byKey(const Key('quick-product-button'));
+    final heldButton = find.byKey(const Key('held-button'));
+
+    /// The units the sheet reads when it opens: the PCS lookup, then the page.
+    void units(RoutedHttp http, {bool hasPcs = false}) {
+      final pcs = {
+        'id': 'u-pcs',
+        'company_id': 'comp_1',
+        'name': 'Pieces',
+        'symbol': 'PCS',
+        'conversion_ratio': 1,
+        'is_base': true,
+      };
+      http
+        ..respond(unitsPath, ok(hasPcs ? [pcs] : <Object>[]))
+        ..respond(unitsPath, ok(hasPcs ? [pcs] : <Object>[]));
+    }
+
+    Future<void> searchFor(
+      WidgetTester tester,
+      RoutedHttp http,
+      String text,
+    ) async {
+      http.respond(productsPath, page(const []));
+      await tester.enterText(find.byType(TextField).first, text);
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('the header offers it by name on a tablet', (tester) async {
+      final http = RoutedHttp();
+      catalog(http);
+
+      await pumpTill(tester, http);
+
+      expect(
+        find.descendant(of: quickButton, matching: find.text('Produk Baru')),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('is not offered to a cashier without the permission', (
+      tester,
+    ) async {
+      // The server would refuse it with a 403; a button it refuses is worse than none (R-26).
+      final http = RoutedHttp();
+      catalog(http);
+      await pumpTill(tester, http, granted: const ['pos.cashier.access']);
+
+      expect(quickButton, findsNothing);
+      await searchFor(tester, http, 'Es Teh');
+      expect(find.text('Tambah produk "Es Teh"'), findsNothing);
+    });
+
+    testWidgets('is not offered while the permissions cannot be read', (
+      tester,
+    ) async {
+      final http = RoutedHttp();
+      catalog(http);
+      useSize(tester, const Size(1280, 800), 1);
+      http.fail(permissionsPath);
+      await tester.pumpWidget(appWith(Rig(storedSession(signedIn)), http));
+      await tester.pumpAndSettle();
+
+      expect(quickButton, findsNothing);
+      expect(card('Kopi'), findsOneWidget);
+    });
+
+    testWidgets(
+      'on a narrow screen the header buttons are icons that keep their names',
+      (tester) async {
+        final http = RoutedHttp();
+        catalog(http);
+
+        await pumpTill(tester, http, size: const Size(360, 800));
+
+        expect(find.text('Produk Baru'), findsNothing);
+        expect(find.byTooltip('Produk Baru'), findsOneWidget);
+        expect(
+          find.descendant(of: heldButton, matching: find.text(l10n.tillHeld)),
+          findsNothing,
+        );
+        expect(find.byTooltip(l10n.tillHeld), findsOneWidget);
+        for (final button in [quickButton, heldButton]) {
+          final size = tester.getSize(button);
+          expect(size.width, greaterThanOrEqualTo(44));
+          expect(size.height, greaterThanOrEqualTo(44));
+        }
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets('a narrow held button still says how many are waiting', (
+      tester,
+    ) async {
+      final http = RoutedHttp();
+      catalog(http);
+      final rig = Rig(storedSession(signedIn));
+      await rig.holdStore.writeAll([
+        HeldOrder(
+          id: 'h1',
+          label: 'Meja 1',
+          outletId: 'out_1',
+          headerDiscount: 0,
+          lines: [
+            CartLine(id: 'l1', product: model.Product.fromJson(kopi), qty: 1),
+          ],
+          heldAt: '2026-09-21T01:00:00.000Z',
+        ),
+      ]);
+
+      await pumpTill(tester, http, rig: rig, size: const Size(360, 800));
+
+      expect(find.byTooltip(l10n.tillHeldCount(1)), findsOneWidget);
+      expect(
+        find.descendant(of: heldButton, matching: find.text('1')),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('the header button starts the name from the search field', (
+      tester,
+    ) async {
+      final http = RoutedHttp();
+      catalog(http);
+      await pumpTill(tester, http);
+      await searchFor(tester, http, 'Es Teh');
+      units(http);
+
+      await tester.tap(quickButton);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Tambah Produk dari Kasir'), findsOneWidget);
+      expect(
+        tester
+            .widget<TextField>(find.byKey(const Key('quick-product-name')))
+            .controller!
+            .text,
+        'Es Teh',
+      );
+    });
+
+    testWidgets('a search that finds nothing offers to add it by that name', (
+      tester,
+    ) async {
+      final http = RoutedHttp();
+      catalog(http);
+      await pumpTill(tester, http);
+      await searchFor(tester, http, '  Es Teh ');
+      units(http);
+
+      await tester.tap(find.text('Tambah produk "Es Teh"'));
+      await tester.pumpAndSettle();
+
+      expect(
+        tester
+            .widget<TextField>(find.byKey(const Key('quick-product-name')))
+            .controller!
+            .text,
+        'Es Teh',
+      );
+    });
+
+    testWidgets('starts on PCS to be created when the company has none', (
+      tester,
+    ) async {
+      final http = RoutedHttp();
+      catalog(http);
+      await pumpTill(tester, http);
+      units(http);
+
+      await tester.tap(quickButton);
+      await tester.pumpAndSettle();
+
+      expect(find.text('PCS (dibuat saat disimpan)'), findsOneWidget);
+    });
+
+    testWidgets('starts on the company PCS when it has one', (tester) async {
+      final http = RoutedHttp();
+      catalog(http);
+      await pumpTill(tester, http);
+      units(http, hasPcs: true);
+
+      await tester.tap(quickButton);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Pieces (PCS)'), findsOneWidget);
+      expect(find.text('PCS (dibuat saat disimpan)'), findsNothing);
+    });
+
+    testWidgets(
+      'saving puts the new product in the cart and clears the search',
+      (tester) async {
+        final http = RoutedHttp();
+        catalog(http);
+        await pumpTill(tester, http);
+        await searchFor(tester, http, 'Es Teh');
+        units(http);
+        await tester.tap(find.text('Tambah produk "Es Teh"'));
+        await tester.pumpAndSettle();
+        http
+          ..respond(
+            quickProductPath,
+            ok(product('n1', 'Es Teh', 5000, type: 'NON_INVENTORY')),
+          )
+          // Clearing the search reads the catalogue again.
+          ..respond(productsPath, page([kopi, teh, jasa]));
+
+        for (final digit in ['5', '0', '0', '0']) {
+          await tester.tap(
+            find
+                .descendant(
+                  of: find.byKey(const Key('quick-product-sheet')),
+                  matching: find.text(digit),
+                )
+                .first,
+          );
+          await tester.pump();
+        }
+        await tester.tap(find.byKey(const Key('quick-product-save')));
+        await tester.pumpAndSettle();
+
+        final posted = http.calls.singleWhere(
+          (c) => c.path == quickProductPath,
+        );
+        expect(jsonDecode(posted.body!), {
+          'name': 'Es Teh',
+          'sell_price': 5000,
+        });
+        expect(find.byKey(const Key('quick-product-sheet')), findsNothing);
+        expect(line('Es Teh'), findsOneWidget);
+        expect(find.text('Es Teh masuk ke keranjang'), findsOneWidget);
+        expect(
+          tester
+              .widget<TextField>(find.byType(TextField).first)
+              .controller!
+              .text,
+          isEmpty,
+        );
+        await tester.pumpAndSettle(const Duration(seconds: 10));
+      },
+    );
+
+    testWidgets('an empty name keeps the sheet open and says why', (
+      tester,
+    ) async {
+      final http = RoutedHttp();
+      catalog(http);
+      await pumpTill(tester, http);
+      units(http);
+      await tester.tap(quickButton);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('quick-product-save')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Nama wajib diisi'), findsOneWidget);
+      expect(http.count(quickProductPath), 0);
+    });
+
+    testWidgets('a refusal is shown in the words of the server', (
+      tester,
+    ) async {
+      final http = RoutedHttp();
+      catalog(http);
+      await pumpTill(tester, http);
+      units(http);
+      await tester.tap(quickButton);
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const Key('quick-product-name')),
+        'Es Teh',
+      );
+      http.respond(quickProductPath, refused(402, 'Kuota produk habis'));
+
+      await tester.tap(find.byKey(const Key('quick-product-save')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Kuota produk habis'), findsOneWidget);
+      expect(find.byKey(const Key('quick-product-sheet')), findsOneWidget);
+    });
+
+    for (final MapEntry(key: name, value: size) in const {
+      '360 dp phone': Size(360, 740),
+      '1280 dp tablet': Size(1280, 800),
+    }.entries) {
+      testWidgets('the sheet fits a $name at text 1.3x', (tester) async {
+        final http = RoutedHttp();
+        catalog(http);
+        await pumpTill(tester, http, size: size, textScale: 1.3);
+        units(http);
+
+        await tester.tap(quickButton);
+        await tester.pumpAndSettle();
+
+        expect(tester.takeException(), isNull);
+        expect(find.byKey(const Key('quick-product-save')), findsOneWidget);
+      });
+    }
+  });
+
+  group('adding a customer from the till', () {
+    Future<void> openPicker(WidgetTester tester, RoutedHttp http) async {
+      http.respond(contactsPath, page(const []));
+      await tester.tap(find.byKey(const Key('transaction-detail-row')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('customer-field')));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('is offered to a cashier holding pos.quick_create', (
+      tester,
+    ) async {
+      final http = RoutedHttp();
+      catalog(http);
+      await pumpTill(tester, http);
+
+      await openPicker(tester, http);
+
+      expect(find.byKey(const Key('add-customer')), findsOneWidget);
+    });
+
+    testWidgets('is not offered to a cashier holding neither permission', (
+      tester,
+    ) async {
+      final http = RoutedHttp();
+      catalog(http);
+      await pumpTill(tester, http, granted: const ['pos.cashier.access']);
+
+      await openPicker(tester, http);
+
+      expect(find.byKey(const Key('add-customer')), findsNothing);
+    });
   });
 
   group('the offline queue status item', () {

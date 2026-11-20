@@ -26,17 +26,30 @@ import 'package:pos/till/catalog_controller.dart';
 /// It listens to the catalogue's own parts and not to the cart, so adding an item does not
 /// rebuild it (`plan/ui/README.md` §3.2).
 class CatalogPane extends StatelessWidget {
-  const CatalogPane({super.key, required this.catalog, required this.onPick});
+  const CatalogPane({
+    super.key,
+    required this.catalog,
+    required this.onPick,
+    this.onCreateProduct,
+  });
 
   final CatalogController catalog;
   final ValueChanged<Product> onPick;
+
+  /// Offered when a search finds nothing, with what was typed as the new product's name. Null for
+  /// anyone without the permission to add products from the till.
+  final ValueChanged<String>? onCreateProduct;
 
   @override
   Widget build(BuildContext context) => Column(
     children: [
       _CategoryStrip(catalog: catalog),
       Expanded(
-        child: _Grid(catalog: catalog, onPick: onPick),
+        child: _Grid(
+          catalog: catalog,
+          onPick: onPick,
+          onCreateProduct: onCreateProduct,
+        ),
       ),
     ],
   );
@@ -120,10 +133,15 @@ class _Chip extends StatelessWidget {
 }
 
 class _Grid extends StatelessWidget {
-  const _Grid({required this.catalog, required this.onPick});
+  const _Grid({
+    required this.catalog,
+    required this.onPick,
+    required this.onCreateProduct,
+  });
 
   final CatalogController catalog;
   final ValueChanged<Product> onPick;
+  final ValueChanged<String>? onCreateProduct;
 
   @override
   Widget build(BuildContext context) {
@@ -150,9 +168,22 @@ class _Grid extends StatelessWidget {
   Widget _products(BuildContext context, L10n l10n) {
     final products = catalog.sellable;
     if (products.isEmpty) {
-      return StateView(
-        title: l10n.tillNoProducts,
-        description: l10n.tillNoProductsDesc,
+      // The miss is where the shortcut belongs: the cashier just typed the name of the product
+      // the customer is holding, so that text becomes the new product's name. Listens to the
+      // catalogue here only, so typing does not rebuild a grid full of cards.
+      return ListenableBuilder(
+        listenable: catalog,
+        builder: (context, _) {
+          final searched = catalog.search.trim();
+          final create = onCreateProduct;
+          final canCreate = create != null && searched.isNotEmpty;
+          return StateView(
+            title: l10n.tillNoProducts,
+            description: l10n.tillNoProductsDesc,
+            actionLabel: canCreate ? l10n.quickProductAddNamed(searched) : null,
+            onAction: canCreate ? () => create(searched) : null,
+          );
+        },
       );
     }
     // Null when the stock could not be read (or has not been yet): the cards then say nothing of
