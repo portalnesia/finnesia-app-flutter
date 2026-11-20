@@ -33,6 +33,17 @@ class _FakeHost {
   }
 }
 
+/// The platform calling into the app on `pos/exit_notice`, as the Windows runner does.
+Future<void> _platformCalls(String method) async {
+  const codec = StandardMethodCodec();
+  await TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+      .handlePlatformMessage(
+        ChannelExitNotice.channel.name,
+        codec.encodeMethodCall(MethodCall(method)),
+        (_) {},
+      );
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -70,6 +81,26 @@ void main() {
         ChannelExitNotice().setNotice(null),
         throwsA(isA<ExitNoticeException>()),
       );
+    });
+
+    // Windows holds the window close itself while a reminder is set, because the engine only asks
+    // Dart when its window is the process's last top-level window, and pdfium's hidden GDI+
+    // window makes it never the last. The runner then asks over this channel instead.
+    test('passes a close the platform held to the app', () async {
+      final port = ChannelExitNotice();
+      var heard = 0;
+      port.onCloseRequested = () => heard++;
+
+      await _platformCalls('closeRequested');
+
+      expect(heard, 1);
+      port.onCloseRequested = null;
+    });
+
+    test('a close with nobody listening is answered, not an error', () async {
+      ChannelExitNotice().onCloseRequested = null;
+
+      await _platformCalls('closeRequested');
     });
 
     // Linux, macOS and iOS have no handler: there is no exit there this could speak at, so

@@ -24,6 +24,14 @@ abstract interface class ExitNoticePort {
   ///
   /// Throws [ExitNoticeException] when the platform could not be told.
   Future<void> setNotice(ExitNotice? notice);
+
+  /// Called when the platform held a window close for the app to decide.
+  ///
+  /// Windows only, while a notice is set: Flutter's engine asks the app about a close only when
+  /// its window is the process's last top-level window, and pdfium (the `printing` plugin)
+  /// starts GDI+, whose hidden hook window means it never is. The runner therefore holds the
+  /// close itself and asks here. The app answers by leaving through `AppExitPort`, or by staying.
+  set onCloseRequested(void Function()? handler);
 }
 
 /// What the platform shows: already in the cashier's language, because the platform has no

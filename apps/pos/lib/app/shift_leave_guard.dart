@@ -27,7 +27,10 @@ import 'package:pos/screens/shift/shift_leave_dialog.dart';
 ///   Back presses inside a pushed screen are untouched: they only close that screen.
 /// - **Closing the window on desktop** (the title-bar close, Alt+F4, the taskbar's "Close
 ///   window"). The engine asks the framework first, and [AppLifecycleListener.onExitRequested]
-///   answers after the cashier has chosen.
+///   answers after the cashier has chosen. On Windows the engine asks only when its window is the
+///   process's last top-level window, and pdfium's hidden GDI+ window means it never is; so while
+///   there is a shift to remind of the runner holds the close itself and asks through
+///   [ExitNoticePort.onCloseRequested], and the app leaves through [AppExitPort] as on Android.
 ///
 /// Two more ways out reach the platform but never the Dart side, so the platform is kept told
 /// beforehand what to say ([ExitNoticePort]):
@@ -75,6 +78,7 @@ class _ShiftLeaveGuardState extends State<ShiftLeaveGuard> {
     super.initState();
     // Touched so the listener exists from the start, not from the first exit request.
     _lifecycle;
+    exitNotice.onCloseRequested = _onCloseHeld;
   }
 
   @override
@@ -94,6 +98,7 @@ class _ShiftLeaveGuardState extends State<ShiftLeaveGuard> {
   void dispose() {
     _reminder?.removeListener(_tellPlatform);
     _lifecycle.dispose();
+    exitNotice.onCloseRequested = null;
     // Gone with the gate (a sign-out, a re-pair): nobody at the till holds a shift to remind of.
     _sendNotice(null);
     super.dispose();
@@ -149,6 +154,19 @@ class _ShiftLeaveGuardState extends State<ShiftLeaveGuard> {
     final shift = _reminder?.value;
     if (shift == null) return;
     if (!await _ask(shift)) return;
+    await _leave();
+  }
+
+  /// A window close the Windows runner held. It holds one only while a reminder is set, but the
+  /// shift may have closed while the request was on its way: then there is nothing to ask.
+  Future<void> _onCloseHeld() async {
+    final shift = _reminder?.value;
+    if (shift != null && !await _ask(shift)) return;
+    await _leave();
+  }
+
+  /// Leaves the app after the cashier chose to, the way the held exit would have.
+  Future<void> _leave() async {
     try {
       await appExit.exit();
     } on AppExitException {

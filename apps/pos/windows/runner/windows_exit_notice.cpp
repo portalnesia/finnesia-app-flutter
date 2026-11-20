@@ -76,6 +76,13 @@ void WindowsExitNotice::HandleMethodCall(
   result->Success();
 }
 
+void WindowsExitNotice::RequestClose() {
+  // No answer is awaited: the app shows the reminder and leaves on its own if the cashier says
+  // so. A build of the app without a handler leaves the window open, which a second press of
+  // the X cannot fix; the handler is installed for as long as the reminder can be set.
+  channel_->InvokeMethod("closeRequested", nullptr);
+}
+
 void WindowsExitNotice::Clear() {
   if (!has_notice_) return;
   ::ShutdownBlockReasonDestroy(window_);

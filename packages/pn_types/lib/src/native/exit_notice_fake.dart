@@ -22,6 +22,14 @@ class FakeExitNotice implements ExitNoticePort {
 
   final _failures = Queue<ExitNoticeException>();
 
+  void Function()? _onCloseRequested;
+
+  @override
+  set onCloseRequested(void Function()? handler) => _onCloseRequested = handler;
+
+  /// What the Windows runner does on a window close while a notice is set.
+  void requestClose() => _onCloseRequested?.call();
+
   /// Makes the next call throw [failure].
   void failNext(ExitNoticeException failure) => _failures.add(failure);
 

@@ -71,6 +71,15 @@ FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
     return FALSE;
   }
 
+  // The window close while the cashier holds an open shift: held here and handed to the app,
+  // which shows the reminder (`windows_exit_notice.h` says why the engine cannot be relied on to
+  // ask). Without a reminder the close goes to Flutter as before.
+  if (message == WM_CLOSE && windows_exit_notice_ &&
+      windows_exit_notice_->HoldsClose()) {
+    windows_exit_notice_->RequestClose();
+    return 0;
+  }
+
   // Give Flutter, including plugins, an opportunity to handle window messages.
   if (flutter_controller_) {
     std::optional<LRESULT> result =

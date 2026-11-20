@@ -209,6 +209,79 @@ void main() {
     });
   });
 
+  // The runner holds WM_CLOSE itself while a reminder is set: Flutter's engine asks Dart only
+  // when its window is the process's last top-level window, and pdfium (the `printing` plugin)
+  // starts GDI+, whose hidden hook window means it never is. So on Windows the close arrives as
+  // a request over `pos/exit_notice`, and the app leaves through `AppExitPort` itself.
+  group('window close held by the Windows runner', () {
+    Future<void> closeWindow(WidgetTester tester) async {
+      exitNoticeHost.requestClose();
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('asks first, and leaves on Tetap keluar', (tester) async {
+      final appExit = await pumpApp(tester, shift: shiftBody());
+
+      await closeWindow(tester);
+      expect(reminder, findsOneWidget);
+      expect(appExit.exits, 0);
+
+      await tester.tap(find.text('Tetap keluar'));
+      await tester.pumpAndSettle();
+
+      expect(appExit.exits, 1);
+    });
+
+    testWidgets('stays on Kembali ke kasir', (tester) async {
+      final appExit = await pumpApp(tester, shift: shiftBody());
+
+      await closeWindow(tester);
+      await tester.tap(find.text('Kembali ke kasir'));
+      await tester.pumpAndSettle();
+
+      expect(appExit.exits, 0);
+      expect(reminder, findsNothing);
+    });
+
+    testWidgets('a second close while asking shows one reminder', (
+      tester,
+    ) async {
+      await pumpApp(tester, shift: shiftBody());
+
+      await closeWindow(tester);
+      await closeWindow(tester);
+
+      expect(reminder, findsOneWidget);
+    });
+
+    testWidgets(
+      'leaves at once when the shift is gone by the time it arrives',
+      (tester) async {
+        // The runner held it while the reminder was set; the shift closed in between.
+        final appExit = await pumpApp(tester);
+
+        await closeWindow(tester);
+
+        expect(reminder, findsNothing);
+        expect(appExit.exits, 1);
+      },
+    );
+
+    testWidgets('says so when the platform refuses to leave', (tester) async {
+      final appExit = await pumpApp(tester, shift: shiftBody());
+      appExit.failNext(AppExitException('refused'));
+
+      await closeWindow(tester);
+      await tester.tap(find.text('Tetap keluar'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Aplikasi tidak bisa ditutup. Coba lagi.'),
+        findsOneWidget,
+      );
+    });
+  });
+
   group('exits the app never hears about', () {
     const notice = ExitNotice(
       title: 'Shift masih aktif',

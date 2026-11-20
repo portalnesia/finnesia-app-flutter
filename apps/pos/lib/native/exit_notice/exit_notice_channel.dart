@@ -19,6 +19,20 @@ class ChannelExitNotice implements ExitNoticePort {
   static const channel = MethodChannel('pos/exit_notice');
 
   @override
+  set onCloseRequested(void Function()? handler) {
+    channel.setMethodCallHandler(
+      handler == null
+          ? null
+          : (call) async {
+              // The only call the platform makes: `windows_exit_notice.cpp`, on a window close
+              // it held. Anything else is a runner newer than this build, and is ignored.
+              if (call.method == 'closeRequested') handler();
+              return null;
+            },
+    );
+  }
+
+  @override
   Future<void> setNotice(ExitNotice? notice) async {
     try {
       if (notice == null) {

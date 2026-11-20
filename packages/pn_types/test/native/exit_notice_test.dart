@@ -49,6 +49,22 @@ void main() {
       expect(port.current, notice);
     });
 
+    test('hands a close the platform held to whoever listens', () {
+      final port = FakeExitNotice();
+      var heard = 0;
+      port.onCloseRequested = () => heard++;
+
+      port.requestClose();
+
+      expect(heard, 1);
+    });
+
+    test('a close nobody listens for goes nowhere', () {
+      final port = FakeExitNotice()..onCloseRequested = null;
+
+      port.requestClose();
+    });
+
     test('compares notices by their text', () {
       expect(
         const ExitNotice(title: 'a', body: 'b'),
