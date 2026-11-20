@@ -21,12 +21,11 @@ import 'package:pn_types/src/api/endpoints/tenant.dart';
 import 'package:pn_types/src/api/http_method.dart';
 import 'package:pn_types/src/api/transport.dart';
 import 'package:pn_types/src/api/transport_fake.dart';
-import 'package:pn_types/src/master_data.dart';
 import 'package:pn_types/src/pos.dart';
 import 'package:pn_types/src/pos_shift.dart';
 import 'package:test/test.dart';
 
-// The table is the contract: the 29 endpoints the POS uses, with the method and path the
+// The table is the contract: the 31 endpoints the POS uses, with the method and path the
 // monorepo's own registry (`packages/shared/src/api/all-endpoints/`) declares. Each
 // `path` below was copied from that registry's output, and `plan/api-client/findings.md`
 // records the comparison of this table against it. `:id` marks a path parameter.
@@ -135,18 +134,25 @@ void main() {
       '/api/v1/master/contacts',
       MasterApi.contactsList,
     ),
-    write(
-      'master.contacts.create',
-      HttpMethod.post,
-      '/api/v1/master/contacts',
-      MasterApi.contactsCreate,
-    ),
     readP(
       'master.contacts.get',
       '/api/v1/master/contacts/:id',
       MasterApi.contactsGet,
     ),
+    read('master.units.list', '/api/v1/master/units', MasterApi.unitsList),
     read('pos.queue.next', '/api/v1/pos/queue/next', PosApi.queueNext),
+    write(
+      'pos.products.create',
+      HttpMethod.post,
+      '/api/v1/pos/products',
+      PosApi.productsCreate,
+    ),
+    write(
+      'pos.customers.create',
+      HttpMethod.post,
+      '/api/v1/pos/customers',
+      PosApi.customersCreate,
+    ),
     write(
       'pos.sales.checkout',
       HttpMethod.post,
@@ -231,8 +237,8 @@ void main() {
   ];
 
   group('the registry table', () {
-    test('has the 29 endpoints the POS uses', () {
-      expect(rows, hasLength(29));
+    test('has the 31 endpoints the POS uses', () {
+      expect(rows, hasLength(31));
     });
 
     test(
@@ -540,22 +546,82 @@ void main() {
       );
     });
 
-    test('adding a customer posts the DTO and returns the Contact', () async {
+    test(
+      'adding a customer from the till posts only name, phone and email',
+      () async {
+        final t = makeClient(
+          '{"data":{"id":"c2","name":"Sari","type":"CUSTOMER"}}',
+        );
+
+        final created = await PosApi.customersCreate(
+          t.client,
+          const POSQuickCustomerDTO(name: 'Sari', phone: '0812'),
+        );
+
+        expect(created.id, 'c2');
+        final sent = t.transport.requests.single;
+        expect(sent.method, HttpMethod.post);
+        expect(sent.path, '/api/v1/pos/customers');
+        // An unfilled field is absent, not `null`: the server validates these `omitempty`.
+        expect(jsonDecode(sent.body!), {'name': 'Sari', 'phone': '0812'});
+      },
+    );
+
+    test(
+      'adding a product from the till posts the unit only when one is picked',
+      () async {
+        final t = makeClient(
+          '{"data":{"id":"p9","name":"Es Teh","unit_id":"u1","sell_price":5000,"type":"NON_INVENTORY"}}',
+        );
+
+        final created = await PosApi.productsCreate(
+          t.client,
+          const POSQuickProductDTO(name: 'Es Teh', sellPrice: 5000),
+        );
+
+        expect(created.id, 'p9');
+        expect(created.sellPrice, 5000);
+        final sent = t.transport.requests.single;
+        expect(sent.path, '/api/v1/pos/products');
+        // No `unit_id` means PCS, which the server creates when the company has none.
+        expect(jsonDecode(sent.body!), {'name': 'Es Teh', 'sell_price': 5000});
+      },
+    );
+
+    test('a picked unit is sent as unit_id', () async {
       final t = makeClient(
-        '{"data":{"id":"c2","name":"Sari","type":"CUSTOMER"}}',
+        '{"data":{"id":"p9","name":"Es Teh","unit_id":"u7","sell_price":0,"type":"NON_INVENTORY"}}',
       );
 
-      final created = await MasterApi.contactsCreate(
+      await PosApi.productsCreate(
         t.client,
-        const CreateContactDTO(name: 'Sari', type: ContactType.customer),
+        const POSQuickProductDTO(name: 'Es Teh', sellPrice: 0, unitId: 'u7'),
       );
 
-      expect(created.id, 'c2');
       expect(jsonDecode(t.transport.requests.single.body!), {
-        'name': 'Sari',
-        'type': 'CUSTOMER',
-        'is_active': true,
+        'name': 'Es Teh',
+        'sell_price': 0,
+        'unit_id': 'u7',
       });
+    });
+
+    test('units come back as Units, filtered by the query', () async {
+      final t = makeClient(
+        '''
+        {"data":[{"id":"u1","company_id":"co1","name":"Pieces","symbol":"PCS","conversion_ratio":1,"is_base":true}]}''',
+      );
+
+      final units = await MasterApi.unitsList(
+        t.client,
+        query: {'q': 'PCS', 'page_size': 10},
+      );
+
+      expect(units.single.symbol, 'PCS');
+      expect(units.single.name, 'Pieces');
+      expect(
+        t.transport.requests.single.path,
+        '/api/v1/master/units?q=PCS&page_size=10',
+      );
     });
 
     test('accounts come back as ChartOfAccounts', () async {

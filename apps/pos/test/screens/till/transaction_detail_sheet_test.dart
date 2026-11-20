@@ -527,8 +527,8 @@ void main() {
     testWidgets('is not offered when the cashier may not create one', (
       tester,
     ) async {
-      // `POST /master/contacts` needs `master.contact.manage`, which the seeded cashier role does
-      // not hold. A button the server refuses is worse than no button (R-26).
+      // `POST /pos/customers` needs `pos.quick_create` or `master.contact.manage`. A button the
+      // server refuses is worse than no button (R-26).
       useTablet(tester);
       final (:controller, :transport) = rig(canCreateContact: false);
       opening(transport);
@@ -558,16 +558,76 @@ void main() {
       final posted = transport.requests.singleWhere(
         (r) => r.method.wire == 'POST',
       );
-      expect(jsonDecode(posted.body!), {
-        'name': 'Sari',
-        'type': 'CUSTOMER',
-        'is_active': true,
-      });
+      expect(Uri.parse(posted.path).path, '/api/v1/pos/customers');
+      expect(jsonDecode(posted.body!), {'name': 'Sari'});
       // Picked straight away: the cashier made this customer to use them.
       expect(controller.detail.customerId, 'c9');
       expect(controller.detail.customerName, 'Sari');
       // And the picker is done: nothing is left to choose.
       expect(find.byKey(const Key('customer-picker')), findsNothing);
+    });
+
+    testWidgets('appears once the permission arrives, with the picker open', (
+      tester,
+    ) async {
+      // The till reads the cashier's permissions after the controller is built; a picker opened
+      // before the answer must not stay without the button.
+      useTablet(tester);
+      final (:controller, :transport) = rig(canCreateContact: false);
+      opening(transport);
+      await openSheet(tester, controller);
+      await openPicker(tester);
+      expect(find.byKey(const Key('add-customer')), findsNothing);
+
+      controller.canCreateContact = true;
+      await tester.pump();
+
+      expect(find.byKey(const Key('add-customer')), findsOneWidget);
+    });
+
+    testWidgets('carries what was searched into the button and the form', (
+      tester,
+    ) async {
+      useTablet(tester);
+      final (:controller, :transport) = rig();
+      opening(transport);
+      await openSheet(tester, controller);
+      await openPicker(tester);
+
+      // The search reads the server; nobody named Wati is there yet.
+      transport.respond(page(const []));
+      await tester.enterText(find.byKey(const Key('customer-search')), 'Wati');
+      await tester.pumpAndSettle();
+
+      expect(find.text('Tambah pelanggan "Wati"'), findsOneWidget);
+      await tester.tap(find.byKey(const Key('add-customer')));
+      await tester.pumpAndSettle();
+      expect(find.text('Wati'), findsOneWidget);
+    });
+
+    testWidgets('asks only for name, phone and email', (tester) async {
+      // The three things a cashier can ask across the counter, and all the till's route takes.
+      useTablet(tester);
+      final (:controller, :transport) = rig();
+      opening(transport);
+      await openSheet(tester, controller);
+      await openPicker(tester);
+
+      await tester.tap(find.byKey(const Key('add-customer')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Tambah Pelanggan'), findsOneWidget);
+      expect(find.text('Nama pelanggan'), findsOneWidget);
+      expect(find.text('Telepon/HP'), findsOneWidget);
+      expect(find.text('Email'), findsOneWidget);
+      expect(find.text('Simpan & Pilih Pelanggan'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('customer-picker')),
+          matching: find.byType(TextField),
+        ),
+        findsNWidgets(3),
+      );
     });
 
     testWidgets('an empty name is refused without asking the server', (
@@ -584,7 +644,7 @@ void main() {
       await tester.enterText(find.byKey(const Key('new-customer-name')), '   ');
       await tapVisible(tester, find.byKey(const Key('save-customer')));
 
-      expect(find.text('Nama pelanggan belum diisi.'), findsOneWidget);
+      expect(find.text('Nama wajib diisi'), findsOneWidget);
       expect(transport.requests.where((r) => r.method.wire == 'POST'), isEmpty);
     });
 

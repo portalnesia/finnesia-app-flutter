@@ -3069,4 +3069,556 @@ as String?,
 
 }
 
+
+/// @nodoc
+mixin _$POSQuickCustomerDTO {
+
+ String get name; String? get phone; String? get email;
+/// Create a copy of POSQuickCustomerDTO
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$POSQuickCustomerDTOCopyWith<POSQuickCustomerDTO> get copyWith => _$POSQuickCustomerDTOCopyWithImpl<POSQuickCustomerDTO>(this as POSQuickCustomerDTO, _$identity);
+
+  /// Serializes this POSQuickCustomerDTO to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  final _this = this as POSQuickCustomerDTO;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is POSQuickCustomerDTO&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.phone, _this.phone) || other.phone == _this.phone)&&(identical(other.email, _this.email) || other.email == _this.email));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+  final _this = this as POSQuickCustomerDTO;
+  return Object.hash(runtimeType,_this.name,_this.phone,_this.email);
+}
+
+@override
+String toString() {
+  final _this = this as POSQuickCustomerDTO;
+  return 'POSQuickCustomerDTO(name: ${_this.name}, phone: ${_this.phone}, email: ${_this.email})';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $POSQuickCustomerDTOCopyWith<$Res>  {
+  factory $POSQuickCustomerDTOCopyWith(POSQuickCustomerDTO value, $Res Function(POSQuickCustomerDTO) _then) = _$POSQuickCustomerDTOCopyWithImpl;
+@useResult
+$Res call({
+ String name, String? phone, String? email
+});
+
+
+
+
+}
+/// @nodoc
+class _$POSQuickCustomerDTOCopyWithImpl<$Res>
+    implements $POSQuickCustomerDTOCopyWith<$Res> {
+  _$POSQuickCustomerDTOCopyWithImpl(this._self, this._then);
+
+  final POSQuickCustomerDTO _self;
+  final $Res Function(POSQuickCustomerDTO) _then;
+
+/// Create a copy of POSQuickCustomerDTO
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? name = null,Object? phone = freezed,Object? email = freezed,}) {
+  return _then(POSQuickCustomerDTO(
+name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,phone: freezed == phone ? _self.phone : phone // ignore: cast_nullable_to_non_nullable
+as String?,email: freezed == email ? _self.email : email // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [POSQuickCustomerDTO].
+extension POSQuickCustomerDTOPatterns on POSQuickCustomerDTO {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _POSQuickCustomerDTO value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _POSQuickCustomerDTO() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _POSQuickCustomerDTO value)  $default,){
+final _that = this;
+switch (_that) {
+case _POSQuickCustomerDTO():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _POSQuickCustomerDTO value)?  $default,){
+final _that = this;
+switch (_that) {
+case _POSQuickCustomerDTO() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String name,  String? phone,  String? email)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _POSQuickCustomerDTO() when $default != null:
+return $default(_that.name,_that.phone,_that.email);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String name,  String? phone,  String? email)  $default,) {final _that = this;
+switch (_that) {
+case _POSQuickCustomerDTO():
+return $default(_that.name,_that.phone,_that.email);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String name,  String? phone,  String? email)?  $default,) {final _that = this;
+switch (_that) {
+case _POSQuickCustomerDTO() when $default != null:
+return $default(_that.name,_that.phone,_that.email);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+
+@JsonSerializable(includeIfNull: false)
+class _POSQuickCustomerDTO implements POSQuickCustomerDTO {
+  const _POSQuickCustomerDTO({required this.name, this.phone, this.email});
+  factory _POSQuickCustomerDTO.fromJson(Map<String, dynamic> json) => _$POSQuickCustomerDTOFromJson(json);
+
+@override final  String name;
+@override final  String? phone;
+@override final  String? email;
+
+/// Create a copy of POSQuickCustomerDTO
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$POSQuickCustomerDTOCopyWith<_POSQuickCustomerDTO> get copyWith => __$POSQuickCustomerDTOCopyWithImpl<_POSQuickCustomerDTO>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$POSQuickCustomerDTOToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _POSQuickCustomerDTO&&(identical(other.name, name) || other.name == name)&&(identical(other.phone, phone) || other.phone == phone)&&(identical(other.email, email) || other.email == email));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+    return Object.hash(runtimeType,name,phone,email);
+}
+
+@override
+String toString() {
+    return 'POSQuickCustomerDTO(name: $name, phone: $phone, email: $email)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$POSQuickCustomerDTOCopyWith<$Res> implements $POSQuickCustomerDTOCopyWith<$Res> {
+  factory _$POSQuickCustomerDTOCopyWith(_POSQuickCustomerDTO value, $Res Function(_POSQuickCustomerDTO) _then) = __$POSQuickCustomerDTOCopyWithImpl;
+@override @useResult
+$Res call({
+ String name, String? phone, String? email
+});
+
+
+
+
+}
+/// @nodoc
+class __$POSQuickCustomerDTOCopyWithImpl<$Res>
+    implements _$POSQuickCustomerDTOCopyWith<$Res> {
+  __$POSQuickCustomerDTOCopyWithImpl(this._self, this._then);
+
+  final _POSQuickCustomerDTO _self;
+  final $Res Function(_POSQuickCustomerDTO) _then;
+
+/// Create a copy of POSQuickCustomerDTO
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? name = null,Object? phone = freezed,Object? email = freezed,}) {
+  return _then(_POSQuickCustomerDTO(
+name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,phone: freezed == phone ? _self.phone : phone // ignore: cast_nullable_to_non_nullable
+as String?,email: freezed == email ? _self.email : email // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$POSQuickProductDTO {
+
+ String get name;@JsonKey(name: 'sell_price') num get sellPrice;@JsonKey(name: 'unit_id') String? get unitId;
+/// Create a copy of POSQuickProductDTO
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$POSQuickProductDTOCopyWith<POSQuickProductDTO> get copyWith => _$POSQuickProductDTOCopyWithImpl<POSQuickProductDTO>(this as POSQuickProductDTO, _$identity);
+
+  /// Serializes this POSQuickProductDTO to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  final _this = this as POSQuickProductDTO;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is POSQuickProductDTO&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.sellPrice, _this.sellPrice) || other.sellPrice == _this.sellPrice)&&(identical(other.unitId, _this.unitId) || other.unitId == _this.unitId));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+  final _this = this as POSQuickProductDTO;
+  return Object.hash(runtimeType,_this.name,_this.sellPrice,_this.unitId);
+}
+
+@override
+String toString() {
+  final _this = this as POSQuickProductDTO;
+  return 'POSQuickProductDTO(name: ${_this.name}, sellPrice: ${_this.sellPrice}, unitId: ${_this.unitId})';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $POSQuickProductDTOCopyWith<$Res>  {
+  factory $POSQuickProductDTOCopyWith(POSQuickProductDTO value, $Res Function(POSQuickProductDTO) _then) = _$POSQuickProductDTOCopyWithImpl;
+@useResult
+$Res call({
+ String name,@JsonKey(name: 'sell_price') num sellPrice,@JsonKey(name: 'unit_id') String? unitId
+});
+
+
+
+
+}
+/// @nodoc
+class _$POSQuickProductDTOCopyWithImpl<$Res>
+    implements $POSQuickProductDTOCopyWith<$Res> {
+  _$POSQuickProductDTOCopyWithImpl(this._self, this._then);
+
+  final POSQuickProductDTO _self;
+  final $Res Function(POSQuickProductDTO) _then;
+
+/// Create a copy of POSQuickProductDTO
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? name = null,Object? sellPrice = null,Object? unitId = freezed,}) {
+  return _then(POSQuickProductDTO(
+name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,sellPrice: null == sellPrice ? _self.sellPrice : sellPrice // ignore: cast_nullable_to_non_nullable
+as num,unitId: freezed == unitId ? _self.unitId : unitId // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [POSQuickProductDTO].
+extension POSQuickProductDTOPatterns on POSQuickProductDTO {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _POSQuickProductDTO value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _POSQuickProductDTO() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _POSQuickProductDTO value)  $default,){
+final _that = this;
+switch (_that) {
+case _POSQuickProductDTO():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _POSQuickProductDTO value)?  $default,){
+final _that = this;
+switch (_that) {
+case _POSQuickProductDTO() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String name, @JsonKey(name: 'sell_price')  num sellPrice, @JsonKey(name: 'unit_id')  String? unitId)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _POSQuickProductDTO() when $default != null:
+return $default(_that.name,_that.sellPrice,_that.unitId);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String name, @JsonKey(name: 'sell_price')  num sellPrice, @JsonKey(name: 'unit_id')  String? unitId)  $default,) {final _that = this;
+switch (_that) {
+case _POSQuickProductDTO():
+return $default(_that.name,_that.sellPrice,_that.unitId);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String name, @JsonKey(name: 'sell_price')  num sellPrice, @JsonKey(name: 'unit_id')  String? unitId)?  $default,) {final _that = this;
+switch (_that) {
+case _POSQuickProductDTO() when $default != null:
+return $default(_that.name,_that.sellPrice,_that.unitId);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+
+@JsonSerializable(includeIfNull: false)
+class _POSQuickProductDTO implements POSQuickProductDTO {
+  const _POSQuickProductDTO({required this.name, @JsonKey(name: 'sell_price') required this.sellPrice, @JsonKey(name: 'unit_id') this.unitId});
+  factory _POSQuickProductDTO.fromJson(Map<String, dynamic> json) => _$POSQuickProductDTOFromJson(json);
+
+@override final  String name;
+@override@JsonKey(name: 'sell_price') final  num sellPrice;
+@override@JsonKey(name: 'unit_id') final  String? unitId;
+
+/// Create a copy of POSQuickProductDTO
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$POSQuickProductDTOCopyWith<_POSQuickProductDTO> get copyWith => __$POSQuickProductDTOCopyWithImpl<_POSQuickProductDTO>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$POSQuickProductDTOToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _POSQuickProductDTO&&(identical(other.name, name) || other.name == name)&&(identical(other.sellPrice, sellPrice) || other.sellPrice == sellPrice)&&(identical(other.unitId, unitId) || other.unitId == unitId));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode {
+    return Object.hash(runtimeType,name,sellPrice,unitId);
+}
+
+@override
+String toString() {
+    return 'POSQuickProductDTO(name: $name, sellPrice: $sellPrice, unitId: $unitId)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$POSQuickProductDTOCopyWith<$Res> implements $POSQuickProductDTOCopyWith<$Res> {
+  factory _$POSQuickProductDTOCopyWith(_POSQuickProductDTO value, $Res Function(_POSQuickProductDTO) _then) = __$POSQuickProductDTOCopyWithImpl;
+@override @useResult
+$Res call({
+ String name,@JsonKey(name: 'sell_price') num sellPrice,@JsonKey(name: 'unit_id') String? unitId
+});
+
+
+
+
+}
+/// @nodoc
+class __$POSQuickProductDTOCopyWithImpl<$Res>
+    implements _$POSQuickProductDTOCopyWith<$Res> {
+  __$POSQuickProductDTOCopyWithImpl(this._self, this._then);
+
+  final _POSQuickProductDTO _self;
+  final $Res Function(_POSQuickProductDTO) _then;
+
+/// Create a copy of POSQuickProductDTO
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? name = null,Object? sellPrice = null,Object? unitId = freezed,}) {
+  return _then(_POSQuickProductDTO(
+name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,sellPrice: null == sellPrice ? _self.sellPrice : sellPrice // ignore: cast_nullable_to_non_nullable
+as num,unitId: freezed == unitId ? _self.unitId : unitId // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+
+}
+
 // dart format on

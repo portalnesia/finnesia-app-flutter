@@ -754,27 +754,6 @@ class L10nId extends L10n {
   String get menuOpen => 'Menu';
 
   @override
-  String get contactQuickAddTitle => 'Tambah Pelanggan Baru';
-
-  @override
-  String get contactNameLabel => 'Nama Pelanggan';
-
-  @override
-  String get contactNamePlaceholder => 'Nama pelanggan...';
-
-  @override
-  String get contactPhoneLabel => 'No. Telepon / HP';
-
-  @override
-  String get contactEmailLabel => 'Email';
-
-  @override
-  String get contactCompanyLabel => 'Nama Perusahaan (opsional)';
-
-  @override
-  String get contactAddressLabel => 'Alamat';
-
-  @override
   String get contactCreated => 'Pelanggan berhasil ditambahkan';
 
   @override
@@ -1203,11 +1182,6 @@ class L10nId extends L10n {
   String get posSearchCustomer => 'Cari pelanggan...';
 
   @override
-  String posAddContactNamed(String q) {
-    return 'Tambah Kontak \"$q\"';
-  }
-
-  @override
   String get posCustomerMemo => 'Catatan Pelanggan';
 
   @override
@@ -1439,9 +1413,6 @@ class L10nId extends L10n {
   @override
   String get tillDetailCreateNoAnswer =>
       'Belum bisa menghubungi server. Periksa koneksi lalu coba lagi.';
-
-  @override
-  String get tillDetailNameRequired => 'Nama pelanggan belum diisi.';
 
   @override
   String get uiPrevious => 'Sebelumnya';
@@ -1788,4 +1759,81 @@ class L10nId extends L10n {
   String shiftLeaveNoticeBody(String number) {
     return 'Shift $number belum ditutup. Tutup shift di akhir jam kerja agar kas laci cocok dengan laporan.';
   }
+
+  @override
+  String get quickProductButton => 'Produk Baru';
+
+  @override
+  String quickProductAddNamed(String q) {
+    return 'Tambah produk \"$q\"';
+  }
+
+  @override
+  String get quickProductTitle => 'Tambah Produk dari Kasir';
+
+  @override
+  String get quickProductName => 'Nama produk';
+
+  @override
+  String get quickProductNamePh => 'Contoh: Es Teh Manis';
+
+  @override
+  String get quickProductPrice => 'Harga jual';
+
+  @override
+  String get quickProductUnit => 'Satuan';
+
+  @override
+  String get quickProductUnitPcsNew => 'PCS (dibuat saat disimpan)';
+
+  @override
+  String get quickProductHint =>
+      'Disimpan sebagai produk tanpa stok. Admin bisa melengkapi kategori, jenis, dan akunnya nanti.';
+
+  @override
+  String get quickProductSave => 'Simpan & Masukkan Keranjang';
+
+  @override
+  String quickProductAdded(String name) {
+    return '$name masuk ke keranjang';
+  }
+
+  @override
+  String get quickProductUnitsFailed =>
+      'Daftar satuan tidak bisa dimuat. Produk tetap bisa disimpan dengan PCS.';
+
+  @override
+  String get quickCustomerTitle => 'Tambah Pelanggan';
+
+  @override
+  String get quickCustomerAdd => 'Tambah pelanggan';
+
+  @override
+  String quickCustomerAddNamed(String q) {
+    return 'Tambah pelanggan \"$q\"';
+  }
+
+  @override
+  String get quickCustomerName => 'Nama pelanggan';
+
+  @override
+  String get quickCustomerNamePh => 'Contoh: Budi Santoso';
+
+  @override
+  String get quickCustomerPhone => 'Telepon/HP';
+
+  @override
+  String get quickCustomerPhonePh => '08123456789';
+
+  @override
+  String get quickCustomerEmail => 'Email';
+
+  @override
+  String get quickCustomerEmailPh => 'nama@contoh.id';
+
+  @override
+  String get quickCustomerSave => 'Simpan & Pilih Pelanggan';
+
+  @override
+  String get quickNameRequired => 'Nama wajib diisi';
 }

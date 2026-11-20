@@ -275,3 +275,32 @@ const _$POSTenderMethodEnumMap = {
   POSTenderMethod.qris: 'QRIS',
   POSTenderMethod.komplimen: 'KOMPLIMEN',
 };
+
+_POSQuickCustomerDTO _$POSQuickCustomerDTOFromJson(Map<String, dynamic> json) =>
+    _POSQuickCustomerDTO(
+      name: json['name'] as String,
+      phone: json['phone'] as String?,
+      email: json['email'] as String?,
+    );
+
+Map<String, dynamic> _$POSQuickCustomerDTOToJson(
+  _POSQuickCustomerDTO instance,
+) => <String, dynamic>{
+  'name': instance.name,
+  'phone': ?instance.phone,
+  'email': ?instance.email,
+};
+
+_POSQuickProductDTO _$POSQuickProductDTOFromJson(Map<String, dynamic> json) =>
+    _POSQuickProductDTO(
+      name: json['name'] as String,
+      sellPrice: json['sell_price'] as num,
+      unitId: json['unit_id'] as String?,
+    );
+
+Map<String, dynamic> _$POSQuickProductDTOToJson(_POSQuickProductDTO instance) =>
+    <String, dynamic>{
+      'name': instance.name,
+      'sell_price': instance.sellPrice,
+      'unit_id': ?instance.unitId,
+    };

@@ -761,27 +761,6 @@ class L10nEn extends L10n {
   String get menuOpen => 'Menu';
 
   @override
-  String get contactQuickAddTitle => 'Add New Customer';
-
-  @override
-  String get contactNameLabel => 'Customer Name';
-
-  @override
-  String get contactNamePlaceholder => 'Customer name...';
-
-  @override
-  String get contactPhoneLabel => 'Phone Number';
-
-  @override
-  String get contactEmailLabel => 'Email';
-
-  @override
-  String get contactCompanyLabel => 'Company Name (optional)';
-
-  @override
-  String get contactAddressLabel => 'Address';
-
-  @override
   String get contactCreated => 'Customer added';
 
   @override
@@ -1216,11 +1195,6 @@ class L10nEn extends L10n {
   String get posSearchCustomer => 'Search customer...';
 
   @override
-  String posAddContactNamed(String q) {
-    return 'Add contact \"$q\"';
-  }
-
-  @override
   String get posCustomerMemo => 'Customer Note';
 
   @override
@@ -1453,9 +1427,6 @@ class L10nEn extends L10n {
   @override
   String get tillDetailCreateNoAnswer =>
       'The server could not be reached. Check the connection and try again.';
-
-  @override
-  String get tillDetailNameRequired => 'The customer name is still empty.';
 
   @override
   String get uiPrevious => 'Previous';
@@ -1799,4 +1770,81 @@ class L10nEn extends L10n {
   String shiftLeaveNoticeBody(String number) {
     return 'Shift $number has not been closed. Close the shift at the end of your working hours so the drawer cash matches the report.';
   }
+
+  @override
+  String get quickProductButton => 'New Product';
+
+  @override
+  String quickProductAddNamed(String q) {
+    return 'Add product \"$q\"';
+  }
+
+  @override
+  String get quickProductTitle => 'Add Product from Till';
+
+  @override
+  String get quickProductName => 'Product name';
+
+  @override
+  String get quickProductNamePh => 'e.g. Sweet Iced Tea';
+
+  @override
+  String get quickProductPrice => 'Selling price';
+
+  @override
+  String get quickProductUnit => 'Unit';
+
+  @override
+  String get quickProductUnitPcsNew => 'PCS (created on save)';
+
+  @override
+  String get quickProductHint =>
+      'Saved as a product without stock tracking. An admin can complete its category, type and accounts later.';
+
+  @override
+  String get quickProductSave => 'Save & Add to Cart';
+
+  @override
+  String quickProductAdded(String name) {
+    return '$name added to the cart';
+  }
+
+  @override
+  String get quickProductUnitsFailed =>
+      'The unit list could not be loaded. The product can still be saved with PCS.';
+
+  @override
+  String get quickCustomerTitle => 'Add Customer';
+
+  @override
+  String get quickCustomerAdd => 'Add customer';
+
+  @override
+  String quickCustomerAddNamed(String q) {
+    return 'Add customer \"$q\"';
+  }
+
+  @override
+  String get quickCustomerName => 'Customer name';
+
+  @override
+  String get quickCustomerNamePh => 'e.g. Budi Santoso';
+
+  @override
+  String get quickCustomerPhone => 'Phone/mobile';
+
+  @override
+  String get quickCustomerPhonePh => '08123456789';
+
+  @override
+  String get quickCustomerEmail => 'Email';
+
+  @override
+  String get quickCustomerEmailPh => 'name@example.com';
+
+  @override
+  String get quickCustomerSave => 'Save & Select Customer';
+
+  @override
+  String get quickNameRequired => 'Name is required';
 }

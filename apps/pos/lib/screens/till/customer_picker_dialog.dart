@@ -12,6 +12,7 @@ import 'package:pn_ui/src/theme/tokens.dart';
 import 'package:pn_ui/src/widgets/state_view.dart';
 import 'package:pos/l10n/app_localizations.dart';
 import 'package:pos/state/loadable.dart';
+import 'package:pos/till/quick_create.dart';
 import 'package:pos/till/transaction_detail_controller.dart';
 
 /// Picks the customer for the sale, in a dialog of its own.
@@ -120,8 +121,8 @@ class _CustomerPickerDialogState extends State<CustomerPickerDialog> {
                               // nothing. It is also what the source does with `onCreateOption`.
                               label: Text(
                                 _search.text.trim().isEmpty
-                                    ? l10n.contactQuickAddTitle
-                                    : l10n.posAddContactNamed(
+                                    ? l10n.quickCustomerAdd
+                                    : l10n.quickCustomerAddNamed(
                                         _search.text.trim(),
                                       ),
                               ),
@@ -219,7 +220,9 @@ class _Results extends StatelessWidget {
   }
 }
 
-/// Adding a customer without leaving the till.
+/// Adding a customer without leaving the till: the three things a cashier can ask across the
+/// counter (`POST /pos/customers`). Terms, accounts and addresses stay on the contact page, where
+/// the people who manage them work.
 ///
 /// Drawn in place of the list, inside the same dialog: the customer is picked the moment it is
 /// saved, so there is nothing to come back to.
@@ -242,8 +245,6 @@ class _NewCustomerState extends State<_NewCustomer> {
   final _name = TextEditingController();
   final _phone = TextEditingController();
   final _email = TextEditingController();
-  final _company = TextEditingController();
-  final _address = TextEditingController();
 
   var _saving = false;
   String? _problem;
@@ -260,8 +261,6 @@ class _NewCustomerState extends State<_NewCustomer> {
     _name.dispose();
     _phone.dispose();
     _email.dispose();
-    _company.dispose();
-    _address.dispose();
     super.dispose();
   }
 
@@ -277,30 +276,28 @@ class _NewCustomerState extends State<_NewCustomer> {
       name: _name.text,
       phone: _phone.text,
       email: _email.text,
-      companyName: _company.text,
-      address: _address.text,
     );
     if (!mounted) return;
 
     switch (outcome) {
-      case CreateContactOk(:final contact):
+      case QuickCreateOk(:final created):
         // Picked straight away: the cashier made this customer to use them, and making them find
         // the name they just typed would be a strange way to finish.
         widget.controller.pickCustomer(
-          TransactionDetail(customerId: contact.id, customerName: contact.name),
+          TransactionDetail(customerId: created.id, customerName: created.name),
         );
         widget.onCreated();
-      case CreateContactInvalid():
+      case QuickCreateInvalid():
         setState(() {
           _saving = false;
-          _problem = l10n.tillDetailNameRequired;
+          _problem = l10n.quickNameRequired;
         });
-      case CreateContactRejected(:final message):
+      case QuickCreateRejected(:final message):
         setState(() {
           _saving = false;
           _problem = message;
         });
-      case CreateContactUnavailable():
+      case QuickCreateUnavailable():
         setState(() {
           _saving = false;
           _problem = l10n.tillDetailCreateNoAnswer;
@@ -315,7 +312,7 @@ class _NewCustomerState extends State<_NewCustomer> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _Title(text: l10n.contactQuickAddTitle),
+        _Title(text: l10n.quickCustomerTitle),
         Flexible(
           child: SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
@@ -335,40 +332,28 @@ class _NewCustomerState extends State<_NewCustomer> {
                   controller: _name,
                   textCapitalization: TextCapitalization.words,
                   decoration: InputDecoration(
-                    labelText: l10n.contactNameLabel,
-                    hintText: l10n.contactNamePlaceholder,
+                    labelText: l10n.quickCustomerName,
+                    hintText: l10n.quickCustomerNamePh,
                   ),
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: _phone,
                   keyboardType: TextInputType.phone,
+                  autofillHints: const [AutofillHints.telephoneNumber],
                   decoration: InputDecoration(
-                    labelText: l10n.contactPhoneLabel,
+                    labelText: l10n.quickCustomerPhone,
+                    hintText: l10n.quickCustomerPhonePh,
                   ),
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: _email,
                   keyboardType: TextInputType.emailAddress,
+                  autofillHints: const [AutofillHints.email],
                   decoration: InputDecoration(
-                    labelText: l10n.contactEmailLabel,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _company,
-                  decoration: InputDecoration(
-                    labelText: l10n.contactCompanyLabel,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _address,
-                  minLines: 2,
-                  maxLines: 3,
-                  decoration: InputDecoration(
-                    labelText: l10n.contactAddressLabel,
+                    labelText: l10n.quickCustomerEmail,
+                    hintText: l10n.quickCustomerEmailPh,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -391,7 +376,9 @@ class _NewCustomerState extends State<_NewCustomer> {
                           key: const Key('save-customer'),
                           onPressed: _saving ? null : _save,
                           child: Text(
-                            _saving ? l10n.commonSaving : l10n.commonSave,
+                            _saving
+                                ? l10n.commonSaving
+                                : l10n.quickCustomerSave,
                           ),
                         ),
                       ),

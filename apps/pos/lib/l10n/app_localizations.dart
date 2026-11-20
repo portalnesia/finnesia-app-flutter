@@ -1339,48 +1339,6 @@ abstract class L10n {
   /// **'Menu'**
   String get menuOpen;
 
-  /// No description provided for @contactQuickAddTitle.
-  ///
-  /// In id, this message translates to:
-  /// **'Tambah Pelanggan Baru'**
-  String get contactQuickAddTitle;
-
-  /// No description provided for @contactNameLabel.
-  ///
-  /// In id, this message translates to:
-  /// **'Nama Pelanggan'**
-  String get contactNameLabel;
-
-  /// No description provided for @contactNamePlaceholder.
-  ///
-  /// In id, this message translates to:
-  /// **'Nama pelanggan...'**
-  String get contactNamePlaceholder;
-
-  /// No description provided for @contactPhoneLabel.
-  ///
-  /// In id, this message translates to:
-  /// **'No. Telepon / HP'**
-  String get contactPhoneLabel;
-
-  /// No description provided for @contactEmailLabel.
-  ///
-  /// In id, this message translates to:
-  /// **'Email'**
-  String get contactEmailLabel;
-
-  /// No description provided for @contactCompanyLabel.
-  ///
-  /// In id, this message translates to:
-  /// **'Nama Perusahaan (opsional)'**
-  String get contactCompanyLabel;
-
-  /// No description provided for @contactAddressLabel.
-  ///
-  /// In id, this message translates to:
-  /// **'Alamat'**
-  String get contactAddressLabel;
-
   /// No description provided for @contactCreated.
   ///
   /// In id, this message translates to:
@@ -2173,12 +2131,6 @@ abstract class L10n {
   /// **'Cari pelanggan...'**
   String get posSearchCustomer;
 
-  /// No description provided for @posAddContactNamed.
-  ///
-  /// In id, this message translates to:
-  /// **'Tambah Kontak \"{q}\"'**
-  String posAddContactNamed(String q);
-
   /// No description provided for @posCustomerMemo.
   ///
   /// In id, this message translates to:
@@ -2598,12 +2550,6 @@ abstract class L10n {
   /// In id, this message translates to:
   /// **'Belum bisa menghubungi server. Periksa koneksi lalu coba lagi.'**
   String get tillDetailCreateNoAnswer;
-
-  /// No description provided for @tillDetailNameRequired.
-  ///
-  /// In id, this message translates to:
-  /// **'Nama pelanggan belum diisi.'**
-  String get tillDetailNameRequired;
 
   /// No description provided for @uiPrevious.
   ///
@@ -3210,6 +3156,144 @@ abstract class L10n {
   /// In id, this message translates to:
   /// **'Shift {number} belum ditutup. Tutup shift di akhir jam kerja agar kas laci cocok dengan laporan.'**
   String shiftLeaveNoticeBody(String number);
+
+  /// No description provided for @quickProductButton.
+  ///
+  /// In id, this message translates to:
+  /// **'Produk Baru'**
+  String get quickProductButton;
+
+  /// No description provided for @quickProductAddNamed.
+  ///
+  /// In id, this message translates to:
+  /// **'Tambah produk \"{q}\"'**
+  String quickProductAddNamed(String q);
+
+  /// No description provided for @quickProductTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Tambah Produk dari Kasir'**
+  String get quickProductTitle;
+
+  /// No description provided for @quickProductName.
+  ///
+  /// In id, this message translates to:
+  /// **'Nama produk'**
+  String get quickProductName;
+
+  /// No description provided for @quickProductNamePh.
+  ///
+  /// In id, this message translates to:
+  /// **'Contoh: Es Teh Manis'**
+  String get quickProductNamePh;
+
+  /// No description provided for @quickProductPrice.
+  ///
+  /// In id, this message translates to:
+  /// **'Harga jual'**
+  String get quickProductPrice;
+
+  /// No description provided for @quickProductUnit.
+  ///
+  /// In id, this message translates to:
+  /// **'Satuan'**
+  String get quickProductUnit;
+
+  /// No description provided for @quickProductUnitPcsNew.
+  ///
+  /// In id, this message translates to:
+  /// **'PCS (dibuat saat disimpan)'**
+  String get quickProductUnitPcsNew;
+
+  /// No description provided for @quickProductHint.
+  ///
+  /// In id, this message translates to:
+  /// **'Disimpan sebagai produk tanpa stok. Admin bisa melengkapi kategori, jenis, dan akunnya nanti.'**
+  String get quickProductHint;
+
+  /// No description provided for @quickProductSave.
+  ///
+  /// In id, this message translates to:
+  /// **'Simpan & Masukkan Keranjang'**
+  String get quickProductSave;
+
+  /// No description provided for @quickProductAdded.
+  ///
+  /// In id, this message translates to:
+  /// **'{name} masuk ke keranjang'**
+  String quickProductAdded(String name);
+
+  /// No description provided for @quickProductUnitsFailed.
+  ///
+  /// In id, this message translates to:
+  /// **'Daftar satuan tidak bisa dimuat. Produk tetap bisa disimpan dengan PCS.'**
+  String get quickProductUnitsFailed;
+
+  /// No description provided for @quickCustomerTitle.
+  ///
+  /// In id, this message translates to:
+  /// **'Tambah Pelanggan'**
+  String get quickCustomerTitle;
+
+  /// No description provided for @quickCustomerAdd.
+  ///
+  /// In id, this message translates to:
+  /// **'Tambah pelanggan'**
+  String get quickCustomerAdd;
+
+  /// No description provided for @quickCustomerAddNamed.
+  ///
+  /// In id, this message translates to:
+  /// **'Tambah pelanggan \"{q}\"'**
+  String quickCustomerAddNamed(String q);
+
+  /// No description provided for @quickCustomerName.
+  ///
+  /// In id, this message translates to:
+  /// **'Nama pelanggan'**
+  String get quickCustomerName;
+
+  /// No description provided for @quickCustomerNamePh.
+  ///
+  /// In id, this message translates to:
+  /// **'Contoh: Budi Santoso'**
+  String get quickCustomerNamePh;
+
+  /// No description provided for @quickCustomerPhone.
+  ///
+  /// In id, this message translates to:
+  /// **'Telepon/HP'**
+  String get quickCustomerPhone;
+
+  /// No description provided for @quickCustomerPhonePh.
+  ///
+  /// In id, this message translates to:
+  /// **'08123456789'**
+  String get quickCustomerPhonePh;
+
+  /// No description provided for @quickCustomerEmail.
+  ///
+  /// In id, this message translates to:
+  /// **'Email'**
+  String get quickCustomerEmail;
+
+  /// No description provided for @quickCustomerEmailPh.
+  ///
+  /// In id, this message translates to:
+  /// **'nama@contoh.id'**
+  String get quickCustomerEmailPh;
+
+  /// No description provided for @quickCustomerSave.
+  ///
+  /// In id, this message translates to:
+  /// **'Simpan & Pilih Pelanggan'**
+  String get quickCustomerSave;
+
+  /// No description provided for @quickNameRequired.
+  ///
+  /// In id, this message translates to:
+  /// **'Nama wajib diisi'**
+  String get quickNameRequired;
 }
 
 class _L10nDelegate extends LocalizationsDelegate<L10n> {

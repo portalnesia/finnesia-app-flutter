@@ -5,7 +5,9 @@
  * Written by Putu Aditya <aditya@portalnesia.com>
  */
 
+import '../../master_data.dart';
 import '../../pos.dart';
+import '../../product.dart';
 import '../../pos_shift.dart';
 import '../endpoint.dart';
 import '../http_method.dart';
@@ -14,7 +16,7 @@ import '../parsers.dart';
 String _nextQueueNumber(Object? data) =>
     (data as Map<String, dynamic>)['next_queue_number'] as String;
 
-/// `finnesia-monorepo/packages/shared/src/api/all-endpoints/pos.ts` — only the 13
+/// `finnesia-monorepo/packages/shared/src/api/all-endpoints/pos.ts` — only the 15
 /// endpoints the POS uses; device, void and settings-update are the web app's.
 ///
 /// Every entry carries its own request and response types, so a payload of the wrong shape
@@ -98,6 +100,23 @@ abstract final class PosApi {
         parseNothing,
         (dto) => dto.toJson(),
       );
+
+  // Adding a product or a customer from the till (`pos.quick_create`): create only, a narrow
+  // body. The till's cashier role holds `pos.quick_create` and not the master permissions, so
+  // these, not `/master/contacts`, are the routes it may post to.
+  static final productsCreate = WriteEndpoint<POSQuickProductDTO, Product>(
+    HttpMethod.post,
+    '/api/v1/pos/products',
+    parseObject(Product.fromJson),
+    (dto) => dto.toJson(),
+  );
+
+  static final customersCreate = WriteEndpoint<POSQuickCustomerDTO, Contact>(
+    HttpMethod.post,
+    '/api/v1/pos/customers',
+    parseObject(Contact.fromJson),
+    (dto) => dto.toJson(),
+  );
 
   static final stock = ReadEndpoint<Map<String, num>>(
     '/api/v1/pos/stock',

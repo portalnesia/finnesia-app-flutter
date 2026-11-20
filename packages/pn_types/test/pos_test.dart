@@ -486,4 +486,40 @@ void main() {
       expect(again, item);
     });
   });
+
+  // `POSQuickProductDTO` / `POSQuickCustomerDTO` in the server's `dto/pos.go`. Optional fields
+  // are validated `omitempty` there, so an unfilled one must be absent, not `null`.
+  group('adding from the till', () {
+    test('a product without a unit leaves unit_id out, so PCS is used', () {
+      expect(
+        const POSQuickProductDTO(name: 'Es Teh', sellPrice: 5000).toJson(),
+        {'name': 'Es Teh', 'sell_price': 5000},
+      );
+    });
+
+    test('a product with a unit sends it, and a zero price as zero', () {
+      expect(
+        const POSQuickProductDTO(
+          name: 'Es Teh',
+          sellPrice: 0,
+          unitId: 'u1',
+        ).toJson(),
+        {'name': 'Es Teh', 'sell_price': 0, 'unit_id': 'u1'},
+      );
+    });
+
+    test('a customer sends only what was filled in', () {
+      expect(const POSQuickCustomerDTO(name: 'Sari').toJson(), {
+        'name': 'Sari',
+      });
+      expect(
+        const POSQuickCustomerDTO(
+          name: 'Sari',
+          phone: '0812',
+          email: 'sari@contoh.id',
+        ).toJson(),
+        {'name': 'Sari', 'phone': '0812', 'email': 'sari@contoh.id'},
+      );
+    });
+  });
 }

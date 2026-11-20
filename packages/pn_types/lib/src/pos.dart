@@ -356,3 +356,41 @@ abstract class POSTenderDTO with _$POSTenderDTO {
   factory POSTenderDTO.fromJson(Map<String, dynamic> json) =>
       _$POSTenderDTOFromJson(json);
 }
+
+/// What `POST /pos/customers` takes: the customer a cashier adds from the till.
+///
+/// `POSQuickCustomerDTO` in the server (`dto/pos.go`): who they are and how to reach them, the
+/// three things a cashier can ask across the counter. Terms, accounts and addresses stay on the
+/// contact page. Empty fields are left out, not sent as `null`: the server validates them
+/// `omitempty`.
+@freezed
+abstract class POSQuickCustomerDTO with _$POSQuickCustomerDTO {
+  @JsonSerializable(includeIfNull: false)
+  const factory POSQuickCustomerDTO({
+    required String name,
+    String? phone,
+    String? email,
+  }) = _POSQuickCustomerDTO;
+
+  factory POSQuickCustomerDTO.fromJson(Map<String, dynamic> json) =>
+      _$POSQuickCustomerDTOFromJson(json);
+}
+
+/// What `POST /pos/products` takes: the product a cashier adds from the till so a sale is not
+/// held up waiting for the master data.
+///
+/// `POSQuickProductDTO` in the server (`dto/pos.go`). Only what a sale needs. An absent
+/// [unitId] means PCS, which the server creates when the company has none; the product is saved
+/// without stock tracking (`NON_INVENTORY`).
+@freezed
+abstract class POSQuickProductDTO with _$POSQuickProductDTO {
+  @JsonSerializable(includeIfNull: false)
+  const factory POSQuickProductDTO({
+    required String name,
+    @JsonKey(name: 'sell_price') required num sellPrice,
+    @JsonKey(name: 'unit_id') String? unitId,
+  }) = _POSQuickProductDTO;
+
+  factory POSQuickProductDTO.fromJson(Map<String, dynamic> json) =>
+      _$POSQuickProductDTOFromJson(json);
+}

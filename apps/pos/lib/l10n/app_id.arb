@@ -353,13 +353,6 @@
   "inspectorResponseHeaders": "Header respons",
   "inspectorResponseBody": "Isi respons",
   "menuOpen": "Menu",
-  "contactQuickAddTitle": "Tambah Pelanggan Baru",
-  "contactNameLabel": "Nama Pelanggan",
-  "contactNamePlaceholder": "Nama pelanggan...",
-  "contactPhoneLabel": "No. Telepon / HP",
-  "contactEmailLabel": "Email",
-  "contactCompanyLabel": "Nama Perusahaan (opsional)",
-  "contactAddressLabel": "Alamat",
   "contactCreated": "Pelanggan berhasil ditambahkan",
   "printerPairTitle": "Sambungkan Printer",
   "printerPairDesc": "Pastikan printer menyala, lalu pindai untuk mencarinya. Printer yang dipilih akan diingat tablet ini.",
@@ -551,14 +544,6 @@
   "posCustomer": "Pelanggan",
   "posNoCustomer": "Tanpa Pelanggan",
   "posSearchCustomer": "Cari pelanggan...",
-  "posAddContactNamed": "Tambah Kontak \"{q}\"",
-  "@posAddContactNamed": {
-    "placeholders": {
-      "q": {
-        "type": "String"
-      }
-    }
-  },
   "posCustomerMemo": "Catatan Pelanggan",
   "posCustomerMemoPlaceholder": "misal: Budi, take away",
   "posTableNumber": "No. Meja",
@@ -664,7 +649,6 @@
   "tillDetailCustomerFailed": "Belum bisa membaca daftar pelanggan. Periksa koneksi lalu coba lagi.",
   "tillDetailCreateFailed": "Pelanggan belum bisa disimpan. Coba lagi.",
   "tillDetailCreateNoAnswer": "Belum bisa menghubungi server. Periksa koneksi lalu coba lagi.",
-  "tillDetailNameRequired": "Nama pelanggan belum diisi.",
   "uiPrevious": "Sebelumnya",
   "uiNext": "Berikutnya",
   "menuShiftDetail": "Detail shift",
@@ -838,5 +822,49 @@
         "type": "String"
       }
     }
-  }
+  },
+  "quickProductButton": "Produk Baru",
+  "quickProductAddNamed": "Tambah produk \"{q}\"",
+  "@quickProductAddNamed": {
+    "placeholders": {
+      "q": {
+        "type": "String"
+      }
+    }
+  },
+  "quickProductTitle": "Tambah Produk dari Kasir",
+  "quickProductName": "Nama produk",
+  "quickProductNamePh": "Contoh: Es Teh Manis",
+  "quickProductPrice": "Harga jual",
+  "quickProductUnit": "Satuan",
+  "quickProductUnitPcsNew": "PCS (dibuat saat disimpan)",
+  "quickProductHint": "Disimpan sebagai produk tanpa stok. Admin bisa melengkapi kategori, jenis, dan akunnya nanti.",
+  "quickProductSave": "Simpan & Masukkan Keranjang",
+  "quickProductAdded": "{name} masuk ke keranjang",
+  "@quickProductAdded": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "quickProductUnitsFailed": "Daftar satuan tidak bisa dimuat. Produk tetap bisa disimpan dengan PCS.",
+  "quickCustomerTitle": "Tambah Pelanggan",
+  "quickCustomerAdd": "Tambah pelanggan",
+  "quickCustomerAddNamed": "Tambah pelanggan \"{q}\"",
+  "@quickCustomerAddNamed": {
+    "placeholders": {
+      "q": {
+        "type": "String"
+      }
+    }
+  },
+  "quickCustomerName": "Nama pelanggan",
+  "quickCustomerNamePh": "Contoh: Budi Santoso",
+  "quickCustomerPhone": "Telepon/HP",
+  "quickCustomerPhonePh": "08123456789",
+  "quickCustomerEmail": "Email",
+  "quickCustomerEmailPh": "nama@contoh.id",
+  "quickCustomerSave": "Simpan & Pilih Pelanggan",
+  "quickNameRequired": "Nama wajib diisi"
 }

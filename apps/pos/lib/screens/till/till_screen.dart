@@ -9,7 +9,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:pn_pos/src/format.dart';
 import 'package:pn_pos/src/permission_viewer.dart';
-import 'package:pn_pos/src/permissions.dart';
 import 'package:pn_pos/src/pos_hold.dart';
 import 'package:pn_types/src/api/api_error.dart';
 import 'package:pn_types/src/api/transport.dart';
@@ -32,9 +31,11 @@ import 'package:pos/screens/till/held_orders_sheet.dart';
 import 'package:pos/screens/till/hold_dialogs.dart';
 import 'package:pos/screens/till/catalog_pane.dart';
 import 'package:pos/screens/till/pos_sheet.dart';
+import 'package:pos/screens/till/quick_product_sheet.dart';
 import 'package:pos/till/cart_controller.dart';
 import 'package:pos/till/catalog_controller.dart';
 import 'package:pos/till/hold_controller.dart';
+import 'package:pos/till/quick_create_access.dart';
 import 'package:pos/till/scan_buffer.dart';
 import 'package:pos/till/transaction_detail_controller.dart';
 
@@ -69,6 +70,7 @@ class _TillScreenState extends State<TillScreen> {
   CatalogController? _catalog;
   TransactionDetailController? _detail;
   HoldController? _hold;
+  QuickCreateAccess? _access;
   final _search = TextEditingController();
   final _scan = ScanBuffer();
   final _stopwatch = Stopwatch()..start();
@@ -113,6 +115,13 @@ class _TillScreenState extends State<TillScreen> {
     // Not awaited: each part reports its own state, and a bug it rethrows stays loud.
     catalog.load();
 
+    final access = QuickCreateAccess(
+      client: services.client,
+      membership: resolvePermissionViewer(services.session.current)
+          .activeUserCompany,
+    );
+    _access = access;
+
     final preferences = widget.preferences;
     _detail = TransactionDetailController(
       client: services.client,
@@ -121,15 +130,14 @@ class _TillScreenState extends State<TillScreen> {
       showQueueNumber: preferences?.showQueueNumber ?? false,
       queueNumberAuto: preferences?.queueNumberAuto ?? false,
       defaultCustomerId: preferences?.defaultCustomerId,
-      // `POST /master/contacts` needs `master.contact.manage`, which the seeded cashier role
-      // does not hold. The button is therefore not drawn for a cashier at all: a control the
-      // server refuses is worse than no control (R-26). The owner has said the permission will
-      // be granted later, and when it is this gate loosens without the screen changing.
-      canCreateContact: Permissions.of(
-        membership: resolvePermissionViewer(services.session.current)
-            .activeUserCompany,
-      ).can('master.contact.manage'),
+      // `POST /pos/customers` needs `pos.quick_create` or `master.contact.manage`. Until the
+      // cashier's permissions are read the button is not drawn: a control the server refuses is
+      // worse than no control (R-26). The owner needs no read and has it from the start.
+      canCreateContact: access.canAddCustomer,
     );
+    access.addListener(_applyAccess);
+    // Not awaited: the buttons appear when the answer arrives, and a bug it rethrows stays loud.
+    access.load();
     // Not awaited: the row shows "Pelanggan" until the name arrives, and a bug it rethrows stays
     // loud.
     _detail!.loadDefault();
@@ -145,9 +153,17 @@ class _TillScreenState extends State<TillScreen> {
     _hold!.refresh();
   }
 
+  /// The cashier's permissions arrived: the customer picker follows them, and the header and the
+  /// catalogue redraw from [_access].
+  void _applyAccess() {
+    _detail!.canCreateContact = _access!.canAddCustomer;
+  }
+
   @override
   void dispose() {
     HardwareKeyboard.instance.removeHandler(_onKey);
+    _access?.removeListener(_applyAccess);
+    _access?.dispose();
     _search.dispose();
     _hold?.dispose();
     _detail?.dispose();
@@ -194,6 +210,19 @@ class _TillScreenState extends State<TillScreen> {
     }
     // The list has done its job; the basket is on the till.
     Navigator.of(context).pop();
+  }
+
+  /// Adds a product the till does not know yet, named from [name], and rings it up.
+  ///
+  /// It goes straight into the cart: it was added because a customer is holding it. The search
+  /// that missed is cleared so the grid shows the catalogue again.
+  Future<void> _addNewProduct(String name) async {
+    final created = await showQuickProductSheet(context, initialName: name);
+    if (created == null || !mounted) return;
+    _add(created);
+    _search.clear();
+    _catalog!.setSearch('');
+    _report(L10n.of(context).quickProductAdded(created.name));
   }
 
   void _add(Product product) {
@@ -386,13 +415,20 @@ class _TillScreenState extends State<TillScreen> {
     final session = services.session.current;
     final cashier = session?.user?.name;
 
+    final access = _access!;
     final wide = context.windowClass != WindowClass.compact;
+    final catalogPane = ListenableBuilder(
+      listenable: access,
+      builder: (context, _) => CatalogPane(
+        catalog: catalog,
+        onPick: _add,
+        onCreateProduct: access.canAddProduct ? _addNewProduct : null,
+      ),
+    );
     final body = wide
         ? Row(
             children: [
-              Expanded(
-                child: CatalogPane(catalog: catalog, onPick: _add),
-              ),
+              Expanded(child: catalogPane),
               _CartColumn(
                 width: context.windowClass == WindowClass.wide ? 440 : 380,
                 child: CartPane(
@@ -406,9 +442,7 @@ class _TillScreenState extends State<TillScreen> {
           )
         : Column(
             children: [
-              Expanded(
-                child: CatalogPane(catalog: catalog, onPick: _add),
-              ),
+              Expanded(child: catalogPane),
               _SummaryBar(
                 cart: cart,
                 detail: detail,
@@ -475,20 +509,33 @@ class _TillScreenState extends State<TillScreen> {
                       onSubmitted: _submitSearch,
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  ListenableBuilder(
+                    listenable: access,
+                    builder: (context, _) => access.canAddProduct
+                        ? Padding(
+                            padding: const EdgeInsets.only(left: 8),
+                            child: _HeaderButton(
+                              key: const Key('quick-product-button'),
+                              label: l10n.quickProductButton,
+                              icon: Icons.add_box_outlined,
+                              iconOnly: !wide,
+                              onPressed: () => _addNewProduct(_search.text),
+                            ),
+                          )
+                        : const SizedBox.shrink(),
+                  ),
+                  const SizedBox(width: 8),
                   ListenableBuilder(
                     listenable: _hold!,
-                    builder: (context, _) => SizedBox(
-                      height: PnTouch.min,
-                      child: OutlinedButton(
-                        key: const Key('held-button'),
-                        onPressed: _openHeld,
-                        child: Text(
-                          _hold!.count == 0
-                              ? l10n.tillHeld
-                              : l10n.tillHeldCount(_hold!.count),
-                        ),
-                      ),
+                    builder: (context, _) => _HeaderButton(
+                      key: const Key('held-button'),
+                      label: _hold!.count == 0
+                          ? l10n.tillHeld
+                          : l10n.tillHeldCount(_hold!.count),
+                      icon: Icons.pause_circle_outline,
+                      iconOnly: !wide,
+                      badge: _hold!.count == 0 ? null : '${_hold!.count}',
+                      onPressed: _openHeld,
                     ),
                   ),
                 ],
@@ -496,6 +543,67 @@ class _TillScreenState extends State<TillScreen> {
             ),
             Expanded(child: body),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// A button in the row beside the search field.
+///
+/// On a narrow screen only its icon: the row has no room for the search and two labels, and the
+/// search is what the cashier types into all day. The label stays as the tooltip and the
+/// screen-reader name, and the button keeps the full touch target.
+class _HeaderButton extends StatelessWidget {
+  const _HeaderButton({
+    super.key,
+    required this.label,
+    required this.icon,
+    required this.iconOnly,
+    required this.onPressed,
+    this.badge,
+  });
+
+  final String label;
+  final IconData icon;
+  final bool iconOnly;
+  final VoidCallback onPressed;
+
+  /// A count drawn on the icon when only the icon is shown, so a narrow screen still says how
+  /// many baskets are waiting.
+  final String? badge;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!iconOnly) {
+      return SizedBox(
+        height: PnTouch.min,
+        child: OutlinedButton.icon(
+          onPressed: onPressed,
+          icon: Icon(icon),
+          label: Text(label),
+        ),
+      );
+    }
+    final shown = badge;
+    return Tooltip(
+      message: label,
+      child: Semantics(
+        button: true,
+        label: label,
+        excludeSemantics: true,
+        child: SizedBox.square(
+          dimension: PnTouch.min,
+          child: OutlinedButton(
+            onPressed: onPressed,
+            style: OutlinedButton.styleFrom(
+              padding: EdgeInsets.zero,
+              minimumSize: const Size.square(PnTouch.min),
+            ),
+            child: shown == null
+                ? Icon(icon)
+                : Badge(label: Text(shown), child: Icon(icon)),
+          ),
         ),
       ),
     );
